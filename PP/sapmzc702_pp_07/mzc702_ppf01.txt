@@ -1,0 +1,795 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_PPF01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form DISPLAY_DISPOSAL
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM display_disposal .
+  PERFORM get_disposal_data.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_DISPOSAL_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM get_disposal_data .
+**** 조건 검색을 위한 range 타입 설정 -> 사용 필드만큼 선언
+  DATA: lt_discode TYPE RANGE OF gty_disposal-discode,
+        ls_discode LIKE LINE OF lt_discode.
+
+  DATA: lt_whcode TYPE RANGE OF gty_disposal-whcode,
+        ls_whcode LIKE LINE OF lt_whcode.
+
+  DATA: lt_lotnum TYPE RANGE OF gty_disposal-lotnum,
+        ls_lotnum LIKE LINE OF lt_lotnum.
+
+  DATA: lt_gdcode TYPE RANGE OF gty_disposal-gdcode,
+        ls_gdcode LIKE LINE OF lt_gdcode.
+
+  DATA: lt_year TYPE string.
+
+**** 조건 검색을 위한 range 타입 조건 설정 => 필드가 입력되면 필드와 동일한 조건으로
+*  IF ztc702_disposal-discode IS NOT INITIAL.
+*    ls_discode-sign = 'I'.
+*    ls_discode-option = 'EQ'.
+*    ls_discode-low = ztc702_disposal-discode.
+*    APPEND ls_discode TO lt_discode.
+*  ENDIF.
+
+*  IF ztc702_disposal-whcode IS NOT INITIAL.
+*    ls_whcode-sign = 'I'.
+*    ls_whcode-option = 'EQ'.
+*    ls_whcode-low = ztc702_disposal-whcode.
+*    APPEND ls_whcode TO lt_whcode.
+*  ENDIF.
+*
+*  IF ztc702_disposal-lotnum IS NOT INITIAL.
+*    ls_lotnum-sign = 'I'.
+*    ls_lotnum-option = 'EQ'.
+*    ls_lotnum-low = ztc702_disposal-lotnum.
+*    APPEND ls_lotnum TO lt_lotnum.
+*  ENDIF.
+
+  IF ztc702_disposal-gdcode IS NOT INITIAL.
+    ls_gdcode-sign = 'I'.
+    ls_gdcode-option = 'EQ'.
+    ls_gdcode-low = ztc702_disposal-gdcode.
+    APPEND ls_gdcode TO lt_gdcode.
+  ENDIF.
+
+  lt_year = gv_year && '%'.
+
+
+**** Select문 range 타입으로 선언했으므로 where ~ in 조건 + 삭제플래그가 체크가 안될 경우 검색.
+  SELECT *
+    FROM zdvc702_disposal INTO CORRESPONDING FIELDS OF TABLE gt_disposal
+    WHERE gdcode IN lt_gdcode
+    AND erdat LIKE lt_year.
+
+  SORT gt_disposal ASCENDING BY discode.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CREATE_DISPOSAL
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM create_disposal .
+  DATA: ls_disposal TYPE ztc702_disposal,
+        lv_text     TYPE string,
+        lv_answer   TYPE c LENGTH 1.
+
+  IF ztc702_disposal-discode IS NOT INITIAL.
+    MESSAGE '폐기코드는 비워두세요.' TYPE 'I'.
+  ELSE.
+    MOVE-CORRESPONDING ztc702_disposal TO ls_disposal.
+
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        titlebar              = '폐기 물품 등록'
+        text_question         = '새로운 폐기 물품을 등록하시겠습니까?'
+        text_button_1         = '예'
+        text_button_2         = '아니오'
+        display_cancel_button = space
+      IMPORTING
+        answer                = lv_answer.
+
+
+    IF lv_answer = 1.
+      CALL FUNCTION 'ZFMC702_CNRO'
+        EXPORTING
+          fv_module_name   = 'DIS'
+          fv_cnro_nr       = '05'
+          fv_object        = 'ZCL719FINR'
+        CHANGING
+          fv_change_codenr = lv_text.
+
+      ls_disposal-discode = lv_text.
+      ls_disposal-crnam = sy-uname.
+      ls_disposal-erdat = sy-datum.
+      ls_disposal-ertim = sy-uzeit.
+      INSERT ztc702_disposal FROM ls_disposal.
+
+      IF sy-subrc = 0.
+        MESSAGE i000 WITH lv_text.
+        PERFORM get_disposal_data.
+        COMMIT WORK.
+      ELSE.
+        MESSAGE '등록 실패' TYPE 'I'.
+        ROLLBACK WORK.
+
+      ENDIF.
+
+    ENDIF.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CHANGE_DISPOSAL
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM change_disposal .
+***** alv row 인데스 찾기
+  CALL METHOD go_alv_grid->get_selected_rows
+    IMPORTING
+      et_index_rows = gt_index.
+
+***** 선택된 ROW 개수 찾기
+  DESCRIBE TABLE gt_index LINES gv_lines.
+
+  LOOP AT gt_index INTO gs_index.
+
+  ENDLOOP.
+
+  IF gt_index IS INITIAL.
+    MESSAGE '라인을 선택해주세요.' TYPE 'I'.
+  ELSEIF gv_lines > 1.
+    MESSAGE '라인을 하나만 선택해주세요.' TYPE 'I'.
+  ELSE.
+    CALL SCREEN 120
+      STARTING AT 10 10
+      ENDING AT 45 16.
+  ENDIF.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CHECK_DISPOSAL
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM check_disposal .
+  DATA: ls_gty_disposal TYPE gty_disposal,
+        ls_disposal     TYPE ztc702_disposal,
+        lt_row          TYPE lvc_t_row,
+        ls_row          TYPE lvc_s_row,
+        lv_line         TYPE i,
+        lv_answer       TYPE c LENGTH 1.
+
+  CALL METHOD go_alv_grid->get_selected_rows
+    IMPORTING
+      et_index_rows = lt_row.
+
+  DESCRIBE TABLE lt_row LINES lv_line.
+
+  IF lt_row IS INITIAL.
+    MESSAGE '라인을 선택해주세요.' TYPE 'I'.
+  ELSEIF lv_line > 1.
+    MESSAGE '라인을 하나만 선택해주세요.' TYPE 'I'.
+  ELSE.
+    LOOP AT lt_row INTO ls_row.
+      READ TABLE gt_disposal INTO ls_gty_disposal INDEX ls_row-index.
+      MOVE-CORRESPONDING ls_gty_disposal TO ls_disposal.
+    ENDLOOP.
+  ENDIF.
+
+  IF ls_disposal-delflag = space.
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        titlebar              = '완전 폐기'
+        text_question         = '완전히 폐기 시키겠습니까?'
+        text_button_1         = '예'
+        text_button_2         = '아니오'
+        display_cancel_button = space
+      IMPORTING
+        answer                = lv_answer.
+
+    IF lv_answer = 1.
+      ls_disposal-delflag = 'X'.
+      ls_disposal-chnam = sy-uname.
+      ls_disposal-chdat = sy-datum.
+      ls_disposal-chtim = sy-uzeit.
+
+      UPDATE ztc702_disposal FROM ls_disposal.
+      MESSAGE '완전 폐기' TYPE 'I'.
+
+      COMMIT WORK.
+    ENDIF.
+
+  ELSEIF ls_disposal-delflag = 'X'.
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        titlebar              = '폐기 취소'
+        text_question         = '폐기를 취소시키겠습니까?'
+        text_button_1         = '예'
+        text_button_2         = '아니오'
+        display_cancel_button = space
+      IMPORTING
+        answer                = lv_answer.
+
+    IF lv_answer = 1.
+      ls_disposal-delflag = space.
+      ls_disposal-chnam = sy-uname.
+      ls_disposal-chdat = sy-datum.
+      ls_disposal-chtim = sy-uzeit.
+
+      UPDATE ztc702_disposal FROM ls_disposal.
+      MESSAGE '완전 폐기 취소' TYPE 'I'.
+
+      COMMIT WORK.
+    ENDIF.
+
+  ENDIF.
+
+  PERFORM get_disposal_data.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_LAYOUT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_layout .
+  gs_layout-info_fname = 'COLOR'.
+  gs_layout-sel_mode = 'A'.
+*  gs_layout-cwidth_opt = 'X'.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_FCAT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_fcat .
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'DISCODE'.
+  gs_fcat-coltext = '폐기물품코드'.
+  gs_fcat-key = 'X'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 12.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDCODE'.
+  gs_fcat-coltext = '품목코드'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 6.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'LOTNUM'.
+  gs_fcat-coltext = 'LOT 번호'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 13.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDNAME'.
+  gs_fcat-coltext = '품목명'.
+  gs_fcat-outputlen = 30.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'QUAN'.
+  gs_fcat-coltext = '수량'.
+  gs_fcat-qfieldname = 'UNIT'.
+  gs_fcat-outputlen = 6.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'UNIT'.
+  gs_fcat-coltext = '단위'.
+  gs_fcat-quantity = 'EA'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 4.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'WHCODE'.
+  gs_fcat-coltext = '창고코드'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 6.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'CRNAM'.
+  gs_fcat-coltext = '생성자'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 9.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'ERDAT'.
+  gs_fcat-coltext = '생성 일자'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 10.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'ERTIM'.
+  gs_fcat-coltext = '생성 시간'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 10.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'CRNAM'.
+  gs_fcat-coltext = '변경자'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 9.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'CHDAT'.
+  gs_fcat-coltext = '변경 일자'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 10.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'CHTIM'.
+  gs_fcat-coltext = '변경 시간'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 10.
+  APPEND gs_fcat TO gt_fcat.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SAVE_DISPOSAL
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM save_disposal .
+  DATA: lt_disposal TYPE TABLE OF ztc702_disposal,
+        ls_disposal TYPE ztc702_disposal.
+
+  DATA: lv_text   TYPE string,
+        lv_answer TYPE c LENGTH 1.
+
+  CALL FUNCTION 'POPUP_TO_CONFIRM'
+    EXPORTING
+      titlebar              = '폐기 물품 등록'
+      text_question         = '폐기 물품을 등록하시겠습니까?'
+      text_button_1         = '예'
+      text_button_2         = '아니오'
+      display_cancel_button = space
+    IMPORTING
+      answer                = lv_answer.
+
+**** 팝업에서 YES 일 경우 데이터 생성 작업
+  IF lv_answer = 1.
+
+**** 채번 펑션 모듈 실행
+    CALL FUNCTION 'ZFMC702_CNRO'
+      EXPORTING
+        fv_module_name   = 'DIS'
+        fv_cnro_nr       = '06'
+        fv_object        = 'ZNRC702PP1'
+      CHANGING
+        fv_change_codenr = lv_text.
+
+**** 채번코드 및 생성자 입력
+    MOVE-CORRESPONDING zsc702_disposal TO ls_disposal.
+    ls_disposal-discode = lv_text.
+    ls_disposal-crnam = sy-uname.
+    ls_disposal-erdat = sy-datum.
+    ls_disposal-ertim = sy-uzeit.
+    ls_disposal-chnam = sy-uname.
+    ls_disposal-chdat = sy-datum.
+    ls_disposal-chtim = sy-uzeit.
+
+    INSERT ztc702_disposal FROM ls_disposal.
+
+**** SY-SUBRC 체크
+    IF sy-subrc = 0.
+      MESSAGE i000 WITH lv_text.
+      CLEAR: zsc702_disposal, gt_disposal .
+      COMMIT WORK.
+      LEAVE TO SCREEN 0.
+    ELSE.
+      MESSAGE '등록 실패' TYPE 'I'.          " 실패 시 이전 작업들 롤백
+      ROLLBACK WORK.
+
+    ENDIF.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form NODE_DOUBLE_CLICK_0100
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*      -->P_NODE_KEY  text
+*&---------------------------------------------------------------------*
+FORM node_double_click_0100  USING    p_node_key.
+  DATA: lv_month       TYPE string,
+        lv_year        TYPE string,
+        lv_check_month TYPE string.
+
+  lv_year = gv_year.
+  lv_month = p_node_key+2(1).
+
+  CASE lv_month.
+    WHEN 'A'.
+      lv_month = '10'.
+    WHEN 'B'.
+      lv_month = '11'.
+    WHEN 'C'.
+      lv_month = '12'.
+  ENDCASE.
+
+  IF lv_month < 10.
+    lv_month = '0' && lv_month.
+  ENDIF.
+
+  CONCATENATE lv_year lv_month '%' INTO lv_check_month.
+
+  SELECT * FROM zdvc702_disposal
+    INTO CORRESPONDING FIELDS OF TABLE gt_disposal
+    WHERE erdat LIKE lv_check_month. "트리 생산번호 더블클릭시 그에맞는 정보만 가져오기.
+
+  SORT gt_disposal ASCENDING BY discode.
+
+  PERFORM refresh_grid. " alv grid refresh.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form REFRESH_GRID
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM refresh_grid .
+  DATA: l_scroll TYPE lvc_s_stbl.
+  l_scroll-row = 'X'.
+  l_scroll-col = 'X'.
+  CALL METHOD go_alv_grid->refresh_table_display
+    EXPORTING
+      i_soft_refresh = ''
+      is_stable      = l_scroll.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CREATE_TREE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM create_tree .
+  DATA: node_table TYPE node_table_type, "트리 값들 관계 넣어주기위해
+        events     TYPE cntl_simple_events, "더블클릭 이벤트
+        event      TYPE cntl_simple_event.    "더블클릭 이벤트
+
+  CREATE OBJECT g_tree
+    EXPORTING
+      parent              = tree_con_ref
+      node_selection_mode = cl_gui_simple_tree=>node_sel_mode_single. "싱글선택
+
+*노드 생성
+  PERFORM build_node_table USING node_table. "트리에 데이터 넣어줌
+
+*트리 노드 추가
+  CALL METHOD g_tree->add_nodes
+    EXPORTING
+      table_structure_name = 'MTREESNODE'
+      node_table           = node_table. "트리 데이터 들어가있는 int
+
+*이벤트
+  CREATE OBJECT g_application.
+
+  event-eventid = cl_gui_simple_tree=>eventid_node_double_click.
+  event-appl_event = 'X'.
+  APPEND event TO events.
+
+*트리 이벤트 등록
+  CALL METHOD g_tree->set_registered_events
+    EXPORTING
+      events                    = events
+    EXCEPTIONS
+      cntl_error                = 1
+      cntl_system_error         = 2
+      illegal_event_combination = 3.
+
+*이벤트 헨들러
+  SET HANDLER g_application->handle_node_double_click FOR g_tree.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form BUILD_NODE_TABLE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*      -->P_NODE_TABLE  text
+*&---------------------------------------------------------------------*
+FORM build_node_table  USING node_table TYPE node_table_type.
+  DATA: node           LIKE mtreesnode,
+        lv_month       TYPE c LENGTH 2,
+        lv_node_month  TYPE string,
+        lv_text        TYPE string,
+        lv_check_month TYPE string,
+        lv_key_discode TYPE string,
+        lv_child_key   TYPE string.
+
+
+  CLEAR node.
+  " Sort 시 root가 최상위가 되야하므로 키 이름을 최상단에 올릴수 있도록 이름 설정
+  node-node_key = 'AA'.       "tree 상위항목 , 최상위 항목임.
+  node-isfolder = 'X'.        "폴더모양으로 표시  , 모양이 폴더
+  node-text = gv_year.
+  APPEND node TO node_table.
+
+  DO 12 TIMES.
+    CLEAR: lv_text, lv_month, lv_node_month.
+
+    IF sy-index < 10.                                   " 1~12월 폴더를 만들기 위한 인덱스 체크
+      lv_month = sy-index.
+    ELSEIF sy-index = 10.                               " 10,11,12는 노드 정렬을 위해 A, B, C로 변경
+      lv_month = 'A'.
+    ELSEIF sy-index = 11.
+      lv_month = 'B'.
+    ELSEIF sy-index = 12.
+      lv_month = 'C'.
+    ENDIF.
+
+* 월단위 생성 - 숫자 뒤에 월 붙히기.
+
+    IF sy-index < 10.                                   " 10보다 작을 경우는 lv_month가 인덱스 이므로 바로 붙히기
+      CONCATENATE lv_month '월' INTO lv_node_month.
+    ELSE.
+      lv_month = sy-index.                              " 10이상 일 경우는 lv_month가 영어 이므로 현재 인덱스(월)로 바꿔주고 월 붙히기.
+      CONCATENATE lv_month '월' INTO lv_node_month.
+    ENDIF.
+
+    CONCATENATE 'AA' lv_month INTO lv_text.
+    CLEAR node.
+    " child는 root 아래에 올 수 있도록 이름 설정
+    node-node_key = lv_text. "root 하위 항목
+    node-n_image = '@TT@'.                              " 아이콘 RETAIL_PRODUCT -> 프로그램 SHOWICON 에서 코드명 찾기
+    node-relatkey = 'AA'.
+    node-text = lv_node_month.
+    APPEND node TO node_table.
+  ENDDO.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SAVE_CHANGE_DISPOSAL
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM save_change_disposal .
+  DATA: ls_disposal TYPE ztc702_disposal,
+*        ls_edt_disposal TYPE ztc702_disposal,
+        lv_answer   TYPE c LENGTH 1.
+
+*  IF ls_pre_disposal-discode <> gs_disposal_f-discode.
+*    MESSAGE '폐기물품코드는 변경할 수 없습니다.' TYPE 'I'.
+*    ROLLBACK WORK.
+*  ELSE.
+  CALL FUNCTION 'POPUP_TO_CONFIRM'
+    EXPORTING
+      titlebar              = '폐기 물품 정보 변경 확인'
+      text_question         = '폐기 물품 정보를 정말 변경하시겠습니까?'
+      text_button_1         = '예'
+      text_button_2         = '아니오'
+      display_cancel_button = space
+    IMPORTING
+      answer                = lv_answer.
+
+  IF lv_answer = 1.
+    MOVE-CORRESPONDING zsc702_disposal TO ls_disposal.
+
+    ls_disposal-chnam = sy-uname.
+    ls_disposal-chdat = sy-datum.
+    ls_disposal-chtim = sy-uzeit.
+
+    UPDATE ztc702_disposal FROM ls_disposal.
+
+    MESSAGE '공장 정보 변경 완료.' TYPE 'I'.
+    CLEAR: zsc702_disposal, gt_disposal.
+
+    COMMIT WORK.
+
+  ENDIF.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DISPOSAL_INIT_200
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM disposal_init_200 .
+  DATA: ls_disposal TYPE zdvc702_disposal.
+
+  CLEAR zsc702_disposal.
+
+  READ TABLE gt_disposal INTO ls_disposal INDEX gs_index.
+  MOVE-CORRESPONDING ls_disposal TO zsc702_disposal.
+  zsc702_disposal-unit = 'EA'.
+  zsc702_disposal-quan = zsc702_disposal-quan / 1000.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CHANGE_YEAR
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM change_year .
+  g_tree->free( ).
+  PERFORM create_tree.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CREATE_PIE_CHART
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM create_pie_chart .
+  DATA: lv_sum TYPE i.
+
+  REFRESH y_values.
+  REFRESH x_texts.
+
+  PERFORM set_pie_text.           " 파이 차트 값 설정
+
+  IF sy-subrc <> 0.
+* Implement suitable error handling here
+  ENDIF.
+
+  CALL FUNCTION 'GFW_PRES_SHOW'
+    EXPORTING
+      container         = 'DISPOSAL'
+      presentation_type = gfw_prestype_pie_chart
+      header            = '불량품 비율'
+    TABLES
+      values            = y_values
+      column_texts      = x_texts.
+
+  IF sy-subrc <> 0.
+* Implement suitable error handling here
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_PIE_TEXT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_pie_text .
+  DATA: ls_disposal TYPE gty_disposal.
+
+  DATA: lv_sum  TYPE i,     " 전체 합계
+        lv_sum1 TYPE i,     " 각 제품에 대한 수량 합계
+        lv_sum2 TYPE i,
+        lv_sum3 TYPE i.
+
+  DATA: lv_per1 TYPE p DECIMALS 0,    " 각 제품에 대한 퍼센트 데이터
+        lv_per2 TYPE p DECIMALS 0,
+        lv_per3 TYPE p DECIMALS 0.
+
+  DATA: lv_text1 TYPE string,         " 각 제품에 대한 x축 설명
+        lv_text2 TYPE string,
+        lv_text3 TYPE string.
+
+  CLEAR y_values.
+
+  LOOP AT gt_disposal INTO ls_disposal.
+    IF ls_disposal-gdcode = 'M101'.                         " 기본 하이볼 수량 체크
+      y_values-val1 = y_values-val1 + ls_disposal-quan.
+      lv_sum1 = lv_sum1 + ls_disposal-quan.
+      APPEND y_values.
+    ELSEIF ls_disposal-gdcode = 'M102'.                     " 하이볼 딸기 수량 체크
+      y_values-val2 = y_values-val2 + ls_disposal-quan.
+      lv_sum2 = lv_sum2 + ls_disposal-quan.
+      APPEND y_values.
+    ELSEIF ls_disposal-gdcode = 'M103'.                     " 하이볼 바나나 수량 체크
+      y_values-val3 = y_values-val3 + ls_disposal-quan.
+      lv_sum3 = lv_sum3 + ls_disposal-quan.
+      APPEND y_values.
+    ENDIF.
+
+  ENDLOOP.
+
+  lv_sum = lv_sum1 + lv_sum2 + lv_sum3.                       " 전체 수량 체크
+
+  IF lv_sum1 <> 0.
+    lv_per1 = ( lv_sum1 / lv_sum ) * 100.
+    lv_text1 = lv_per1 && '%'.
+    CONCATENATE '하이볼' lv_text1 INTO lv_text1 SEPARATED BY space.
+
+    x_texts-coltxt = lv_text1.
+    APPEND x_texts.
+  ENDIF.
+
+  IF lv_sum2 <> 0.
+    lv_per2 = ( lv_sum2 / lv_sum ) * 100.
+    lv_text2 = lv_per2  && '%'.
+    CONCATENATE '하이볼 딸기' lv_text2 INTO lv_text2 SEPARATED BY space.
+
+    x_texts-coltxt = lv_text2.
+    APPEND x_texts.
+  ENDIF.
+
+  IF lv_sum3 <> 0 .
+    lv_per3 = ( lv_sum3 / lv_sum ) * 100.
+    lv_text3 = lv_per3  && '%'.
+    CONCATENATE '하이볼 바나나' lv_text3 INTO lv_text3 SEPARATED BY space.
+
+    x_texts-coltxt = lv_text3.
+    APPEND x_texts.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_SORT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_sort .
+  CLEAR gs_sort.
+  gs_sort-fieldname = 'DISCODE'.
+  gs_sort-up = 'X'.
+  APPEND gs_sort TO gt_sort.
+
+ENDFORM.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

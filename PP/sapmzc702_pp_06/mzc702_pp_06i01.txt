@@ -1,0 +1,41 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_PP_06I01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  EXIT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE exit INPUT.
+  CASE ok_code.
+    WHEN 'EXIT'.
+      LEAVE PROGRAM.
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN 'EXECUTE'.
+      PERFORM create_condition.
+    WHEN 'SAVE'.
+      PERFORM save_mrp_list.
+    WHEN 'CLEAR'.
+      CLEAR: gt_mrp_i, ztc702_bom_h, zsc702_prdplan_h.
+      gv_check = '1'.       " 필드 재 활성화
+      WHEN 'CANC'.
+        clear: ZSC702_PRDPLAN_H, ztc702_bom_h.
+
+
+  ENDCASE.
+
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

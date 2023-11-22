@@ -1,0 +1,27 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_MM_05_C01
+*&---------------------------------------------------------------------*
+CLASS lcl_handler DEFINITION. "정의부
+  PUBLIC SECTION.
+
+    CLASS-METHODS: on_double_click
+                  FOR EVENT double_click OF cl_gui_alv_grid IMPORTING es_row_no.
+ENDCLASS.
+
+CLASS lcl_handler IMPLEMENTATION. "구현부
+  METHOD on_double_click.
+    READ TABLE gt_ztc702_mpr INTO gs_ztc702_mpr_200 INDEX es_row_no-row_id.
+
+    SELECT r~gdcode m~gdname r~quantity r~unit
+      FROM ( ztc702_mpr AS r INNER JOIN ztc702_mtmaster AS m
+        ON r~gdcode = m~gdcode )
+      INTO CORRESPONDING FIELDS OF TABLE gt_ztc702_mpr_200
+     WHERE mprno = gs_ztc702_mpr_200-mprno.
+
+    CALL SCREEN 200.
+    LEAVE SCREEN.
+  ENDMETHOD.
+ENDCLASS.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

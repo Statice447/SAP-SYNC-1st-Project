@@ -1,0 +1,206 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_HR_01O01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'S0100'.
+  SET TITLEBAR 'S0100'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CLEAR_OK_CODE OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE clear_ok OUTPUT.
+  CLEAR ok_code.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SET_ALV OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE alv_setting OUTPUT.
+  IF go_con IS INITIAL.
+    CREATE OBJECT go_con
+      EXPORTING
+        container_name = 'EMP_ALV'.
+
+    CREATE OBJECT go_alv
+      EXPORTING
+        i_parent = go_con.
+
+    PERFORM set_lay.
+    PERFORM set_cat.
+
+    go_alv->set_table_for_first_display(
+    EXPORTING
+      is_layout = gs_lay
+
+        CHANGING
+        it_outtab       = gt_emp
+        it_fieldcatalog = gt_cat
+       ).
+  ENDIF.
+  go_alv->refresh_table_display( ).
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_100 OUTPUT.
+  CLEAR ztc702_conmaster.
+**** ROW 색을 위한 LOOP문
+  LOOP AT gt_emp INTO gs_emp.
+
+***** 삭제플래그 체크 시 ROW 색 변경
+    IF gs_emp-delflag = 'X'.
+      gs_emp-color = 'C610'.
+    ENDIF.
+
+    MODIFY gt_emp FROM gs_emp TRANSPORTING color.
+  ENDLOOP.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0110 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0110 OUTPUT.
+  SET PF-STATUS '0110'.
+  SET TITLEBAR '0110'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0120 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0120 OUTPUT.
+  SET PF-STATUS '0120'.
+  SET TITLEBAR '0120'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module NUM_INFO OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE num_info OUTPUT.
+  ztc702_conmaster-mtcode = 'P'.
+  ztc702_conmaster-currency = 'KRW'.
+ENDMODULE.
+
+*&---------------------------------------------------------------------*
+*& Module INIT_LIST2 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_list2 OUTPUT.
+  SELECT *
+    FROM ztc702_mtmaster
+    INTO CORRESPONDING FIELDS OF TABLE gt_list
+    WHERE mtcode = 'P'
+    .
+
+  TYPE-POOLS vrm.
+
+  CLEAR: list.
+
+  LOOP AT gt_list INTO gs_list.
+    value-key = gs_list-gdcode.
+    value-text = gs_list-gdname.
+    APPEND value TO list.
+    CLEAR: gs_list, value.
+  ENDLOOP.
+
+  CALL FUNCTION 'VRM_SET_VALUES'
+    EXPORTING
+      id     = 'ZTC702_CONMASTER-GDCODE'
+      values = list.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module ALV_SETTING2 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE alv_setting2 OUTPUT.
+
+
+*  call METHOD cl_salv_table=>factory
+*  IMPORTING
+*    r_salv_table = lr_salv_tab
+*    CHANGING
+*      t_table  = gt_mtm.
+*
+*lr_salv_tab->display( ).
+***** 최초 컨테이너 생성 시
+  IF go_con2 IS INITIAL.
+    CREATE OBJECT go_con2
+      EXPORTING
+        container_name = 'CON2'.
+    gv_refresh     = abap_true.         " 리프레시 체크
+  ENDIF.
+
+***** 최초 ALV 생성 시
+  IF gv_refresh = abap_true.
+    CREATE OBJECT go_alv2
+      EXPORTING
+        i_parent = go_con2.
+
+    CLEAR gs_cat2.
+    gs_cat2-fieldname = 'GDCODE'.
+    gs_cat2-coltext = '품목 코드'.
+    gs_cat2-outputlen = '6'.
+    gs_cat2-col_pos = '1'.
+    APPEND gs_cat2 TO gt_cat2.
+    CLEAR gs_cat2.
+    gs_cat2-fieldname = 'GDNAME'.
+    gs_cat2-coltext = '품목명'.
+    gs_cat2-outputlen = '18'.
+    gs_cat2-col_pos = '2'.
+    APPEND gs_cat2 TO gt_cat2.
+    CLEAR gs_cat2.
+    gs_cat2-fieldname = 'ERDAT'.
+    gs_cat2-coltext = '생성일자'.
+    gs_cat2-outputlen = '10'.
+    gs_cat2-col_pos = '3'.
+    APPEND gs_cat2 TO gt_cat2.
+    CLEAR gs_cat2.
+
+    gs_exclude = cl_gui_alv_grid=>mc_fc_excl_all.
+    APPEND gs_exclude TO gt_exclude.
+
+    CALL METHOD go_alv2->set_table_for_first_display
+      EXPORTING
+*       is_variant      = gs_variant
+*       i_save          = gv_save
+        i_default       = 'X'
+        is_layout       = gs_lay2
+         it_toolbar_excluding = gt_exclude
+      CHANGING
+        it_outtab       = gt_mtm
+        it_fieldcatalog = gt_cat2.
+*       it_sort          =
+*       it_filter        =
+
+    gv_refresh = abap_false. " 리프레시 해제
+
+  ELSE. " 기존 ALV가 있을경우 리프레시 => gv_refresh가 false 일 때
+    go_alv2->refresh_table_display( ).
+  ENDIF.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_120 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_120 OUTPUT.
+"ztc702_conmaster-currency = 'P'.
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

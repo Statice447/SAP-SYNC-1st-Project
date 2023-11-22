@@ -1,0 +1,180 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_PPO01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'S0100'.
+  SET TITLEBAR 'T0100'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CLEAR_OK_CODE OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE clear_ok_code OUTPUT.
+  CLEAR ok_code.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SET_ALV OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE set_alv OUTPUT.
+***** 최초 컨테이너 생성 시
+  IF go_container IS INITIAL.
+    CREATE OBJECT go_container
+      EXPORTING
+        container_name = 'DISPOSAL_ALV'.
+    gv_refresh     = abap_true.             " 리프레시 체크
+  ENDIF.
+
+***** 최초 ALV 생성 시
+  IF gv_refresh = abap_true.
+    CREATE OBJECT go_alv_grid
+      EXPORTING
+        i_parent = go_container.
+
+***** ALV 이벤트 설정
+*    SET HANDLER lcl_handler=>on_double_click FOR go_alv_grid.
+
+***** ALV 레이아웃 및 필드카탈로그 설정
+    PERFORM set_layout.
+    PERFORM set_fcat.
+*    PERFORM set_sort.
+
+    CALL METHOD go_alv_grid->set_table_for_first_display
+      EXPORTING
+*       i_structure_name = 'ZDVC702_DISPOSAL'
+*       is_variant      = gs_variant
+*       i_save          = gv_save
+        i_default       = 'X'
+        is_layout       = gs_layout
+      CHANGING
+        it_outtab       = gt_disposal
+        it_fieldcatalog = gt_fcat
+*       it_sort         = gt_sort
+*       it_filter       =
+      EXCEPTIONS
+        OTHERS          = 4.
+    IF sy-subrc <> 0.
+*       Implement suitable error handling here
+    ENDIF.
+
+    gv_refresh = abap_false.                  " 리프레시 해제
+
+  ELSE.                                       " 기존 ALV가 있을경우 리프레시
+    go_alv_grid->refresh_table_display( ).
+  ENDIF.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_100 OUTPUT.
+  IF  gv_year IS INITIAL.
+    gv_year = sy-datum+0(4).
+  ENDIF.
+
+  IF  gv_date IS INITIAL.
+    IF gv_date IS INITIAL.
+      gv_date = sy-datum.
+
+      CALL FUNCTION 'RP_CALC_DATE_IN_INTERVAL'
+        EXPORTING
+          date      = sy-datum
+          days      = '00'
+          months    = '01'
+          signum    = '-'
+          years     = '00'
+        IMPORTING
+          calc_date = gv_pre_date.
+
+
+    ENDIF.
+
+
+  ENDIF.
+
+
+**** ROW 색을 위한 LOOP문
+  LOOP AT gt_disposal INTO gs_disposal.
+
+***** 삭제플래그 체크 시 ROW 색 변경
+    IF gs_disposal-delflag = 'X'.
+      gs_disposal-color = 'C610'.
+    ENDIF.
+
+    MODIFY gt_disposal FROM gs_disposal TRANSPORTING color.
+  ENDLOOP.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0110 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0110 OUTPUT.
+  SET PF-STATUS 'S0110'.
+  SET TITLEBAR 'T0110'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0120 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0120 OUTPUT.
+  SET PF-STATUS 'S0120'.
+  SET TITLEBAR 'T0120'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_110 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_110 OUTPUT.
+  ztc702_disposal-unit = 'EA'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_120 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_120 OUTPUT.
+  PERFORM disposal_init_200.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_TREE OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_tree OUTPUT.
+  SELECT * FROM ztc702_disposal
+    INTO CORRESPONDING FIELDS OF TABLE wt_tab.
+
+  IF g_tree IS INITIAL.
+    CREATE OBJECT tree_con_ref
+      EXPORTING
+        container_name = 'TREE1'.
+    PERFORM create_tree.
+*  ELSE.
+*    g_tree->update_calculations( no_frontend_update = ' ' ).
+  ENDIF.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SET_PIE_CHART OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE set_pie_chart OUTPUT.
+  PERFORM create_pie_chart.
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

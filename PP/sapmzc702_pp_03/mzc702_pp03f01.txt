@@ -1,0 +1,756 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_PP03F01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form SET_FCAT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_fcat .
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'LIGHT'.
+  gs_fcat-ref_table = 'GTY_PRDPLAN_H'.
+  gs_fcat-coltext = '상태표시'.
+  gs_fcat-outputlen = 4.
+  gs_fcat-just = 'C'.
+  gs_fcat-col_pos = 1.
+  APPEND gs_fcat TO gt_fcat.
+
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'PPLNUM'.
+  gs_fcat-coltext = '생산계획번호'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 13.
+  gs_fcat-key = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDCODE'.
+  gs_fcat-coltext = '품목코드'.
+  gs_fcat-just = 'C'.
+  gs_fcat-key = 'X'.
+  gs_fcat-outputlen = 10.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDNAME'.
+  gs_fcat-coltext = '품목명'.
+  gs_fcat-outputlen = 40.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'QUAN'.
+  gs_fcat-coltext = '수량'.
+  gs_fcat-qfieldname = 'UNIT'.
+  gs_fcat-outputlen = 6.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'UNIT'.
+  gs_fcat-coltext = '단위'.
+  gs_fcat-quantity = 'EA'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 3.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'REFNUM'.
+  gs_fcat-coltext = '참조문서번호'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 13.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'PLCODE'.
+  gs_fcat-coltext = '공장코드'.
+  gs_fcat-just = 'C'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'PLNAME'.
+  gs_fcat-coltext = '공장명'.
+  gs_fcat-just = 'C'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'PLPERNR'.
+  gs_fcat-coltext = '계획담당자번호'.
+  gs_fcat-just = 'C'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'PLPNAME'.
+  gs_fcat-coltext = '계획담당자이름'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 10.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'CRNAM'.
+  gs_fcat-coltext = '생성자'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 10.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'ERDAT'.
+  gs_fcat-coltext = '생성일자'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 10.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'ERTIM'.
+  gs_fcat-coltext = '생성시간'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 10.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'CHNAM'.
+  gs_fcat-coltext = '변경자'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 10.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'CHDAT'.
+  gs_fcat-coltext = '변경일자'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 10.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'CHTIM'.
+  gs_fcat-coltext = '변경시간'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 10.
+  APPEND gs_fcat TO gt_fcat.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_LAYOUT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_layout .
+  gs_layout-info_fname = 'COLOR'.
+  gs_layout-excp_fname = 'LIGHT'.
+  gs_layout-sel_mode = 'A'.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DISPLAY_PLAN_HEAD
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM display_plan_head .
+  PERFORM get_plan_head.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_PLAN_HEAD
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM get_plan_head .
+  DATA: lt_ppl_h TYPE TABLE OF gty_prdplan_h,
+        ls_ppl_h TYPE gty_prdplan_h.
+
+**** 조건 검색을 위한 range 타입 설정 -> 사용 필드만큼 선언
+*  DATA: lt_pplnum TYPE RANGE OF gty_prdplan_h-pplnum,
+*        ls_pplnum LIKE LINE OF lt_pplnum.
+*
+*  DATA: lt_refnum TYPE RANGE OF gty_prdplan_h-refnum,
+*        ls_refnum LIKE LINE OF lt_refnum.
+
+
+**** 조건 검색을 위한 range 타입 조건 설정 => 필드가 입력되면 필드와 동일한 조건으로
+*  IF ztc702_prdplan_h-pplnum IS NOT INITIAL.
+*    ls_pplnum-sign = 'I'.
+*    ls_pplnum-option = 'EQ'.
+*    ls_pplnum-low = ztc702_prdplan_h-pplnum.
+*    APPEND ls_pplnum TO lt_pplnum.
+*  ENDIF.
+*
+*  IF ztc702_prdplan_h-refnum IS NOT INITIAL.
+*    ls_refnum-sign = 'I'.
+*    ls_refnum-option = 'EQ'.
+*    ls_refnum-low = ztc702_prdplan_h-refnum.
+*    APPEND ls_refnum TO lt_refnum.
+*  ENDIF.
+
+  CLEAR gt_prdplan_h.
+
+  SELECT *
+    FROM ztc702_prdplan_h INTO CORRESPONDING FIELDS OF TABLE lt_ppl_h
+    WHERE pplnum IN so_plnum
+    AND refnum IN so_rfnum
+    AND erdat IN so_date.
+
+  IF gv_chk_delflag = space.                        " 삭제 포함에 체크 할 경우
+    CASE 'X'.                                       " 라디오 버튼 case
+      WHEN gv_rad_wait.
+        LOOP AT lt_ppl_h INTO ls_ppl_h WHERE status = '2' AND delflag = space.
+          APPEND ls_ppl_h TO gt_prdplan_h.
+        ENDLOOP.
+      WHEN gv_rad_confirm.
+        LOOP AT lt_ppl_h INTO ls_ppl_h WHERE status = '3' AND delflag = space.
+          APPEND ls_ppl_h TO gt_prdplan_h.
+        ENDLOOP.
+      WHEN gv_rad_reject.
+        LOOP AT lt_ppl_h INTO ls_ppl_h WHERE status = '1' AND delflag = space.
+          APPEND ls_ppl_h TO gt_prdplan_h.
+        ENDLOOP.
+      WHEN gv_rad_all.
+        LOOP AT lt_ppl_h INTO ls_ppl_h WHERE delflag = space.
+          APPEND ls_ppl_h TO gt_prdplan_h.
+        ENDLOOP.
+    ENDCASE.
+
+  ELSE.                                              " 삭제 포함에 체크를 안 할 경우
+    CASE 'X'.                                        " 라디오 버튼 case
+      WHEN gv_rad_wait.
+        LOOP AT lt_ppl_h INTO ls_ppl_h WHERE status = '2'.
+          APPEND ls_ppl_h TO gt_prdplan_h.
+        ENDLOOP.
+      WHEN gv_rad_confirm.
+        LOOP AT lt_ppl_h INTO ls_ppl_h WHERE status = '3'.
+          APPEND ls_ppl_h TO gt_prdplan_h.
+        ENDLOOP.
+      WHEN gv_rad_reject.
+        LOOP AT lt_ppl_h INTO ls_ppl_h WHERE status = '1' .
+          APPEND ls_ppl_h TO gt_prdplan_h.
+        ENDLOOP.
+      WHEN gv_rad_all.                              " 전체는 삭제된 문서를 무조건 포함
+        LOOP AT lt_ppl_h INTO ls_ppl_h.
+          APPEND ls_ppl_h TO gt_prdplan_h.
+        ENDLOOP.
+    ENDCASE.
+  ENDIF.
+
+
+
+  SORT gt_prdplan_h ASCENDING BY pplnum.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DISPLAY_PLAN_ITEM
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM display_plan_item .
+  CALL METHOD go_alv_grid->get_selected_rows
+    IMPORTING
+      et_index_rows = gt_index.
+
+  DESCRIBE TABLE gt_index LINES gv_lines.
+
+  LOOP AT gt_index INTO gs_index.
+
+  ENDLOOP.
+
+  CALL SCREEN 200.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_LAYOUT_200
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_layout_200 .
+  gs_layout2-info_fname = 'COLOR'.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CREATE_PLAN
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM create_plan .
+*  DATA: ls_prdplan_h TYPE ztc702_prdplan_h,
+*        lv_text      TYPE string,
+*        lv_answer    TYPE c LENGTH 1.
+*
+*  IF ztc702_prdplan_h-pplnum IS NOT INITIAL.
+*    MESSAGE '계획번호는 비워두세요.' TYPE 'I'.
+*  ELSE.
+*    MOVE-CORRESPONDING ztc702_prdplan_h TO ls_prdplan_h.
+*
+*
+*    CALL FUNCTION 'POPUP_TO_CONFIRM'
+*      EXPORTING
+*        titlebar              = '계획 등록'
+*        text_question         = '새로운 계획을 등록하시겠습니까?'
+*        text_button_1         = '예'
+*        text_button_2         = '아니오'
+*        display_cancel_button = space
+*      IMPORTING
+*        answer                = lv_answer.
+*
+*
+*    IF lv_answer = 1.
+*      CALL FUNCTION 'ZFMC702_CNRO'
+*        EXPORTING
+*          fv_module_name   = 'PPL'
+*          fv_cnro_nr       = '05'
+*          fv_object        = 'ZCL719FINR'
+*        CHANGING
+*          fv_change_codenr = lv_text.
+*
+*      ls_prdplan_h-pplnum = lv_text.
+*      ls_prdplan_h-crnam = sy-uname.
+*      ls_prdplan_h-erdat = sy-datum.
+*      ls_prdplan_h-ertim = sy-uzeit.
+*      INSERT ztc702_prdplan_h FROM ls_prdplan_h.
+*
+*      IF sy-subrc = 0.
+*        MESSAGE i000 WITH lv_text.
+*        PERFORM get_plan_head.
+*        COMMIT WORK.
+*      ELSE.
+*        MESSAGE '등록 실패' TYPE 'I'.
+*        ROLLBACK WORK.
+*
+*      ENDIF.
+*
+*    ENDIF.
+*  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CHECK_PLAN_HEAD
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM check_plan_head .
+
+  DATA: ls_prdplan_h TYPE ztc702_prdplan_h,
+        lt_row       TYPE lvc_t_row,
+        ls_row       TYPE lvc_s_row,
+        lv_line      TYPE i,
+        lv_answer    TYPE c LENGTH 1.
+
+  CALL METHOD go_alv_grid->get_selected_rows
+    IMPORTING
+      et_index_rows = lt_row.
+
+  DESCRIBE TABLE lt_row LINES lv_line.
+
+  IF lt_row IS INITIAL.
+    MESSAGE '라인을 선택해주세요.' TYPE 'I'.
+  ELSEIF lv_line > 1.
+    MESSAGE '라인을 하나만 선택해주세요.' TYPE 'I'.
+  ELSE.
+    LOOP AT lt_row INTO ls_row.
+      READ TABLE gt_prdplan_h INTO ls_prdplan_h INDEX ls_row-index.
+    ENDLOOP.
+  ENDIF.
+
+*    READ TABLE gt_plant INTO gs_plant INDEX ls_row.
+
+*  MOVE-CORRESPONDING ztc702_plant TO ls_plant.
+
+  IF ls_prdplan_h-delflag = space.
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        titlebar              = '계획 중지'
+        text_question         = '생산 계획을 중지시키겠습니까?'
+        text_button_1         = '예'
+        text_button_2         = '아니오'
+        display_cancel_button = space
+      IMPORTING
+        answer                = lv_answer.
+
+    IF lv_answer = 1.
+      ls_prdplan_h-delflag = 'X'.
+      ls_prdplan_h-chnam = sy-uname.
+      ls_prdplan_h-chdat = sy-datum.
+      ls_prdplan_h-chtim = sy-uzeit.
+
+      UPDATE ztc702_prdplan_h FROM ls_prdplan_h.
+      MESSAGE '생산 계획 중지' TYPE 'I'.
+
+      COMMIT WORK.
+    ENDIF.
+
+  ELSEIF ls_prdplan_h-delflag = 'X'.
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        titlebar              = '계획 보구'
+        text_question         = '계획을 복구 시키겠습니까?'
+        text_button_1         = '예'
+        text_button_2         = '아니오'
+        display_cancel_button = space
+      IMPORTING
+        answer                = lv_answer.
+
+    IF lv_answer = 1.
+      ls_prdplan_h-delflag = space.
+      ls_prdplan_h-chnam = sy-uname.
+      ls_prdplan_h-chdat = sy-datum.
+      ls_prdplan_h-chtim = sy-uzeit.
+
+      UPDATE ztc702_prdplan_h FROM ls_prdplan_h.
+      MESSAGE '계획 복구' TYPE 'I'.
+
+      COMMIT WORK.
+    ENDIF.
+
+  ENDIF.
+
+  PERFORM get_plan_head.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CHANGE_STATUS
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM change_status .
+  DATA: ls_prdplan_h TYPE ztc702_prdplan_h,
+        lt_row       TYPE lvc_t_row,
+        ls_row       TYPE lvc_s_row,
+        lv_line      TYPE i,
+        lv_answer    TYPE c LENGTH 1,
+        lv_text      TYPE string.
+
+
+  CALL METHOD go_alv_grid->get_selected_rows
+    IMPORTING
+      et_index_rows = lt_row.
+
+  DESCRIBE TABLE lt_row LINES lv_line.
+
+  IF lt_row IS INITIAL.
+    MESSAGE '라인을 선택해주세요.' TYPE 'I'.
+  ELSEIF lv_line > 1.
+    MESSAGE '라인을 하나만 선택해주세요.' TYPE 'I'.
+  ELSE.                                             " 정상 수행 일 경우
+    lv_text = gv_chk_text && ' 하시겠습니까?'.
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        titlebar              = gv_chk_text
+        text_question         = lv_text
+        text_button_1         = '예'
+        text_button_2         = '아니오'
+        display_cancel_button = space
+      IMPORTING
+        answer                = lv_answer.
+
+**** 팝업에서 YES 일 경우 데이터 생성 작업
+    IF lv_answer = 1.
+      LOOP AT lt_row INTO ls_row.
+        READ TABLE gt_prdplan_h INTO ls_prdplan_h INDEX ls_row-index.
+      ENDLOOP.
+
+      CASE ls_prdplan_h-status.
+        WHEN '2'.
+          IF ok_code = 'REJECT'.
+            ls_prdplan_h-status = '1'.
+          ELSEIF ok_code = 'CONFIRM'.
+            ls_prdplan_h-status = '3'.
+          ENDIF.
+
+          ls_prdplan_h-chnam = sy-uname.
+          ls_prdplan_h-chdat = sy-datum.
+          ls_prdplan_h-chtim = sy-uzeit.
+
+          MESSAGE i012 WITH ls_prdplan_h-pplnum.
+          UPDATE ztc702_prdplan_h FROM ls_prdplan_h.
+
+          PERFORM get_plan_head.
+        WHEN OTHERS.
+          MESSAGE '반려 또는 승인된 생산 계획은 변경할 수 없습니다.' TYPE 'I'.
+      ENDCASE.
+    ENDIF.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SAVE_CREATE_PRDPLAN
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM save_create_prdplan .
+  DATA: lt_prdplan_h TYPE TABLE OF ztc702_prdplan_h,
+        ls_prdplan_h TYPE ztc702_prdplan_h.
+
+  DATA: lt_spl TYPE TABLE OF zdvc702_spl,
+        ls_spl TYPE zdvc702_spl.
+
+  DATA: lv_text   TYPE string,
+        lv_answer TYPE c LENGTH 1.
+
+  IF gt_prdplan_300 IS INITIAL.
+    MESSAGE '계획 리스트를 한 개 이상 추가해 주세요.' TYPE 'I'.
+
+  ELSE.
+
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        titlebar              = '생산 계획 생성'
+        text_question         = '생산 계획을 등록하시겠습니까?'
+        text_button_1         = '예'
+        text_button_2         = '아니오'
+        display_cancel_button = space
+      IMPORTING
+        answer                = lv_answer.
+
+**** 팝업에서 YES 일 경우 데이터 생성 작업
+    IF lv_answer = 1.
+
+**** 채번 펑션 모듈 실행
+      CALL FUNCTION 'ZFMC702_CNRO'
+        EXPORTING
+          fv_module_name   = 'PPL'
+          fv_cnro_nr       = '02'
+          fv_object        = 'ZNRC702PP1'
+        CHANGING
+          fv_change_codenr = lv_text.
+
+**** 채번코드 및 생성자 입력
+      LOOP AT gt_prdplan_300 INTO ls_prdplan_h.
+        ls_prdplan_h-pplnum = lv_text.
+        ls_prdplan_h-status = '2'.
+        ls_prdplan_h-crnam = sy-uname.
+        ls_prdplan_h-erdat = sy-datum.
+        ls_prdplan_h-ertim = sy-uzeit.
+
+        MODIFY gt_prdplan_300 FROM ls_prdplan_h.
+
+      ENDLOOP.
+
+      INSERT ztc702_prdplan_h FROM TABLE gt_prdplan_300.
+      UPDATE ztc702_spl_h SET pplstatus = 'X' WHERE splno = ls_prdplan_h-refnum.
+
+**** SY-SUBRC 체크
+      IF sy-subrc = 0.
+        MESSAGE i000 WITH lv_text.
+        COMMIT WORK.
+        CLEAR: zsc702_prdplan_ref, ztc702_prdplan_h, gt_prdplan_300. " 성공 시 스크린 초기화.
+        LEAVE TO SCREEN 0.
+      ELSE.
+        MESSAGE '등록 실패' TYPE 'I'.          " 실패 시 이전 작업들 롤백
+        ROLLBACK WORK.
+
+      ENDIF.
+    ENDIF.
+
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ADD_PLAN_ITEM
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM add_plan_item .
+  DATA: lt_prdplan_h  TYPE TABLE OF ztc702_prdplan_h,
+        ls_prdplan_h  TYPE ztc702_prdplan_h,
+        ls_check_plan TYPE ztc702_prdplan_h.
+
+  MOVE-CORRESPONDING zsc702_prdplan_ref TO gs_prdplan_300_h.
+
+  IF zsc702_prdplan_ref-mtcode <> 'P'.
+    MESSAGE '완제품만 추가 할 수 있습니다.' TYPE 'I'.
+    RETURN.
+  ELSE.
+    LOOP AT gt_prdplan_300 INTO ls_check_plan.
+      IF ls_check_plan-gdcode = zsc702_prdplan_ref-gdcode.
+        MESSAGE '중복된 완제품이 존재합니다.' TYPE 'I'.
+        RETURN.
+      ENDIF.
+    ENDLOOP.
+  ENDIF.
+
+  gs_prdplan_300_h-plpernr = ztc702_prdplan_h-plpernr.
+  gs_prdplan_300_h-plpname = ztc702_prdplan_h-plpname.
+  gs_prdplan_300_h-plcode = ztc702_prdplan_h-plcode.
+  gs_prdplan_300_h-plname = ztc702_prdplan_h-plname.
+
+  APPEND gs_prdplan_300_h TO gt_prdplan_300.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_FCAT_200
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_fcat_200 .
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDCODE'.
+  gs_fcat-coltext = '품목코드'.
+  gs_fcat-key = 'X'.
+  gs_fcat-outputlen = 6.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDNAME'.
+  gs_fcat-coltext = '품목명'.
+  gs_fcat-outputlen = 25.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'QUAN'.
+  gs_fcat-coltext = '수량'.
+  gs_fcat-qfieldname = 'UNIT'.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'UNIT'.
+  gs_fcat-coltext = '단위'.
+  gs_fcat-quantity = 'EA'.
+  APPEND gs_fcat TO gt_fcat_200.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_FCAT_300
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_fcat_300 .
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDCODE'.
+  gs_fcat-coltext = '품목코드'.
+  gs_fcat-key = 'X'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 6.
+  APPEND gs_fcat TO gt_fcat_300.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDNAME'.
+  gs_fcat-coltext = '품목명'.
+  gs_fcat-outputlen = 40.
+  APPEND gs_fcat TO gt_fcat_300.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'QUAN'.
+  gs_fcat-coltext = '수량'.
+  gs_fcat-qfieldname = 'UNIT'.
+  APPEND gs_fcat TO gt_fcat_300.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'UNIT'.
+  gs_fcat-coltext = '단위'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 3.
+  gs_fcat-quantity = 'EA'.
+  APPEND gs_fcat TO gt_fcat_300.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'REFNUM'.
+  gs_fcat-coltext = '참조문서번호'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 13.
+  APPEND gs_fcat TO gt_fcat_300.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'PLCODE'.
+  gs_fcat-coltext = '공장코드'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 6.
+  APPEND gs_fcat TO gt_fcat_300.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'PLNAME'.
+  gs_fcat-coltext = '공장지점'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 8.
+  APPEND gs_fcat TO gt_fcat_300.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'PLPERNR'.
+  gs_fcat-coltext = '계획담당자번호'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 12.
+  APPEND gs_fcat TO gt_fcat_300.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'PLPNAME'.
+  gs_fcat-coltext = '계획담당자이름'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 10.
+  APPEND gs_fcat TO gt_fcat_300.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_DATE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_date .
+  DATA: lv_date TYPE sy-datum.
+
+  IF so_date IS INITIAL.
+    CALL FUNCTION 'RP_CALC_DATE_IN_INTERVAL'
+      EXPORTING
+        date      = sy-datum
+        days      = '00'
+        months    = '01'
+        signum    = '-'
+        years     = '00'
+      IMPORTING
+        calc_date = lv_date.
+
+    so_date-sign = 'I'.
+    so_date-option = 'EQ'.
+    so_date-low = lv_date.
+    so_date-high = sy-datum.
+    APPEND so_date.
+  ENDIF.
+
+
+ENDFORM.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

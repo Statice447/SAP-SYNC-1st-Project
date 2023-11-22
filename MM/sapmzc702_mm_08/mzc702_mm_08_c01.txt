@@ -1,0 +1,19 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_MM_08_C01
+*&---------------------------------------------------------------------*
+*CLASS lcl_handler DEFINITION. "정의부(변수 선언)
+*  PUBLIC SECTION.
+*
+*    CLASS-METHODS: on_double_click
+*              FOR EVENT double_click OF cl_gui_alv_grid IMPORTING es_row_no.
+*ENDCLASS.
+*CLASS lcl_handler IMPLEMENTATION. "구현부(실제 사용하는 코딩)
+*  METHOD on_double_click.
+*
+*    CALL TRANSACTION 'ZC702_MM_07_V3'.
+*
+*  ENDMETHOD.
+*ENDCLASS.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

@@ -1,0 +1,273 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_MM_05_O01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'S0100'.
+  SET TITLEBAR 'T0100'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0110 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0110 OUTPUT.
+  SET PF-STATUS 'S0110'.
+  SET TITLEBAR 'T0110'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0200 OUTPUT.
+  SET PF-STATUS 'S0200'.
+  SET TITLEBAR 'T0200' WITH gs_ztc702_mpr_200-mprno.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CLEAR_OK_CODE OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE clear_ok_code OUTPUT.
+  CLEAR ok_code.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init OUTPUT.
+
+  LOOP AT gt_ztc702_mpr INTO gs_ztc702_mpr.
+    IF gs_ztc702_mpr-status = ' '.
+      gs_ztc702_mpr-light = '1'.
+    ELSEIF gs_ztc702_mpr-status = 'X'.
+      gs_ztc702_mpr-light = '3'.
+    ENDIF.
+
+    MODIFY gt_ztc702_mpr FROM gs_ztc702_mpr TRANSPORTING light.
+  ENDLOOP.
+
+  ysztc702_mpr-mprdate_b = sy-datum.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SET_ALV OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE set_alv OUTPUT.
+  IF go_container IS INITIAL.     "처음 컨테이너를 생성할 경우
+
+    CREATE OBJECT go_container
+      EXPORTING
+        container_name = 'MY_CONTROL_AREA'.
+
+    CREATE OBJECT go_alv_grid
+      EXPORTING
+        i_parent = go_container.
+
+    SET HANDLER lcl_handler=>on_double_click FOR go_alv_grid.
+
+    APPEND cl_gui_alv_grid=>mc_fc_detail TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_fc_sort_asc TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_fc_sort_dsc TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_fc_find TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_fc_filter TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_mb_sum TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_fc_print_back TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_mb_view TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_mb_export TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_mb_variant TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_fc_info TO gt_exclude_100.
+
+*    gs_layout-cwidth_opt = 'C'. "X의 경우 필드명, A의 경우 필드 내용 기준으로 셀 너비가 조절됨.
+    gs_layout-excp_fname = 'LIGHT'.
+    gs_layout-excp_led = 'X'.
+*    gs_layout-stylefname = 'STYLE'.
+
+    CLEAR gs_fcat.
+    gs_fcat-fieldname = 'LIGHT'.
+    " gs_fcat-ref_table = 'GTY_S_ZTC702_MPR'.
+    gs_fcat-coltext = '구분'.
+    gs_fcat-just = 'C'. "필드명 가운데 정렬
+*    gs_fcat-outputlen = 7. "excp의 경우 outputlen이 안먹음.
+    APPEND gs_fcat TO gt_fcat.
+
+*    gs_fcat-fieldname = 'STATUS'.
+*    gs_fcat-no_out = 'X'.
+*    gs_fcat-coltext = '진행상태'.
+*    gs_fcat-just = 'C'. "필드명 가운데 정렬
+*    gs_fcat-outputlen = 7.
+*    APPEND gs_fcat TO gt_fcat.
+
+    CLEAR gs_fcat.
+    gs_fcat-fieldname = 'MPRNO'.
+    gs_fcat-coltext = '구매요청번호'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 13.
+    APPEND gs_fcat TO gt_fcat.
+
+    CLEAR gs_fcat.
+    gs_fcat-fieldname = 'PLCODE'.
+    gs_fcat-coltext = '공장코드'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 7.
+    APPEND gs_fcat TO gt_fcat.
+
+    CLEAR gs_fcat.
+    gs_fcat-fieldname = 'PLNAME'.
+    gs_fcat-coltext = '공장명'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 7.
+    APPEND gs_fcat TO gt_fcat.
+
+    CLEAR gs_fcat.
+    gs_fcat-fieldname = 'WHCODE'.
+    gs_fcat-coltext = '창고코드'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 7.
+    APPEND gs_fcat TO gt_fcat.
+
+    CLEAR gs_fcat.
+    gs_fcat-fieldname = 'MPRDATE'.
+    gs_fcat-coltext = '구매요청일'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 10.
+    APPEND gs_fcat TO gt_fcat.
+
+    CLEAR gs_fcat.
+    gs_fcat-fieldname = 'RDDATE'.
+    gs_fcat-coltext = '입고희망일'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 10.
+    APPEND gs_fcat TO gt_fcat.
+
+    CALL METHOD go_alv_grid->set_table_for_first_display
+      EXPORTING
+*       i_buffer_active      =
+*       i_bypassing_buffer   =
+*       i_consistency_check  =
+*       i_structure_name     =
+*       is_variant           =
+*       i_save               =
+*       i_default            = 'X'
+        is_layout            = gs_layout
+*       is_print             =
+*       it_special_groups    =
+        it_toolbar_excluding = gt_exclude_100
+*       it_hyperlink         =
+*       it_alv_graphics      =
+*       it_except_qinfo      =
+*       ir_salv_adapter      =
+      CHANGING
+        it_outtab            = gt_ztc702_mpr
+        it_fieldcatalog      = gt_fcat
+*       it_sort              =
+*       it_filter            =
+      EXCEPTIONS
+        OTHERS               = 1.
+    IF sy-subrc <> 0.
+      WRITE: '에러가 발생했습니다.'.
+    ENDIF.
+
+  ELSE.             "컨테이너가 있을 경우
+    go_alv_grid->refresh_table_display( ).
+
+  ENDIF.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SET_ALV_200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE set_alv_200 OUTPUT.
+  IF go_container_200 IS INITIAL.
+
+    CREATE OBJECT go_container_200
+      EXPORTING
+        container_name = 'MY_CONTROL_AREA_200'.
+
+    CREATE OBJECT go_alv_grid_200
+      EXPORTING
+        i_parent = go_container_200.
+
+    APPEND cl_gui_alv_grid=>mc_fc_detail TO gt_exclude_200.
+    APPEND cl_gui_alv_grid=>mc_fc_sort_asc TO gt_exclude_200.
+    APPEND cl_gui_alv_grid=>mc_fc_sort_dsc TO gt_exclude_200.
+    APPEND cl_gui_alv_grid=>mc_fc_find TO gt_exclude_200.
+    APPEND cl_gui_alv_grid=>mc_fc_filter TO gt_exclude_200.
+    APPEND cl_gui_alv_grid=>mc_mb_sum TO gt_exclude_200.
+    APPEND cl_gui_alv_grid=>mc_fc_print_back TO gt_exclude_200.
+    APPEND cl_gui_alv_grid=>mc_mb_view TO gt_exclude_200.
+    APPEND cl_gui_alv_grid=>mc_mb_export TO gt_exclude_200.
+    APPEND cl_gui_alv_grid=>mc_mb_variant TO gt_exclude_200.
+    APPEND cl_gui_alv_grid=>mc_fc_info TO gt_exclude_200.
+
+    gs_fcat_200-fieldname = 'GDCODE'.
+    gs_fcat_200-coltext = '품목코드'.
+    gs_fcat_200-just = 'C'.
+    gs_fcat_200-outputlen = 7.
+    APPEND gs_fcat_200 TO gt_fcat_200.
+
+    gs_fcat_200-fieldname = 'GDNAME'.
+    gs_fcat_200-coltext = '품목명'.
+    gs_fcat_200-just = 'C'.
+    gs_fcat_200-outputlen = 30.
+    APPEND gs_fcat_200 TO gt_fcat_200.
+
+    gs_fcat_200-fieldname = 'QUANTITY'.
+    gs_fcat_200-coltext = '수량'.
+    gs_fcat_200-just = 'C'.
+    gs_fcat_200-outputlen = 7.
+    gs_fcat_200-qfieldname = 'UNIT'.
+    APPEND gs_fcat_200 TO gt_fcat_200.
+
+    gs_fcat_200-fieldname = 'UNIT'.
+    gs_fcat_200-coltext = '단위'.
+    gs_fcat_200-just = 'C'.
+    gs_fcat_200-outputlen = 7.
+    gs_fcat_200-quantity = 'EA'.
+    APPEND gs_fcat_200 TO gt_fcat_200.
+
+    CALL METHOD go_alv_grid_200->set_table_for_first_display
+      EXPORTING
+*       i_buffer_active      =
+*       i_bypassing_buffer   =
+*       i_consistency_check  =
+*       i_structure_name     =
+*       is_variant           =
+*       i_save               =
+*       i_default            = 'X'
+*       is_layout            =
+*       is_print             =
+*       it_special_groups    =
+        it_toolbar_excluding = gt_exclude_200
+*       it_hyperlink         =
+*       it_alv_graphics      =
+*       it_except_qinfo      =
+*       ir_salv_adapter      =
+      CHANGING
+        it_outtab            = gt_ztc702_mpr_200
+        it_fieldcatalog      = gt_fcat_200
+*       it_sort              =
+*       it_filter            =
+      EXCEPTIONS
+        OTHERS               = 1.
+    IF sy-subrc <> 0.
+      WRITE: '에러가 발생했습니다.'.
+    ENDIF.
+
+  ELSE.
+    go_alv_grid_200->refresh_table_display( ).
+
+  ENDIF.
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

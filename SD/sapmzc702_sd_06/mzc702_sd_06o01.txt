@@ -1,0 +1,230 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_SD_06O01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS '0100'.
+  SET TITLEBAR '0100'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CLEAR_OK OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE clear_ok OUTPUT.
+  CLEAR ok_code.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CREATE_ALV OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE create_alv OUTPUT.
+  IF go_con IS INITIAL.
+    CREATE OBJECT go_con
+      EXPORTING
+        container_name = 'CON'.
+
+    CREATE OBJECT go_alv
+      EXPORTING
+        i_parent = go_con.
+
+    PERFORM alv_setting.
+    SET HANDLER lcl_class=>on_double FOR go_alv.
+
+    go_alv->set_table_for_first_display(
+    EXPORTING
+      is_layout = gs_lay
+
+        CHANGING
+      it_outtab = gt_inc
+      it_sort = gt_sort
+      it_fieldcatalog = gt_cat
+       ).
+  ENDIF.
+  go_alv->refresh_table_display( ).
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module LINE_COL OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE line_col OUTPUT.
+  LOOP AT gt_inc INTO gs_inc.
+
+
+*    IF gs_inc-flag = 'A'.
+*      gs_inc-color = 'C100'.
+*
+*      IF gs_inc-stock IS INITIAL. "재고가 들어오면 즉각적으로 flag와 라인색상을 변경하도록
+*
+*      ELSEIF gs_inc-stock >= gs_inc-quantity.
+*        UPDATE ztc702_inc_i SET flag = 'B'
+*        WHERE ornum = gs_inc-ornum AND gdcode = gs_inc-gdcode.
+*        gs_inc-flag = 'B'.
+*        gs_inc-color = 'C500'.
+*      ELSEIF gs_inc-stock = 0.
+*        UPDATE ztc702_inc_i SET flag = 'D'
+*        WHERE ornum = gs_inc-ornum AND gdcode = gs_inc-gdcode.
+*        gs_inc-flag = 'D'.
+*        gs_inc-color = 'C600'.
+*      ELSEIF gs_inc-stock < gs_inc-quantity.
+*        UPDATE ztc702_inc_i SET flag = 'C'
+*        WHERE ornum = gs_inc-ornum AND gdcode = gs_inc-gdcode.
+*        gs_inc-flag = 'C'.
+*        gs_inc-color = 'C300'.
+*      ENDIF.
+*    ELSEIF gs_inc-flag = 'B'.
+*      gs_inc-color = 'C500'.
+*    ELSEIF gs_inc-flag = 'C'.
+*      gs_inc-color = 'C300'.
+*    ELSEIF gs_inc-flag = 'D'.
+*      gs_inc-color = 'C600'.
+*    ELSEIF gs_inc-flag = 'E'.
+*      gs_inc-color = 'C700'.
+*      IF gs_inc-stock >= gs_inc-quantity.
+*        UPDATE ztc702_inc_i SET flag = 'B'
+*        WHERE ornum = gs_inc-ornum AND gdcode = gs_inc-gdcode.
+*        gs_inc-flag = 'B'.
+*        gs_inc-color = 'C500'.
+*      ENDIF.
+*    ENDIF.
+    MODIFY gt_inc FROM gs_inc TRANSPORTING color flag.
+  ENDLOOP.
+
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0120 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0120 OUTPUT.
+  SET PF-STATUS '0110'.
+  SET TITLEBAR '0120'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SET_DATA110 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE set_data110 OUTPUT.
+
+  MOVE-CORRESPONDING gs_inc TO ztc702_prdplan_h.
+  "MOVE-CORRESPONDING gs_inc TO ztc702_prdplan_i.
+
+  ztc702_prdplan_h-plpernr = 'DD000005'.
+  ztc702_prdplan_h-plpname = '이찬수'.
+  "ztc702_prdplan_i-quan = gs_inc-quantity - gs_inc-stock.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0110 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0110 OUTPUT.
+  SET PF-STATUS '0110'.
+  SET TITLEBAR '0110'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SET_SCR_0120 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE set_scr_0120 OUTPUT.
+  ztc702_prdplan_h-plpernr = 'DD000005'.
+  ztc702_prdplan_h-plpname = '이찬수'.
+
+*  ztc702_prdplan_i-gdcode = gs_inc-gdcode.
+*  ztc702_prdplan_i-gdname = gs_inc-gdname.
+*  ztc702_prdplan_i-quan = gs_inc-quantity.
+*  ztc702_prdplan_i-unit = gs_inc-unit.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module LINE_COLOR OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE line_color OUTPUT.
+  LOOP AT  gt_inc  INTO gs_inc.
+    IF gv_flag = ''.
+      IF gs_inc-flag = ''.
+        gs_inc-color = ''.
+      ELSEIF gs_inc-flag = 'B'.
+        gs_inc-color = '3'.
+      ELSEIF gs_inc-flag = 'C'.
+        gs_inc-color = '2'.
+      ELSEIF gs_inc-flag = 'D'.
+        gs_inc-color = '1'.
+      ELSEIF gs_inc-flag = 'E' OR gs_inc-flag = 'O'.
+        gs_inc-color = '3'.
+      ELSEIF gs_inc-flag = 'F'.
+        gs_inc-color = '1'.
+      ENDIF.
+      SELECT SINGLE cusname
+        FROM ztc702_cusmaster
+        INTO gs_inc-cusname
+        WHERE cuscode = gs_inc-cuscode.
+      MODIFY gt_inc FROM gs_inc TRANSPORTING color cusname.
+    ELSEIF gv_flag = 'X'.
+      IF gs_inc-flag = ''.
+        gs_inc-color = ''.
+      ELSEIF gs_inc-flag = 'B'.
+        gs_inc-color = '3'.
+      ELSEIF gs_inc-flag = 'C'.
+        gs_inc-color = '2'.
+      ELSEIF gs_inc-flag = 'D'.
+        gs_inc-color = '1'.
+      ELSEIF gs_inc-flag = 'E' OR gs_inc-flag = 'O'.
+        gs_inc-color = '2'.
+      ELSEIF gs_inc-flag = 'F'.
+        gs_inc-color = '1'.
+      ENDIF.
+      SELECT SINGLE cusname
+        FROM ztc702_cusmaster
+        INTO gs_inc-cusname
+        WHERE cuscode = gs_inc-cuscode.
+      MODIFY gt_inc FROM gs_inc TRANSPORTING color cusname.
+    ENDIF.
+  ENDLOOP.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SH_EXIT OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+*MODULE sh_exit OUTPUT.
+*  data: lv_exit type TABLE OF zdvc702_inc.
+*
+*  SELECT *
+*    FROM ZDVC702_INC
+*    INTO TABLE LV_EXIT
+*    WHERE FLAG <> 'O'.
+*
+*  CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+*    EXPORTING
+*      retfield        = 'ZSC702_INC_CON-ORNUM'  " ITAB의 필드 중 인풋칸에 넣고자 하는 필드 -> 서치헬프에서 파란색 컬럼이 됨>
+*      dynpprog        = sy-repid  " 현재 프로그램의 아이디(이름)>
+*      dynpnr          = sy-dynnr  " 스크린 넘버(1000번이 아닐 수 있으므로 에러가 날 시 '1000' 하드코딩한다)>
+*      dynprofield     = 'ORNUM'  " 더블클릭 시 인풋칸에 들어갈 값.>
+*                        " SO의 LOW, HIGH 미입력 : 인풋칸에 따라 자동입력되므로 입력생략가능>
+*      window_title    = '타이틀'
+*      value_org       = 'S'
+**     DISPLAY         = ' '
+*    TABLES
+*      value_tab       = LV_EXIT " 셀렉트문 작성한 ITAB명>
+**     RETURN_TAB      =
+*    EXCEPTIONS
+*      parameter_error = 1
+*      no_values_found = 2
+*      OTHERS          = 3.
+*ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

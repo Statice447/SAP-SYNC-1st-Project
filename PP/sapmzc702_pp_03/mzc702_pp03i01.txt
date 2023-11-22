@@ -1,0 +1,83 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_PP03I01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  EXIT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE exit INPUT.
+  CASE ok_code.
+    WHEN 'EXIT'.
+      LEAVE PROGRAM.
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN 'DISPLAY'.
+      PERFORM display_plan_head.      " 생산 계획 헤더 조회 서브루틴
+
+    WHEN 'CREATE'.
+      CALL SCREEN 300.
+    WHEN 'CANC'.
+      CLEAR: ztc702_prdplan_h, gs_prdplan_h, gt_prdplan_h, so_plnum, so_rfnum, so_date.
+
+    WHEN 'CHKDEL'.
+      PERFORM check_plan_head.        " 생산 계획 삭제 플래그 서브루틴
+    WHEN 'CONFIRM' OR 'WAIT' OR 'REJECT'.
+      IF ok_code = 'REJECT'.
+        gv_check = '1'.
+        gv_chk_text = '생산 계획 반려'.
+
+      ELSEIF ok_code = 'CONFIRM'.
+        gv_check = '3'.
+        gv_chk_text = '생산 계획 승인'.
+
+      ENDIF.
+      PERFORM change_status.          " 상태플래그 변경 서브루틴
+
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0200  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0200 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0300  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0300 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN 'ADD'.
+      PERFORM add_plan_item.
+    WHEN 'SAVE'.
+      PERFORM save_create_prdplan.
+    WHEN 'CANC'.
+      CLEAR: zsc702_prdplan_ref, ztc702_prdplan_h, gt_prdplan_300.
+
+  ENDCASE.
+
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

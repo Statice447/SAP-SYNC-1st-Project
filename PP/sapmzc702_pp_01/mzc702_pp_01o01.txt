@@ -1,0 +1,114 @@
+*&---------------------------------------------------------------------*
+*& Include          MZPPTEMP19_01O01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'S0100'.
+ SET TITLEBAR 'T0100'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CLEAR_OK_CODE OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE clear_ok_code OUTPUT.
+  CLEAR ok_code.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SET_ALV OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE set_alv OUTPUT.
+**** 최초 컨테이너 생성 시
+  IF go_container IS INITIAL.
+    CREATE OBJECT go_container
+      EXPORTING
+        container_name = 'PLANT_ALV'.
+    gv_refresh     = abap_true.           " 리프레시 체크
+  ENDIF.
+
+***** 최초 ALV 생성 시
+  IF gv_refresh = abap_true.              " 리프레시 확인
+    CREATE OBJECT go_alv_grid
+      EXPORTING
+        i_parent = go_container.
+
+***** ALV 레이아웃 및 필드카탈로그 설정
+    PERFORM set_layout.
+    PERFORM set_fcat.
+
+    CALL METHOD go_alv_grid->set_table_for_first_display
+      EXPORTING
+*       i_structure_name = 'ZTC702_PLANT'
+*       is_variant      = gs_variant
+*       i_save          = gv_save
+        i_default       = 'X'
+        is_layout       = gs_layout
+      CHANGING
+        it_outtab       = gt_plant
+        it_fieldcatalog = gt_fcat
+*       it_sort         =
+*       it_filter       =
+      EXCEPTIONS
+        OTHERS          = 4.
+    IF sy-subrc <> 0.
+*       Implement suitable error handling here
+    ENDIF.
+
+    gv_refresh = abap_false.                  " 리프레시 해제
+
+  ELSE.                                       " 기존 ALV가 있을경우 리프레시
+    go_alv_grid->refresh_table_display( ).
+  ENDIF.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_100 OUTPUT.
+**** ALV 더블클릭 시 필드 채우기
+*  MOVE-CORRESPONDING gs_plant_f TO ztc702_plant.
+
+**** ROW 색을 위한 LOOP문
+  LOOP AT gt_plant INTO gs_plant.
+
+***** 삭제플래그 체크 시 ROW 색 변경
+    IF gs_plant-delflag = 'X'.
+      gs_plant-color = 'C610'.
+    ENDIF.
+    MODIFY gt_plant FROM gs_plant TRANSPORTING color.
+  ENDLOOP.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0110 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0110 OUTPUT.
+  SET PF-STATUS 'S0110'.
+  CASE gv_dynnr_check.
+    WHEN 'CREATE'.
+      SET TITLEBAR 'T0111'.
+
+    WHEN 'CHANGE'.
+      SET TITLEBAR 'T0112'.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_110 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_110 OUTPUT.
+  PERFORM plant_init_110.
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

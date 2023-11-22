@@ -1,0 +1,482 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_SD_03F01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form ALV_SETTING
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM alv_setting .
+  gs_lay-zebra = 'X'.
+  gs_lay-info_fname = 'COLOR'.
+  gs_lay-sel_mode = 'B'.
+  gs_lay-excp_fname = 'LED'.
+
+  gs_sort-fieldname = 'REORNUM'.
+  gs_sort-up = 'X'.
+  APPEND gs_sort TO gt_sort.
+  CLEAR gs_sort.
+
+  gs_cat-fieldname = 'LED'.
+  gs_cat-coltext = '진행상태'.
+  gs_cat-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+  gs_cat-col_pos = '1'.
+  gs_cat-fieldname = 'REORNUM'.
+  gs_cat-coltext = '출하오더 번호'.
+  gs_cat-outputlen = '11'.
+  gs_cat-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+  gs_cat-col_pos = '2'.
+  gs_cat-fieldname = 'ORNUM'.
+  gs_cat-coltext = '제품주문번호'.
+  gs_cat-outputlen = '11'.
+  gs_cat-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+  gs_cat-col_pos = '3'.
+  gs_cat-fieldname = 'GDCODE'.
+  gs_cat-coltext = '상품 코드'.
+  gs_cat-outputlen = '6'.
+  gs_cat-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+  gs_cat-col_pos = '4'.
+  gs_cat-fieldname = 'GDNAME'.
+  gs_cat-coltext = '상품명'.
+  gs_cat-outputlen = '24'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+  gs_cat-col_pos = '5'.
+  gs_cat-fieldname = 'QUANTITY'.
+  gs_cat-coltext = '수량'.
+  gs_cat-outputlen = '8'.
+  gs_cat-qfieldname = 'UNIT'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+  gs_cat-col_pos = '6'.
+  gs_cat-fieldname = 'UNIT'.
+  gs_cat-coltext = '단위'.
+  gs_cat-currency = 'EA'.
+  gs_cat-outputlen = '4'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+  gs_cat-col_pos = '7'.
+  gs_cat-fieldname = 'CUSCODE'.
+  gs_cat-coltext = '고객번호'.
+  gs_cat-outputlen = '12'.
+  gs_cat-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+  gs_cat-col_pos = '8'.
+  gs_cat-fieldname = 'CUSNAME'.
+  gs_cat-coltext = '고객명'.
+  gs_cat-outputlen = '10'.
+  gs_cat-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM get_data .
+  DATA: lt_reor  LIKE TABLE OF gt_reor,
+        ls_reor  LIKE LINE OF gt_reor,
+        lt_ornum TYPE RANGE OF gty_reor-ornum,
+        ls_ornum LIKE LINE OF lt_ornum.
+
+**** 조건 검색을 위한 range 타입 조건 설정 => 필드가 입력되면 필드와 동일한 조건으로
+  IF zsc702_reor_con-reornum IS NOT INITIAL.
+    ls_ornum-sign = 'I'.
+    ls_ornum-option = 'EQ'.
+    ls_ornum-low = zsc702_reor_con-reornum.
+    APPEND ls_ornum TO lt_ornum.
+  ENDIF.
+
+  CLEAR gt_reor.
+  IF zsc702_reor_con-ordate_a > zsc702_reor_con-ordate_b.
+    MESSAGE '시작일자와 종료일자가 잘못 입력되었습니다.' TYPE 'I'.
+    RETURN.
+  ENDIF.
+
+  SELECT *
+  FROM zdvc702_reor AS a
+  JOIN ztc702_ord_h AS b
+  ON a~ornum = b~ornum
+  INTO CORRESPONDING FIELDS OF TABLE gt_reor3
+  WHERE ordate BETWEEN zsc702_reor_con-ordate_a AND zsc702_reor_con-ordate_b
+  AND a~ornum IN lt_ornum.
+
+  IF rad1 <> 'X'.
+    LOOP AT  gt_reor3 INTO ls_reor WHERE flag <> 'B'.
+      APPEND ls_reor TO gt_reor.
+    ENDLOOP.
+  ELSE.
+    LOOP AT  gt_reor3 INTO ls_reor WHERE flag = 'B'.
+      APPEND ls_reor TO gt_reor.
+    ENDLOOP.
+  ENDIF.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form OUT_REQ
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM out_req .
+  DATA : ls_reor TYPE zdvc702_reor.
+  PERFORM read_line USING gs_reor.
+  IF gs_reor IS INITIAL.
+    MESSAGE '라인을 선택해주세요.' TYPE 'I'.
+  ELSEIF gs_reor-flag = ''.
+    PERFORM to_mm USING gs_reor.
+    UPDATE ztc702_reor_h SET flag = 'A' WHERE reornum = gs_reor-reornum.
+    PERFORM get_data.
+    MESSAGE '출하 완료.'  TYPE 'I'.
+  ELSE.
+    MESSAGE '이미 출하가 완료되었습니다.'  TYPE 'I'.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form READ_LINE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM read_line USING ps_reor.
+  CLEAR ps_reor.
+  CALL METHOD go_alv->get_selected_rows "선택된 열의 INDEX를 읽어 오는 함수
+    IMPORTING
+      et_index_rows = gt_index.
+
+  LOOP AT gt_index INTO gs_index. "INDEX에 해당하는 ALV의 정보를 저장
+    READ TABLE gt_reor INTO ps_reor INDEX gs_index-index.
+  ENDLOOP.
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*& Form DELIVERY
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM delivery .
+  DATA : ls_reor LIKE gs_reor.
+  CLEAR gt_reor2.
+  PERFORM read_line USING ls_reor.
+
+  IF ls_reor IS INITIAL.
+    MESSAGE '라인을 선택해주세요.' TYPE 'I'.
+  ELSEIF ls_reor-flag = '' .
+    MESSAGE '출하가 완료되지 않았습니다.' TYPE 'I'.
+  ELSEIF ls_reor-flag = 'B' .
+    MESSAGE '이미 배송이 완료되었습니다.' TYPE 'I'.
+  ELSE.
+    LOOP AT gt_reor INTO gs_reor.
+      IF gs_reor-ornum = ls_reor-ornum AND ls_reor-flag = 'A' AND gs_reor-reornum = ls_reor-reornum.
+        "UPDATE ztc702_reor_h SET flag = 'A' WHERE reornum = ls_reor-reornum.
+        INSERT gs_reor INTO TABLE gt_reor2.
+      ENDIF.
+    ENDLOOP.
+    "출하가 이뤄진건에 대해 배송준비
+    gv_cusname = ls_reor-cusname.
+    gv_cuscode = ls_reor-cuscode.
+    CALL SCREEN 200.
+
+    CLEAR ztc702_dev_h.
+  ENDIF.
+
+  PERFORM get_data.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form TO_DEV
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM to_dev .
+  DATA : ls_dev_h TYPE ztc702_dev_h.
+  DATA : ls_dev_i  TYPE ztc702_dev_i,
+         lv_num    TYPE string,
+         lv_string TYPE string,
+         lv_dev    TYPE c LENGTH 1.
+  CALL FUNCTION 'POPUP_TO_CONFIRM'
+    EXPORTING
+      titlebar              = '배송 승인'
+      diagnose_object       = ' '
+      text_question         = '배송을 시작합니다.'
+      text_button_1         = 'YES'(001)
+      icon_button_1         = 'ICON_OKAY'
+      text_button_2         = 'NO'(002)
+      icon_button_2         = 'ICON_INCOMPLETE'
+      display_cancel_button = ''
+    IMPORTING
+      answer                = lv_dev.
+
+  IF lv_dev = 1. "yes버튼 클릭시
+
+    CALL FUNCTION 'NUMBER_GET_NEXT'
+      EXPORTING
+        nr_range_nr = '02'
+        object      = 'ZNRC702SD3'
+      IMPORTING
+        number      = lv_num.
+
+    CONCATENATE 'DEV' sy-datum(4) lv_num+1(5) INTO lv_string.
+
+    " 3번
+    MOVE-CORRESPONDING ztc702_dev_h TO ls_dev_h.
+    ls_dev_h-ornum = gs_reor2-ornum.
+    ls_dev_h-devnum = lv_string.
+    ls_dev_h-delflag = ''.
+
+    ls_dev_h-crnam = sy-uname.
+    ls_dev_h-erdat = sy-datum.
+    ls_dev_h-ertim = sy-uzeit.
+    INSERT ztc702_dev_h FROM ls_dev_h.
+    "같은방법으로 헤더테이블 업데이트
+    LOOP AT gt_reor2 INTO gs_reor2.
+      UPDATE ztc702_reor_h SET flag = 'B' WHERE reornum = gs_reor2-reornum.
+      MOVE-CORRESPONDING gs_reor2 TO ls_dev_i.
+      ls_dev_i-devnum = lv_string.
+      ls_dev_i-delflag = ''.
+      INSERT ztc702_dev_i FROM ls_dev_i.
+      "주문건의 flag 바꾸고 ls_dev_i에 데이터 넣은뒤 배송아이템테이블에 추가
+      PERFORM to_billing USING gs_reor2.
+    ENDLOOP.
+
+
+
+*    SELECT *
+*      FROM zdvc702_reor
+*      INTO CORRESPONDING FIELDS OF TABLE gt_reor2
+*      WHERE flag = 'B'
+*      AND ornum = gs_reor2-ornum.
+    "alv 변경사항 업데이트
+    MESSAGE  lv_string && ' / 배송 처리가 완료되었습니다.' TYPE 'I'.
+    LEAVE TO SCREEN 0.
+
+
+    gv_dev = 1.
+  ELSE.
+    MESSAGE '취소되었습니다.' TYPE 'I'.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form TO_MM
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM to_mm USING ps_reor LIKE gs_reor.
+  DATA:
+    lv_restquan TYPE p LENGTH 7 DECIMALS 3,
+    lv_minus    TYPE p LENGTH 7 DECIMALS 3,
+    lv_etc      TYPE p LENGTH 7 DECIMALS 3,
+    ls_reor     LIKE gs_reor,
+    ls_lotnum   TYPE ztc702_exp,
+    ls_rinven   TYPE ztc702_mtiv.
+
+  DATA: ls_srm  TYPE ztc702_srmanage,
+        lv_num  TYPE c LENGTH 8,
+        lv_dnum TYPE c LENGTH 12.
+
+  LOOP AT gt_reor INTO ls_reor.
+    IF ls_reor-ornum = ps_reor-ornum.
+      SELECT SINGLE rinven    "STATUS R/현재 RESERVATION 잡아놓은 재고량
+        FROM ztc702_mtiv
+        INTO CORRESPONDING FIELDS OF ls_rinven
+        WHERE gdcode = ls_reor-gdcode
+        AND status = 'R'.
+
+      lv_minus = ls_rinven-rinven - ls_reor-quantity.
+
+      UPDATE ztc702_mtiv SET rinven = lv_minus
+      WHERE gdcode = ls_reor-gdcode AND status = 'R'.
+*--------------------------------------------------------
+      WHILE ls_reor-quantity > 0. "요구수량이 0이될때까지 반복
+        SELECT * UP TO 1 ROWS
+          FROM ztc702_exp
+          INTO CORRESPONDING FIELDS OF ls_lotnum
+          WHERE gdcode = ls_reor-gdcode
+          and expfin > sy-datum
+          AND delflag <> 'X'
+          ORDER BY lotnum ASCENDING.
+        ENDSELECT.
+        IF sy-subrc <> 0.
+          MESSAGE '오류' TYPE 'I'.
+          EXIT.                    "EXP에 해당 품목의 재고가 없을때 발생
+        ENDIF.
+
+        IF ls_lotnum-quan > ls_reor-quantity. "선택된 로트넘버의 재고가 요구수량보다 많을때
+          lv_restquan = ls_lotnum-quan - ls_reor-quantity.
+          ls_srm-quantity = ls_reor-quantity.
+          ls_reor-quantity = 0.                     "요구 수량값 0으로 수정
+          UPDATE ztc702_exp SET quan = lv_restquan  "로트넘버 재고 수정
+          WHERE lotnum = ls_lotnum-lotnum AND gdcode = ls_lotnum-gdcode.
+* 채번 펑션.
+          CALL FUNCTION 'NUMBER_GET_NEXT'
+            EXPORTING
+              nr_range_nr = '1'
+              object      = 'ZNRC702MM7'
+            IMPORTING
+              number      = lv_num.
+
+          lv_num = lv_num + 550.
+* 수불 대기 문서 채번.
+          CONCATENATE 'SRD' sy-datum(4) lv_num+3(5) INTO lv_dnum.
+
+          ls_srm-srdocu = lv_dnum.
+          ls_srm-srtype = 'GI'.
+          ls_srm-gdcode = ls_reor-gdcode.
+          ls_srm-lotnum = ls_lotnum-lotnum.
+          ls_srm-unit = 'EA'.
+          ls_srm-reference = ls_reor-reornum.
+          ls_srm-crnam = sy-uname.
+          ls_srm-erdat = sy-datum.
+          ls_srm-ertim = sy-uzeit.
+          ls_srm-chnam = sy-uname.
+          ls_srm-chdat = sy-datum.
+          ls_srm-chtim = sy-uzeit.
+
+          INSERT ztc702_srmanage FROM ls_srm.
+          UPDATE ztc702_mtiv SET chnam = ls_srm-chnam chdat = ls_srm-chdat chtim = ls_srm-chtim
+                           WHERE status = 'R' AND gdcode = ls_srm-gdcode.
+          UPDATE ztc702_exp  SET chnam = ls_srm-chnam chdat = ls_srm-chdat chtim = ls_srm-chtim
+                           WHERE lotnum = ls_srm-lotnum.
+
+        ELSEIF ls_lotnum-quan <= ls_reor-quantity.  "선택된 로트넘버의 재고가 요구수량보다 적을때
+          ls_reor-quantity = ls_reor-quantity - ls_lotnum-quan. "요구 수량 재고만큼 뺸값으로 수정
+          UPDATE ztc702_exp SET quan = 0 delflag = 'X'
+          WHERE lotnum = ls_lotnum-lotnum.  "재고가 0이된 EXP의 라인은 삭제
+          "DELETE FROM ztc702_exp WHERE lotnum = ls_lotnum-lotnum.
+
+* 채번 펑션.
+          CALL FUNCTION 'NUMBER_GET_NEXT'
+            EXPORTING
+              nr_range_nr = '1'
+              object      = 'ZNRC702MM7'
+            IMPORTING
+              number      = lv_num.
+
+* 수불 대기 문서 채번.
+          CONCATENATE 'SRD' sy-datum(4) lv_num+3(5) INTO lv_dnum.
+
+          ls_srm-srdocu = lv_dnum.
+          ls_srm-srtype = 'GI'.
+          ls_srm-gdcode = ls_reor-gdcode.
+          ls_srm-lotnum = ls_lotnum-lotnum.
+          ls_srm-quantity = ls_lotnum-quan.
+          ls_srm-unit = 'EA'.
+          ls_srm-reference = ls_reor-reornum.
+
+          ls_srm-crnam = sy-uname.
+          ls_srm-erdat = sy-datum.
+          ls_srm-ertim = sy-uzeit.
+          ls_srm-chnam = sy-uname.
+          ls_srm-chdat = sy-datum.
+          ls_srm-chtim = sy-uzeit.
+
+          INSERT ztc702_srmanage FROM ls_srm.
+          UPDATE ztc702_mtiv SET chnam = ls_srm-chnam chdat = ls_srm-chdat chtim = ls_srm-chtim
+                           WHERE status = 'R' AND gdcode = ls_srm-gdcode.
+          UPDATE ztc702_exp  SET chnam = ls_srm-chnam chdat = ls_srm-chdat chtim = ls_srm-chtim
+                           WHERE lotnum = ls_srm-lotnum.
+
+        ENDIF.
+      ENDWHILE.
+
+    ENDIF.
+  ENDLOOP.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form TO_BILLING
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM to_billing USING ps_reor2 LIKE gs_reor2.
+  DATA : ls_bill TYPE ztc702_billing,
+         lt_bill TYPE TABLE OF ztc702_billing.
+
+  MOVE-CORRESPONDING ps_reor2 TO ls_bill.
+  SELECT SINGLE price currency
+    FROM ztc702_ord_i
+    INTO CORRESPONDING FIELDS OF ls_bill
+    WHERE gdcode = ls_bill-gdcode
+    AND ornum = ls_bill-ornum.
+  ls_bill-devdate = sy-datum.
+  ls_bill-amount = ls_bill-price * ls_bill-quantity.
+  ls_bill-status = ''.
+  ls_bill-delflag = ''.
+
+  ls_bill-crnam = sy-uname.
+  ls_bill-erdat = sy-datum.
+  ls_bill-ertim = sy-uzeit.
+
+  INSERT ztc702_billing FROM ls_bill.
+ENDFORM.
+FORM create_salv USING ps_ordst LIKE gs_reor4.
+  DATA lv_title TYPE lvc_title.
+  lv_title  = '주문 정보'.
+
+  SELECT *    "주문정보 불러오기
+    FROM  zdvc702_ord
+    INTO CORRESPONDING FIELDS OF TABLE gt_ordst
+    WHERE ornum = ps_ordst-ornum.
+
+  cl_salv_table=>factory( "salv 설정
+    IMPORTING
+  r_salv_table = gr_table
+    CHANGING
+    t_table = gt_ordst ).
+
+  gr_table->set_screen_popup( "salv를 팝업형태로 출력하도록 설정
+  start_column = 40
+  end_column = 87
+  start_line = 1
+  end_line = 8 ).
+
+  go_display = gr_table->get_display_settings( ).
+  go_display->set_list_header( lv_title ).
+  go_sal_cols = gr_table->get_columns( ).
+  go_sal_cols->set_optimize( abap_true ). "salv필드 길이를 글자수에 맞춤
+
+  gr_table->display( ). "salv 출력
+ENDFORM.
+
+CLASS lcl_class IMPLEMENTATION.
+  METHOD on_double.
+    READ TABLE gt_reor  INTO gs_reor4 INDEX es_row_no-row_id.
+    PERFORM create_salv USING gs_reor4.
+  ENDMETHOD.
+ENDCLASS.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

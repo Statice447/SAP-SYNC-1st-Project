@@ -1,0 +1,111 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_PP_04I01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  EXIT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE exit INPUT.
+  CASE ok_code.
+    WHEN 'EXIT'.
+      LEAVE PROGRAM.
+    WHEN 'CANC'.
+      IF sy-dynnr = 200.
+        LEAVE TO SCREEN 0.
+
+      ENDIF.
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN 'DISPLAY'.
+      PERFORM display_ord.         " 생산 오더 조회 서브루틴
+    WHEN 'CREATE'.
+      CLEAR ztc702_prdord_h.
+      CALL SCREEN 300.
+    WHEN 'CANC'.
+      CLEAR: ztc702_prdord_h, gt_prdord_h.             " 필드 초기화
+    WHEN 'CONFIRM'.
+      PERFORM confirm_prdord.
+    WHEN 'REJECT'.
+      PERFORM reject_prdord.
+
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_100 OUTPUT.
+**** ALV 리스트 번호 순으로 정렬
+  SORT gt_prdord_h ASCENDING BY pornum.
+
+**** ALV LOOP문
+  LOOP AT gt_prdord_h INTO gs_prdord_h.
+
+**** 삭제플래그 체크 시 ROW 색 변경
+    IF gs_prdord_h-delflag = 'X'.
+      gs_prdord_h-color = 'C610'.
+    ENDIF.
+
+**** 상태플래그에 따른 신호등 색 설정 ( 1: 반려/빨강, 2: 대기/노랑, 3: 승인/초록)
+    IF gs_prdord_h-status = '2'.
+      gs_prdord_h-light = '2'.
+    ELSEIF gs_prdord_h-status = '1'.
+      gs_prdord_h-light = '1'.
+    ELSEIF gs_prdord_h-status = '3'.
+      gs_prdord_h-light = '3'.
+    ENDIF.
+
+    MODIFY gt_prdord_h FROM gs_prdord_h TRANSPORTING color light.
+  ENDLOOP.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0200  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0200 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0300  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0300 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      CLEAR gt_prdord_i_300.
+      LEAVE TO SCREEN 0.
+    WHEN 'ADD'.
+      PERFORM add_ord_item.
+    WHEN 'DEL'.
+      PERFORM del_ord_item.
+    WHEN 'SAVE'.
+      PERFORM save_prdord.
+    WHEN 'CANC'.
+      CLEAR: zsc702_prdord, ztc702_prdord_i, gt_prdord_i_300.
+
+
+  ENDCASE.
+
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

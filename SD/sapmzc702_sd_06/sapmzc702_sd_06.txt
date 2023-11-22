@@ -1,0 +1,41 @@
+*&---------------------------------------------------------------------*
+*& Module Pool      SAPMZC702_SD_06
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+
+INCLUDE mzc702_sd_06top                         .    " Global Data
+INCLUDE mzc702_sd_06o01                         .  " PBO-Modules
+INCLUDE mzc702_sd_06i01                         .  " PAI-Modules
+INCLUDE mzc702_sd_06f01                         .  " FORM-Routines
+
+LOAD-OF-PROGRAM.
+
+  DATA: lv_date LIKE sy-datum.
+  zsc702_inc-ordate_b = sy-datum.
+  CALL FUNCTION 'RP_CALC_DATE_IN_INTERVAL'
+    EXPORTING
+      date      = sy-datum
+      days      = '0'
+      months    = '1'
+      signum    = '-'
+      years     = '0'
+    IMPORTING
+      calc_date = lv_date.
+  zsc702_inc-ordate_a = lv_date.
+
+*GUI Texts
+*----------------------------------------------------------
+* 0100 --> 판매 주문 오더 관리
+* 0110 --> 출하 대기/생산 요청 확인
+* 0120 --> 생산 요청 확인
+
+
+*Messages
+*----------------------------------------------------------
+*
+* Message class: Hard coded
+*   주문건을 선택하세요.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

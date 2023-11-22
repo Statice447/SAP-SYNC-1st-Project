@@ -1,0 +1,538 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_PP_08F01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form SET_LAYOUT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_layout .
+
+*  gs_layout-info_fname = 'COLOR'.
+  gs_layout-excp_led   = 'X'.
+*  gs_layout-sel_mode = 'A'.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_FCAT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_fcat .
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'MRPNUM'.
+  gs_fcat-coltext = 'MRP번호'.
+  gs_fcat-key = 'X'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 13.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'LIGHT'.
+*  gs_fcat-ref_table = 'GTY_MPR_PR'.
+  gs_fcat-coltext = '상태표시'.
+  gs_fcat-no_out = 'X'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 5.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDCODE'.
+  gs_fcat-coltext = '품목코드'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 5.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDNAME'.
+  gs_fcat-coltext = '품목명'.
+  gs_fcat-outputlen = 40.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'QUAN'.
+  gs_fcat-coltext = '생산수량'.
+  gs_fcat-qfieldname = 'UNIT'.
+  gs_fcat-outputlen = 6.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'UNIT'.
+  gs_fcat-coltext = '단위'.
+  gs_fcat-quantity = 'EA'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 3.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'CRNAM'.
+  gs_fcat-coltext = '생성자'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 10.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'ERDAT'.
+  gs_fcat-coltext = '생성 일자'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 10.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'ERTIM'.
+  gs_fcat-coltext = '생성 시간'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 10.
+  APPEND gs_fcat TO gt_fcat.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DISPLAY_MRP_LIST
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM display_mrp_list .
+  PERFORM get_mrp_list.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_MRP_LIST
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM get_mrp_list .
+**** 인터널 테이블 및 스트럭처 선언
+  DATA: lt_mrp_h TYPE TABLE OF ztc702_mrp_h,
+        ls_mrp_h TYPE ztc702_mrp_h.
+
+**** 조건 검색을 위한 range 타입 설정 -> 사용 필드만큼 선언
+  DATA: lt_mrpnum TYPE RANGE OF ztc702_mrp_h-mrpnum,
+        ls_mrpnum LIKE LINE OF lt_mrpnum.
+
+**** 조건 검색을 위한 range 타입 조건 설정 => 필드가 입력되면 필드와 동일한 조건으로
+  IF ztc702_mrp_h-mrpnum IS NOT INITIAL.
+    ls_mrpnum-sign = 'I'.
+    ls_mrpnum-option = 'EQ'.
+    ls_mrpnum-low = ztc702_mrp_h-mrpnum.
+    APPEND ls_mrpnum TO lt_mrpnum.
+  ENDIF.
+
+  SELECT *
+    FROM ztc702_mrp_h INTO CORRESPONDING FIELDS OF TABLE gt_mrp_h
+    WHERE mrpnum IN lt_mrpnum
+    AND erdat BETWEEN gv_pre_date AND gv_nxt_date.
+
+*  IF gv_chk_delflag = space.                        " 삭제 포함에 체크 할 경우
+*    CASE 'X'.                                       " 라디오 버튼 case
+*      WHEN gv_rad_wait.
+*        LOOP AT lt_ppl_h INTO ls_ppl_h WHERE status = '2' AND delflag = space.
+*          APPEND ls_ppl_h TO gt_prdplan_h.
+*        ENDLOOP.
+*      WHEN gv_rad_confirm.
+*        LOOP AT lt_ppl_h INTO ls_ppl_h WHERE status = '3' AND delflag = space.
+*          APPEND ls_ppl_h TO gt_prdplan_h.
+*        ENDLOOP.
+*      WHEN gv_rad_reject.
+*        LOOP AT lt_ppl_h INTO ls_ppl_h WHERE status = '1' AND delflag = space.
+*          APPEND ls_ppl_h TO gt_prdplan_h.
+*        ENDLOOP.
+*      WHEN gv_rad_all.
+*        LOOP AT lt_ppl_h INTO ls_ppl_h WHERE delflag = space.
+*          APPEND ls_ppl_h TO gt_prdplan_h.
+*        ENDLOOP.
+*    ENDCASE.
+*
+*  ELSE.                                              " 삭제 포함에 체크를 안 할 경우
+*    CASE 'X'.                                        " 라디오 버튼 case
+*      WHEN gv_rad_wait.
+*        LOOP AT lt_ppl_h INTO ls_ppl_h WHERE status = '2'.
+*          APPEND ls_ppl_h TO gt_prdplan_h.
+*        ENDLOOP.
+*      WHEN gv_rad_confirm.
+*        LOOP AT lt_ppl_h INTO ls_ppl_h WHERE status = '3'.
+*          APPEND ls_ppl_h TO gt_prdplan_h.
+*        ENDLOOP.
+*      WHEN gv_rad_reject.
+*        LOOP AT lt_ppl_h INTO ls_ppl_h WHERE status = '1' .
+*          APPEND ls_ppl_h TO gt_prdplan_h.
+*        ENDLOOP.
+*      WHEN gv_rad_all.                              " 전체는 삭제된 문서를 무조건 포함
+*        LOOP AT lt_ppl_h INTO ls_ppl_h.
+*          APPEND ls_ppl_h TO gt_prdplan_h.
+*        ENDLOOP.
+*    ENDCASE.
+*  ENDIF.
+
+
+
+  SORT gt_mrp_h ASCENDING BY mrpnum.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DISPLAY_MRP_I
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM display_mrp_i .
+***** alv row 인데스 찾기
+  CALL METHOD go_alv_grid->get_selected_rows
+    IMPORTING
+      et_index_rows = gt_index.
+
+***** 선택된 ROW 개수 찾기
+  DESCRIBE TABLE gt_index LINES gv_lines.
+
+
+  LOOP AT gt_index INTO gs_index.
+
+  ENDLOOP.
+
+  CALL SCREEN 200.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_FCAT_200
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_fcat_200 .
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'LIGHT'.
+  gs_fcat-coltext = '상태표시'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 5.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDCODE_M'.
+  gs_fcat-coltext = '품목코드'.
+  gs_fcat-key = 'X'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 5.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'MTCODE_M'.
+  gs_fcat-coltext = '품목구분'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 2.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDNAME_M'.
+  gs_fcat-coltext = '품목명'.
+  gs_fcat-outputlen = 30.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'QUAN'.
+  gs_fcat-coltext = '필요수량'.
+  gs_fcat-qfieldname = 'UNIT'.
+  gs_fcat-outputlen = 6.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'MTIVQUAN'.
+  gs_fcat-coltext = '실재고량'.
+  gs_fcat-qfieldname = 'UNIT'.
+  gs_fcat-outputlen = 6.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'MPRQUAN'.
+  gs_fcat-coltext = '구매요청량'.
+  gs_fcat-qfieldname = 'UNIT'.
+  gs_fcat-outputlen = 8.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'UNIT'.
+  gs_fcat-coltext = '단위'.
+  gs_fcat-quantity = 'EA'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 3.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'REQUEST'.
+  gs_fcat-coltext = '구매요청'.
+  gs_fcat-just = 'C'.
+  APPEND gs_fcat TO gt_fcat_200.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_LAYOUT_200
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_layout_200 .
+  gs_layout_200-stylefname   = 'CELLSTYLE'.
+  gs_layout_200-excp_fname = 'LIGHT'.
+  gs_layout_200-excp_led = 'X'.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form TEST_DISPLAY
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM test_display .
+  DATA: lv_text TYPE string.
+  DATA: ls_mrp_i TYPE ztc702_mrp_i,
+        ls_mpr   TYPE ztc702_mpr.     "mpr 테이블에 넣기 위한 데이터 선언
+
+  MOVE-CORRESPONDING gs_mrp_i TO ls_mrp_i.
+  ls_mpr-gdcode = ls_mrp_i-gdcode_m.
+  ls_mpr-quantity = ls_mrp_i-mprquan.
+  ls_mpr-unit = 'EA'.
+  ls_mpr-plcode = 'P0100'.
+  ls_mpr-whcode = 'WH01'.
+  ls_mpr-mprdate = sy-datum.
+  ls_mpr-rddate = sy-datum + 7.
+
+  LOOP AT gt_mpr_list INTO gs_mpr_list.
+    IF gs_mpr_list-gdcode = ls_mpr-gdcode.
+      MESSAGE '중복된 품목이 있습니다.' TYPE 'I'.
+      RETURN.
+    ENDIF.
+  ENDLOOP.
+
+  MOVE-CORRESPONDING ls_mpr TO gs_mpr_list.
+  APPEND gs_mpr_list TO gt_mpr_list.
+
+*  MOVE-CORRESPONDING gs_mrp_i TO ls_mrp_i.
+*  CALL FUNCTION 'ZFMC702_CNRO'
+*    EXPORTING
+*      fv_module_name   = 'MPR'
+*      fv_cnro_nr       = '05'
+*      fv_object        = 'ZCL719FINR'
+*    CHANGING
+*      fv_change_codenr = lv_text.
+*
+*  ls_mpr-mprno = lv_text.
+*  ls_mpr-gdcode = ls_mrp_i-gdcode_m.
+*  ls_mpr-quantity = ls_mrp_i-mprquan.
+*  ls_mpr-unit = 'EA'.
+*  ls_mpr-plcode = 'P0100'.
+*  ls_mpr-whcode = 'WH01'.
+*  ls_mpr-mprdate = sy-datum.
+*  ls_mpr-rddate = sy-datum + 7.
+*
+*  INSERT ztc702_mpr FROM ls_mpr.
+*  IF sy-subrc = 0.
+*    gs_mrp_i-status = '3'.
+*    CLEAR ls_mrp_i.
+*    MOVE-CORRESPONDING gs_mrp_i TO ls_mrp_i.
+*    UPDATE ztc702_mrp_i FROM ls_mrp_i.
+*    MESSAGE i015 WITH ls_mpr-mprno ls_mpr-quantity.
+*    COMMIT WORK.
+*  ELSE.
+*    ROLLBACK WORK.
+*  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_CELL_LIGHT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_cell_light .
+  DATA: lv_text  TYPE string,
+        lv_text2 TYPE string.
+
+  lv_text = icon_okay && '구매 요청 완료'.
+  lv_text2 = icon_led_green && '재고량 충분'.
+
+
+  LOOP AT gt_mrp_i INTO gs_mrp_i.
+    IF gs_mrp_i-mprquan > 1 AND gs_mrp_i-status = space.
+      CLEAR: gs_cell_style.
+      gs_cell_style-fieldname = 'REQUEST'.               " self-define에 선언한 이름과 동일한 필드이름 오타 주의
+      gs_cell_style-style     = cl_gui_alv_grid=>mc_style_button. " mc_style_button 타입
+      APPEND gs_cell_style TO gs_mrp_i-cellstyle.              " cell_type에 추가
+      gs_mrp_i-request = '구매요청'.                   " 만들어진 버튼 text 이름 선언
+    ELSEIF gs_mrp_i-mprquan = 0 AND gs_mrp_i-status = space.
+      CLEAR: gs_cell_style.
+      gs_mrp_i-request = lv_text2.
+    ELSEIF gs_mrp_i-status = 3.
+      CLEAR: gs_cell_style.
+      gs_mrp_i-request = lv_text.
+    ENDIF.
+
+    IF gs_mrp_i-status = '3'.
+      gs_mrp_i-light = '3'.
+    ELSEIF gs_mrp_i-status = '2'.
+      gs_mrp_i-light = '2'.
+    ENDIF.
+
+    MODIFY gt_mrp_i FROM gs_mrp_i TRANSPORTING light cellstyle request.
+  ENDLOOP.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_MPR_LIST
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_mpr_list .
+  DATA: lt_mpr_list TYPE TABLE OF ztc702_mpr,
+        ls_mpr_list TYPE ztc702_mpr.
+
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_FCAT_MPR
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_fcat_mpr .
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDCODE'.
+  gs_fcat-coltext = '품목코드'.
+  gs_fcat-key = 'X'.
+  gs_fcat-outputlen = 5.
+  APPEND gs_fcat TO gt_fcat_mpr.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'QUANTITY'.
+  gs_fcat-coltext = '구매요청량'.
+  gs_fcat-qfieldname = 'UNIT'.
+  gs_fcat-outputlen = 7.
+  APPEND gs_fcat TO gt_fcat_mpr.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'UNIT'.
+  gs_fcat-coltext = '단위'.
+  gs_fcat-quantity = 'EA'.
+  gs_fcat-outputlen = 3.
+  APPEND gs_fcat TO gt_fcat_mpr.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'PLCODE'.
+  gs_fcat-coltext = '공장코드'.
+  gs_fcat-outputlen = 6.
+  APPEND gs_fcat TO gt_fcat_mpr.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'MPRDATE'.
+  gs_fcat-coltext = '구매요청일'.
+  gs_fcat-outputlen = 10.
+  APPEND gs_fcat TO gt_fcat_mpr.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'RDDATE'.
+  gs_fcat-coltext = '입고희망일'.
+  gs_fcat-outputlen = 10.
+  APPEND gs_fcat TO gt_fcat_mpr.
+
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SAVE_MPR
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM save_mpr .
+  DATA: lt_mpr TYPE TABLE OF ztc702_mpr,
+        ls_mpr TYPE ztc702_mpr.
+
+  DATA: ls_mrp_t TYPE ztc702_mrp_i,   " 테이블 업데이트 용 wa
+        lt_mrp_t TYPE TABLE OF ztc702_mrp_i,
+        ls_mrp_i TYPE gty_mrp_pr.     " 데이터 받아오는 wa
+
+  DATA: lv_text  TYPE string.
+
+  IF gt_mpr_list IS INITIAL.
+    MESSAGE 'MPR 리스트가 없습니다. 요청 불가' TYPE 'I'.
+  ELSE.
+    CALL FUNCTION 'ZFMC702_CNRO'                  " 채번 펑션 모듈
+      EXPORTING
+        fv_module_name   = 'MPR'
+        fv_cnro_nr       = '07'
+        fv_object        = 'ZNRC702PP1'
+      CHANGING
+        fv_change_codenr = lv_text.
+
+    LOOP AT gt_mpr_list INTO ls_mpr.
+      ls_mpr-mprno = lv_text.
+      ls_mpr-crnam = sy-uname.
+      ls_mpr-erdat = sy-datum.
+      ls_mpr-ertim = sy-uzeit.
+      APPEND ls_mpr TO lt_mpr.
+
+    ENDLOOP.
+
+    LOOP AT gt_mrp_i INTO ls_mrp_i.
+      LOOP AT gt_mpr_list INTO gs_mpr_list.
+        IF  ls_mrp_i-gdcode_m = gs_mpr_list-gdcode.
+          ls_mrp_i-status = '3'.
+          MOVE-CORRESPONDING ls_mrp_i TO ls_mrp_t.
+          MODIFY gt_mrp_i FROM ls_mrp_i TRANSPORTING status.
+          APPEND ls_mrp_t TO lt_mrp_t.
+
+        ENDIF.
+      ENDLOOP.
+
+    ENDLOOP.
+
+    UPDATE ztc702_mrp_i FROM TABLE lt_mrp_t.
+    INSERT ztc702_mpr FROM TABLE lt_mpr.
+
+    IF sy-subrc = 0.
+      MESSAGE i000 WITH lv_text.
+      CLEAR gt_mpr_list.
+      COMMIT WORK.
+      LEAVE TO SCREEN 0.
+    ELSE.
+      MESSAGE '실패' TYPE 'I'.
+      ROLLBACK WORK.
+
+    ENDIF.
+  ENDIF.
+
+ENDFORM.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

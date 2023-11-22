@@ -1,0 +1,177 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_DDI01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN 'NEXT'.
+      CALL SCREEN 200.
+***** SD
+    WHEN 'PRICE'.
+      CALL TRANSACTION 'ZC702_SD_08'.
+    WHEN 'SALPLAN'.
+      CALL TRANSACTION 'ZC702_SD_01'.
+    WHEN 'BILL'.
+      CALL TRANSACTION 'ZC702_SD_02'.
+    WHEN 'SALMAN'.
+      CALL TRANSACTION 'ZC702_SD_04'.
+    WHEN 'SALORD'.
+      CALL TRANSACTION 'ZC702_SD_06'.
+    WHEN 'RELMAN'.
+      CALL TRANSACTION 'ZC702_SD_03'.
+    WHEN 'HR01'.
+      CALL TRANSACTION 'ZC702_HR_01'.
+
+***** PP
+    WHEN 'PLANT'.
+      CALL TRANSACTION 'ZC702_PP_01'.
+    WHEN 'BOM'.
+      CALL TRANSACTION 'ZC702_PP_02'.
+    WHEN 'PRDPLAN'.
+      CALL TRANSACTION 'ZC702_PP_03'.
+    WHEN 'MRP'.
+      CALL TRANSACTION 'ZC702_PP_06'.
+    WHEN 'MRPREQ'.
+      CALL TRANSACTION 'ZC702_PP_08'.
+    WHEN 'PRDORD'.
+      CALL TRANSACTION 'ZC702_PP_04'.
+    WHEN 'PRDMAN'.
+      CALL TRANSACTION 'ZC702_PP_05'.
+    WHEN 'DISPOSAL'.
+      CALL TRANSACTION 'ZC702_PP_07'.
+
+***** MM
+    WHEN 'WARE'.
+      CALL TRANSACTION 'ZC702_MM_01'.
+    WHEN 'MTIV'.
+      CALL TRANSACTION 'ZC702_MM_02'.
+    WHEN 'CLIENT'.
+      CALL TRANSACTION 'ZC702_MM_03'.
+    WHEN 'SRMAN'.
+      CALL TRANSACTION 'ZC702_MM_04'.
+    WHEN 'BUYREQ'.
+      CALL TRANSACTION 'ZC702_MM_05'.
+    WHEN 'BUYINFO'.
+      CALL TRANSACTION 'ZC702_MM_06'.
+    WHEN 'BUYORD'.
+      CALL TRANSACTION 'ZC702_MM_07'.
+    WHEN 'BUYAPP'.
+      CALL TRANSACTION 'ZC702_MM_08'.
+    WHEN 'EXP'.
+      CALL TRANSACTION 'ZC702_MM_11'.
+    WHEN 'INVOICE'.
+      CALL TRANSACTION 'ZC702_MM_10'.
+    WHEN 'BUYMAN'.
+      CALL TRANSACTION 'ZC702_MM_12'.
+
+***** FI
+    WHEN 'ACCOUNT'.
+      CALL TRANSACTION 'ZC702_FI_01'.
+    WHEN 'DOCU'.
+      CALL TRANSACTION 'ZC702_FI_02'.
+    WHEN 'VCCLEAR'.
+      CALL TRANSACTION 'ZC702_FI_03'.
+    WHEN 'LEDGER'.
+      CALL TRANSACTION 'ZC702_FI_04'.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  EXIT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE exit INPUT.
+  CASE ok_code.
+    WHEN 'EXIT' OR 'CANC'.
+      LEAVE PROGRAM.
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0200  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0200 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+***** sd
+    WHEN 'PRICE'.
+      CALL TRANSACTION 'ZC702_SD_08'.
+    WHEN 'SALPLAN'.
+      CALL TRANSACTION 'ZC702_SD_01'.
+    WHEN 'BILL'.
+      CALL TRANSACTION 'ZC702_SD_02'.
+    WHEN 'SALMAN'.
+      CALL TRANSACTION 'ZC702_SD_04'.
+    WHEN 'SALORD'.
+      CALL TRANSACTION 'ZC702_SD_06'.
+    WHEN 'RELMAN'.
+      CALL TRANSACTION 'ZC702_SD_03'.
+    WHEN 'HR01'.
+      CALL TRANSACTION 'ZC702_HR_01'.
+
+***** PP
+    WHEN 'PLANT'.
+      CALL TRANSACTION 'ZC702_PP_01'.
+    WHEN 'BOM'.
+      CALL TRANSACTION 'ZC702_PP_02'.
+    WHEN 'PRDPLAN'.
+      CALL TRANSACTION 'ZC702_PP_03'.
+    WHEN 'MRP'.
+      CALL TRANSACTION 'ZC702_PP_06'.
+    WHEN 'MRPREQ'.
+      CALL TRANSACTION 'ZC702_PP_08'.
+    WHEN 'PRDORD'.
+      CALL TRANSACTION 'ZC702_PP_04'.
+    WHEN 'PRDMAN'.
+      CALL TRANSACTION 'ZC702_PP_05'.
+    WHEN 'DISPOSAL'.
+      CALL TRANSACTION 'ZC702_PP_07'.
+
+***** MM
+    WHEN 'WARE'.
+      CALL TRANSACTION 'ZC702_MM_01'.
+    WHEN 'MTIV'.
+      CALL TRANSACTION 'ZC702_MM_02'.
+    WHEN 'CLIENT'.
+      CALL TRANSACTION 'ZC702_MM_03'.
+    WHEN 'SRMAN'.
+      CALL TRANSACTION 'ZC702_MM_04'.
+    WHEN 'BUYREQ'.
+      CALL TRANSACTION 'ZC702_MM_05'.
+    WHEN 'BUYINFO'.
+      CALL TRANSACTION 'ZC702_MM_06'.
+    WHEN 'BUYORD'.
+      CALL TRANSACTION 'ZC702_MM_07'.
+    WHEN 'BUYAPP'.
+      CALL TRANSACTION 'ZC702_MM_08'.
+    WHEN 'EXP'.
+      CALL TRANSACTION 'ZC702_MM_11'.
+    WHEN 'INVOICE'.
+      CALL TRANSACTION 'ZC702_MM_10'.
+    WHEN 'BUYMAN'.
+      CALL TRANSACTION 'ZC702_MM_12'.
+
+***** FI
+    WHEN 'ACCOUNT'.
+      CALL TRANSACTION 'ZC702_FI_01'.
+    WHEN 'DOCU'.
+      CALL TRANSACTION 'ZC702_FI_02'.
+    WHEN 'VCCLEAR'.
+      CALL TRANSACTION 'ZC702_FI_03'.
+    WHEN 'LEDGER'.
+      CALL TRANSACTION 'ZC702_FI_04'.
+  ENDCASE.
+
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

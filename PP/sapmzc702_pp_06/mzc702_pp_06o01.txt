@@ -1,0 +1,97 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_PP_06O01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'S0100'.
+  SET TITLEBAR 'T0100'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CLEAR_OK_CODE OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE clear_ok_code OUTPUT.
+  CLEAR ok_code.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SET_ALV OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE set_alv OUTPUT.
+**** 최초 컨테이너 생성 시
+  IF go_container IS INITIAL.
+    CREATE OBJECT go_container
+      EXPORTING
+        container_name = 'MRP_LIST'.
+    gv_refresh     = abap_true.   " 리프레쉬 체크
+  ENDIF.
+
+***** 최초 ALV 생성 시
+  IF gv_refresh = abap_true.      " 리프레시 확인
+    CREATE OBJECT go_alv_grid
+      EXPORTING
+        i_parent = go_container.
+
+***** ALV 핸들러 설정
+*    SET HANDLER lcl_handler=>on_double_click FOR go_alv_grid.
+
+***** ALV 레이아웃 및 필드카탈로그 설정
+*    PERFORM set_layout.
+    PERFORM set_fcat.
+
+    CALL METHOD go_alv_grid->set_table_for_first_display
+      EXPORTING
+        i_default       = 'X'
+        is_layout       = gs_layout
+      CHANGING
+        it_outtab       = gt_mrp_i
+        it_fieldcatalog = gt_fcat
+*       it_sort         =
+*       it_filter       =
+      EXCEPTIONS
+        OTHERS          = 4.
+    IF sy-subrc <> 0.
+*       Implement suitable error handling here
+    ENDIF.
+
+    gv_refresh = abap_false.    " 리프레시 해제
+
+  ELSE.                         " 기존 ALV가 있을경우 리프레시
+    go_alv_grid->refresh_table_display( ).
+  ENDIF.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_100 OUTPUT.
+
+*  IF gv_check = '1'.
+*    LOOP AT SCREEN.
+*      IF screen-group1 = 'GR1'.
+*        screen-input = 1.
+*        MODIFY SCREEN.
+*      ENDIF.
+*    ENDLOOP.
+*  ELSEIF gv_check = '0'.
+*    LOOP AT SCREEN.
+*      IF screen-group1 = 'GR1'.
+*        screen-input = 0.
+*        MODIFY SCREEN.
+*      ENDIF.
+*    ENDLOOP.
+*
+*  ENDIF.
+
+
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

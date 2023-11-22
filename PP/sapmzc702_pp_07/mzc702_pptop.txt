@@ -1,0 +1,73 @@
+*&---------------------------------------------------------------------*
+*& Include MZC702_PPTOP                             - Module Pool      SAPMZ702_PP_07
+*&---------------------------------------------------------------------*
+PROGRAM sapmz702_pp_07 MESSAGE-ID zc702_message.
+
+TABLES: ztc702_disposal, zdvc702_disposal, zsc702_disposal.
+
+TYPES: BEGIN OF gty_disposal .
+    INCLUDE TYPE zdvc702_disposal .
+TYPES: color TYPE c LENGTH 4,
+       END OF gty_disposal .
+
+DATA: gt_disposal   TYPE TABLE OF gty_disposal,
+      gs_disposal_f TYPE gty_disposal,
+      gs_disposal   TYPE gty_disposal.
+
+*************************************TREE ALV
+TYPES: node_table_type  LIKE STANDARD TABLE OF mtreesnode WITH DEFAULT KEY.
+
+DATA: tree_con_ref TYPE REF TO cl_gui_custom_container, "컨테이너 만들기
+      g_tree       TYPE REF TO cl_gui_simple_tree.        "트리 컨테이너 참조변수
+
+
+DATA: ws_tab  TYPE ztc702_disposal,
+      wt_tab  TYPE TABLE OF ztc702_disposal,
+      wt_tab2 TYPE TABLE OF ztc702_disposal. " 처음 실행했을때 밑에 alv에 생산오더 번호가 보여져서 그걸 안보이게 하기 위함.
+**************************************
+DATA: go_container TYPE REF TO cl_gui_custom_container,
+      go_alv_grid  TYPE REF TO cl_gui_custom_alv_grid.
+
+DATA: y_values TYPE TABLE OF gprval WITH HEADER LINE,        " 파이 차트 그래프 및 x축 텍스트 선언
+      x_texts  TYPE TABLE OF gprtxt WITH HEADER LINE.
+
+DATA: ok_code    TYPE sy-ucomm,
+      gv_refresh TYPE c LENGTH 1,
+      gs_layout  TYPE lvc_s_layo.
+
+DATA: gt_fcat TYPE lvc_t_fcat,
+      gs_fcat TYPE lvc_s_fcat.
+
+DATA: gs_sort      TYPE lvc_s_sort,
+      gt_sort      TYPE lvc_t_sort,
+      gs_functions TYPE ui_functions,
+      gs_refto     TYPE REF TO data,
+      gs_pos       TYPE i.
+
+DATA : gt_index TYPE lvc_t_row, "ALV 선택라인 저장 인터널테이블
+       gs_index LIKE LINE OF gt_index, "ALV 선택라인 저장 스트럭쳐
+       gv_lines TYPE i. "선택한 라인수를 저장할 변수
+
+DATA: gv_year     TYPE n LENGTH 4,
+      gv_pre_date TYPE sy-datum,
+      gv_date     TYPE sy-datum.
+
+
+* 이벤트 구현
+CLASS lcl_application DEFINITION.
+  PUBLIC SECTION.
+    METHODS : handle_node_double_click
+                  FOR EVENT node_double_click OF cl_gui_simple_tree " 트리에 노드 더블 클릭시 해당 ALV나옴.
+      IMPORTING node_key.
+ENDCLASS.
+CLASS lcl_application IMPLEMENTATION.
+  METHOD handle_node_double_click.
+    PERFORM node_double_click_0100  USING node_key.
+  ENDMETHOD.
+
+ENDCLASS.
+
+DATA: g_application TYPE REF TO lcl_application.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

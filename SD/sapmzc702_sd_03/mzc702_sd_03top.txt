@@ -1,0 +1,71 @@
+*&---------------------------------------------------------------------*
+*& Include MZC702_SD_03TOP                          - Module Pool      SAPMZC702_SD_03
+*&---------------------------------------------------------------------*
+PROGRAM sapmzc702_sd_03.
+
+TABLES : ztc702_reor_h, ztc702_reor_i, ztc702_dev_h, ztc702_dev_i, zsc702_reor_con.
+
+TYPES : BEGIN OF gty_reor.
+    INCLUDE TYPE zdvc702_reor.
+TYPES : led     TYPE c LENGTH 1,
+        cusname LIKE ztc702_cusmaster-cusname,
+        cuscode LIKE ztc702_cusmaster-cuscode,
+        END OF gty_reor.
+
+TYPES: BEGIN OF gty_ord.
+TYPES :
+  ornum    TYPE zdvc702_inc-ornum,
+  gdcode   TYPE zdvc702_inc-gdcode,
+  gdname   TYPE zdvc702_inc-gdname,
+  quantity TYPE zdvc702_inc-quantity,
+  unit     TYPE zdvc702_inc-unit,
+  END OF gty_ord.
+
+DATA : ok_code    TYPE sy-ucomm,
+       gs_reor    TYPE gty_reor,
+       gs_reor2   TYPE gty_reor,
+       gs_reor3   TYPE gty_reor,
+       gs_reor4   TYPE gty_reor,
+       gt_reor    TYPE TABLE OF gty_reor,
+       gt_reor2   TYPE TABLE OF gty_reor,
+       gt_reor3   TYPE TABLE OF gty_reor,
+       gv_dev     TYPE c LENGTH 1 VALUE 0,
+       gs_ordst   TYPE gty_ord,
+       gt_ordst   TYPE TABLE OF gty_ord,
+
+       go_con     TYPE REF TO cl_gui_custom_container,
+       go_con2    TYPE REF TO cl_gui_custom_container,
+       go_alv     TYPE REF TO cl_gui_alv_grid,
+       go_alv2    TYPE REF TO cl_gui_alv_grid,
+       gs_lay     TYPE lvc_s_layo,
+       gs_sort    TYPE lvc_s_sort,
+       gt_sort    TYPE lvc_t_sort,
+       gs_cat     TYPE lvc_s_fcat,
+       gt_cat     TYPE lvc_t_fcat,
+       gt_cat2    TYPE lvc_t_fcat,
+       gt_index   TYPE lvc_t_row,
+       gs_index   LIKE LINE OF gt_index,
+       gv_cusname LIKE ztc702_cusmaster-cusname,
+       gv_cuscode LIKE ztc702_cusmaster-cuscode,
+
+       rad1       TYPE c LENGTH 1,
+       rad2       TYPE c LENGTH 1,
+       rad3       TYPE c LENGTH 1.
+DATA: gv_list TYPE char50,
+      gt_list TYPE TABLE OF ztc702_dev_h,
+      gs_list LIKE LINE OF gt_list.
+DATA: list  TYPE vrm_values,
+      value LIKE LINE OF list.
+DATA: gr_table    TYPE REF TO cl_salv_table,
+      go_sal_cols TYPE REF TO cl_salv_columns_table,
+      go_DISPLAY   TYPE REF TO CL_SALV_DISPLAY_SETTINGS.
+CLASS lcl_class DEFINITION.
+  PUBLIC SECTION.
+
+    CLASS-METHODS:
+      on_double FOR EVENT double_click OF cl_gui_alv_grid
+        IMPORTING es_row_no.
+ENDCLASS.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

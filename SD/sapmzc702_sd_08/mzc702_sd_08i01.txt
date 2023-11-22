@@ -1,0 +1,255 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_HR_01I01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  EXIT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE exit INPUT.
+  CASE ok_code.
+    WHEN 'EXIT' OR 'CANC'.
+      LEAVE PROGRAM.
+    WHEN 'CANCLE'.
+      CLEAR ztc702_conmaster.
+      MESSAGE '작업 취소' TYPE 'I'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN 'DISPLAY'.
+      PERFORM display_emp.
+    WHEN 'CHANGE'.
+      PERFORM change.
+            IF gv_check = space.
+        SELECT *
+          FROM ztc702_conmaster
+          INTO CORRESPONDING FIELDS OF TABLE gt_emp
+          WHERE delflag = ''.
+      ELSE.
+        SELECT *
+          FROM ztc702_conmaster
+          INTO CORRESPONDING FIELDS OF TABLE gt_emp
+          WHERE delflag NE ''.
+      ENDIF.
+
+      SORT gt_emp ASCENDING BY gdcode.
+    WHEN 'CREATE'.
+      PERFORM create.
+*            IF gv_check = space.
+*        SELECT *
+*          FROM ztc702_conmaster
+*          INTO CORRESPONDING FIELDS OF TABLE gt_emp
+*          WHERE delflag = ''.
+*      ELSE.
+*        SELECT *
+*          FROM ztc702_conmaster
+*          INTO CORRESPONDING FIELDS OF TABLE gt_emp
+*          WHERE delflag NE ''.
+*      ENDIF.
+*
+*      SORT gt_emp ASCENDING BY gdcode.
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0110  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0110 INPUT.
+  CASE ok_code.
+
+    WHEN 'ENROLL'.
+      DATA: ls_empc  TYPE ztc702_conmaster,
+            ls_pernr TYPE string.
+      MOVE-CORRESPONDING ztc702_conmaster TO ls_empc.
+      ls_empc-crnam = sy-uname.
+      ls_empc-erdat = sy-datum.
+      ls_empc-ertim = sy-uzeit.
+      INSERT ztc702_conmaster FROM ls_empc.
+
+      IF sy-subrc = 0.
+        CLEAR ztc702_conmaster.
+        MESSAGE ls_empc-gdcode && ' / ' && ls_empc-gdname && ' / 가격 정보를 생성합니다.' TYPE 'I'.
+        MESSAGE ls_empc-gdcode && ' / 등록 성공' TYPE 'S'.
+        LEAVE TO SCREEN 0.
+        COMMIT WORK.
+      ELSE.
+        MESSAGE '등록 실패 : 이미 존재하는 데이터입니다.' TYPE 'I'.
+        LEAVE TO SCREEN 0.
+        ROLLBACK WORK.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0120  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0120 INPUT.
+  CASE ok_code.
+    WHEN 'CANCLE'.
+      CLEAR ztc702_conmaster.
+      MESSAGE '수정 취소' TYPE 'S'.
+      LEAVE TO SCREEN 0.
+    WHEN 'OKAY'.
+      DATA : ls_empu TYPE ztc702_conmaster.
+      MESSAGE ztc702_conmaster-gdcode && ' / 정보를 수정합니다.' TYPE 'I'.
+
+      MOVE-CORRESPONDING ztc702_conmaster TO ls_empu.
+      SELECT SINGLE gdname
+         FROM ztc702_mtmaster
+         INTO CORRESPONDING FIELDS OF ls_empc
+         WHERE gdcode = ztc702_conmaster-gdcode.
+      ls_empu-chnam = sy-uname.
+      ls_empu-chdat = sy-datum.
+      ls_empu-chtim = sy-uzeit.
+      UPDATE ztc702_conmaster FROM ls_empu.
+
+      IF sy-subrc = 0.
+        MESSAGE ztc702_conmaster-gdcode && ' / 수정 성공' TYPE 'I'.
+        LEAVE TO SCREEN 0.
+      ELSE.
+        MESSAGE '수정 실패' TYPE 'I'.
+        LEAVE TO SCREEN 0.
+      ENDIF.
+    WHEN 'FLAG'.
+      DATA: lv_answer TYPE c LENGTH 1.
+
+      IF ls_empu-delflag = space.
+        CALL FUNCTION 'POPUP_TO_CONFIRM'
+          EXPORTING
+            titlebar              = '가격 정보 비활성화'
+            text_question         = '해당 품목을 비활성화하겠습니까?'
+            text_button_1         = '예'
+            text_button_2         = '아니오'
+            display_cancel_button = space
+          IMPORTING
+            answer                = lv_answer.
+
+        IF lv_answer = 1.
+**** 삭제플래그 변경 및 LOG 변경
+          MOVE-CORRESPONDING ztc702_conmaster TO ls_empu.
+          SELECT SINGLE gdname
+             FROM ztc702_mtmaster
+             INTO CORRESPONDING FIELDS OF ls_empc
+             WHERE gdcode = ztc702_conmaster-gdcode.
+          ls_empu-delflag = 'X'.
+          ls_empu-chnam = sy-uname.
+          ls_empu-chdat = sy-datum.
+          ls_empu-chtim = sy-uzeit.
+          UPDATE ztc702_conmaster FROM ls_empu.
+
+          IF sy-subrc = 0.
+            CLEAR gt_emp.
+            MESSAGE ztc702_conmaster-gdcode && ' / 비활성화 성공' TYPE 'I'.
+            LEAVE TO SCREEN 0.
+          ELSE.
+            MESSAGE '작업 실패' TYPE 'I'.
+            LEAVE TO SCREEN 0.
+          ENDIF.
+        ENDIF.
+**** 선택된 스트럭처의 삭제플래그가 있을 경우
+      ELSEIF ls_empu-delflag = 'X'.
+        CALL FUNCTION 'POPUP_TO_CONFIRM'
+          EXPORTING
+            titlebar              = '가격 정보 활성화'
+            text_question         = '해당 품목을 활성화하겠습니까?'
+            text_button_1         = '예'
+            text_button_2         = '아니오'
+            display_cancel_button = space
+          IMPORTING
+            answer                = lv_answer.
+
+        IF lv_answer = 1.
+**** 삭제플래그 변경 및 LOG 변경
+          MOVE-CORRESPONDING ztc702_conmaster TO ls_empu.
+          SELECT SINGLE gdname
+             FROM ztc702_mtmaster
+             INTO CORRESPONDING FIELDS OF ls_empc
+             WHERE gdcode = ztc702_conmaster-gdcode.
+          ls_empu-delflag = space.
+          ls_empu-chnam = sy-uname.
+          ls_empu-chdat = sy-datum.
+          ls_empu-chtim = sy-uzeit.
+          UPDATE ztc702_conmaster FROM ls_empu.
+
+          IF sy-subrc = 0.
+            CLEAR gt_emp.
+            MESSAGE ztc702_conmaster-gdcode && ' / 수정 및 활성화 성공' TYPE 'I'.
+            LEAVE TO SCREEN 0.
+          ELSE.
+            MESSAGE '작업 실패' TYPE 'I'.
+            LEAVE TO SCREEN 0.
+          ENDIF.
+        ENDIF.
+      ENDIF.
+
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Form CHANGE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM change .
+  PERFORM read_line USING gs_emp.
+
+  IF gs_emp IS INITIAL.
+    MESSAGE '라인을 선택하세요.' TYPE 'I'.
+  ELSE.
+    MOVE-CORRESPONDING gs_emp TO ztc702_conmaster.
+    CALL SCREEN 120
+    STARTING AT 15 5
+    ENDING AT 60 15.
+    PERFORM get_emp_data.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Module  SET_OTEXT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE set_gdname INPUT.
+  SELECT SINGLE gdname
+    FROM ztc702_mtmaster
+    INTO ztc702_conmaster-gdname
+    WHERE gdcode = ztc702_conmaster-gdcode.
+ENDMODULE.
+
+*&---------------------------------------------------------------------*
+*&      Module  NO_DATA_PRICE  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE no_data_price INPUT.
+  IF ztc702_conmaster-price IS INITIAL.
+    MESSAGE '가격을 입력하세요' TYPE 'E'.
+  ENDIF.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  NO_DATA_GDCODE  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE no_data_gdcode INPUT.
+  IF ztc702_conmaster-gdcode IS INITIAL.
+    MESSAGE '품목코드를 입력하세요' TYPE 'E'.
+  ENDIF.
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

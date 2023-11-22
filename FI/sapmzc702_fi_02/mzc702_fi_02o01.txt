@@ -1,0 +1,117 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_FI_02O01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+ SET PF-STATUS 'P0100'.
+ SET TITLEBAR 'T0100'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CREATE_AND_TRANSFER OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE create_and_transfer OUTPUT.
+  IF go_container IS INITIAL.
+    CREATE OBJECT go_container
+      EXPORTING
+        container_name    = 'MY_CONTROL_AREA'.
+    CREATE OBJECT go_alv_grid
+      EXPORTING
+        i_parent          = go_container.
+
+  SET HANDLER lcl_handler=>on_double_click FOR go_alv_grid.
+
+  PERFORM field_catalog.
+
+  CALL METHOD go_alv_grid->set_table_for_first_display
+    CHANGING
+      it_outtab                     = gt_tab
+      it_fieldcatalog               = gt_fcat.
+
+*  gs_layout-cwidth_opt    = 'X'.
+  gs_layout-grid_title    = '전표 리스트'.
+  gs_layout-zebra         = 'X'.
+
+  gs_variant-report       = sy-cprog.
+  gs_save                 = 'A'.
+
+    CALL METHOD go_alv_grid->set_table_for_first_display
+*      EXPORTING
+*        is_variant                    = gs_variant
+*        is_layout                     = gs_layout
+      CHANGING
+        it_outtab                     = gt_tab
+        it_fieldcatalog               = gt_fcat.
+  ENDIF.
+  CALL METHOD go_alv_grid->refresh_table_display.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0200 OUTPUT.
+ SET PF-STATUS 'P0200'.
+ SET TITLEBAR 'T0200'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CLEAR_OK_CODE OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE clear_ok_code OUTPUT.
+  CLEAR ok_code.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CREATE_AND_TRANSFER_200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE create_and_transfer_200 OUTPUT.
+  IF go_container2 IS INITIAL.
+    CREATE OBJECT go_container2
+      EXPORTING
+        container_name    = 'MY_CONTROL_AREA2'.
+    CREATE OBJECT go_alv_grid2
+      EXPORTING
+        i_parent          = go_container2.
+
+  PERFORM field_catalog2.
+
+  CALL METHOD go_alv_grid2->set_table_for_first_display
+    CHANGING
+      it_outtab                     = gt_tab2
+      it_fieldcatalog               = gt_fcat2.
+
+  gs_layout-grid_title    = '전표 상세 리스트'.
+  gs_layout-zebra         = 'X'.
+
+  gs_variant-report       = sy-cprog.
+  gs_save                 = 'A'.
+
+    CALL METHOD go_alv_grid2->set_table_for_first_display
+      EXPORTING
+        is_variant                    = gs_variant
+        is_layout                     = gs_layout
+      CHANGING
+        it_outtab                     = gt_tab2
+        it_fieldcatalog               = gt_fcat2.
+  ENDIF.
+  CALL METHOD go_alv_grid2->refresh_table_display.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_CONDITION OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_condition OUTPUT.
+  PERFORM init_docudate.  " 조회 기간 날짜 초기값 설정.
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

@@ -1,0 +1,40 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_MM_06C01
+*&---------------------------------------------------------------------*
+
+* 핸들러 메소드 정의.
+CLASS LCL_HANDLE DEFINITION.
+  PUBLIC SECTION.
+    CLASS-METHODS: ON_DOUBLE_CLICK FOR EVENT DOUBLE_CLICK OF CL_GUI_ALV_GRID IMPORTING ES_ROW_NO. " 더블 클릭 시 실행.
+
+ENDCLASS.
+
+* 핸들러 메소드 구현.
+CLASS LCL_HANDLE IMPLEMENTATION.
+  METHOD ON_DOUBLE_CLICK.
+
+    READ TABLE GT_TABLE INTO GS_TABLE INDEX ES_ROW_NO-ROW_ID. " 선택한 줄 더블 클릭시 데이터 읽어옴.
+
+IF GS_TABLE-EXPTYPE = 'O'.
+
+    SELECT *
+      FROM ZTC702_EXP
+      INTO CORRESPONDING FIELDS OF TABLE GT_EXP
+     WHERE GDCODE = GS_TABLE-GDCODE
+       AND PLCODE = GS_TABLE-PLCODE
+       AND WHCODE = GS_TABLE-WHCODE
+       AND DELFLAG = SPACE
+     ORDER BY LOTNUM.
+
+    CALL SCREEN 200.
+
+  ELSEIF GS_TABLE-EXPTYPE = 'X'.
+    MESSAGE '유통기한이 없는 품목입니다.' type 'I'.
+ENDIF.
+
+
+  ENDMETHOD.
+ENDCLASS.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

@@ -1,0 +1,39 @@
+*&---------------------------------------------------------------------*
+*& Module Pool      SAPMZC702_SD_02
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+
+INCLUDE mzc702_sd_02top                         .    " Global Data
+INCLUDE mzc702_sd_02o01                         .  " PBO-Modules
+INCLUDE mzc702_sd_02i01                         .  " PAI-Modules
+INCLUDE mzc702_sd_02f01                         .  " FORM-Routines
+
+LOAD-OF-PROGRAM.
+  DATA: lv_date LIKE sy-datum.
+  zsc702_inc-ordate_b = sy-datum.
+  CALL FUNCTION 'RP_CALC_DATE_IN_INTERVAL'
+    EXPORTING
+      date      = sy-datum
+      days      = '0'
+      months    = '1'
+      signum    = '-'
+      years     = '0'
+    IMPORTING
+      calc_date = lv_date.
+  zsc702_inc-ordate_a = lv_date.
+
+*GUI Texts
+*----------------------------------------------------------
+* 0100 --> 빌링 생성 프로그램
+* 0200 --> 청구 문서 생성
+
+
+*Messages
+*----------------------------------------------------------
+*
+* Message class: Hard coded
+*   이미 문서 출력을 완료하였습니다.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

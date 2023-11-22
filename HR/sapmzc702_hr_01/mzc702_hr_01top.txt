@@ -1,0 +1,41 @@
+*&---------------------------------------------------------------------*
+*& Include MZC702_HR_01TOP                          - Module Pool      SAPMZC702_HR_01
+*&---------------------------------------------------------------------*
+PROGRAM sapmzc702_hr_01.
+
+TABLES: zdvc702_emporg.
+
+TYPES: BEGIN OF gty_emp .
+    INCLUDE TYPE zdvc702_emporg .
+TYPES: color TYPE c LENGTH 4,
+       END OF gty_emp .
+
+DATA: gt_emp     TYPE TABLE OF gty_emp,
+      gs_emp_f   TYPE gty_emp,
+      gs_emp     TYPE gty_emp,
+      gs_emdrog  TYPE zdvc702_emporg,
+
+      go_con     TYPE REF TO cl_gui_custom_container,
+      go_alv     TYPE REF TO cl_gui_custom_alv_grid,
+      ok_code    TYPE sy-ucomm,
+      gv_refresh TYPE c LENGTH 1,
+      gs_lay     TYPE lvc_s_layo,
+      gt_cat     TYPE lvc_t_fcat,
+      gs_cat     TYPE lvc_s_fcat,
+
+      gt_index   TYPE lvc_t_row, "ALV 선택라인 저장 인터널테이블
+      gs_index   LIKE LINE OF gt_index, "ALV 선택라인 저장 스트럭쳐
+      gv_lines   TYPE i, "선택한 라인수를 저장할 변수
+      gv_check   type c length 1.
+
+*ListBox 변수 선언
+DATA: gv_list TYPE char50,
+      gt_list TYPE TABLE OF zdvc702_emporg,
+      gs_list LIKE LINE OF gt_list.
+
+*리스트 박스 구현
+DATA: list  TYPE vrm_values,
+      value LIKE LINE OF list.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

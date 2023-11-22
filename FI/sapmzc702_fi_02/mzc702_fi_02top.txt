@@ -1,0 +1,67 @@
+*&---------------------------------------------------------------------*
+*& Include MZC702_FI_02TOP                          - Module Pool      SAPMZC702_FI_02
+*&---------------------------------------------------------------------*
+PROGRAM sapmzc702_fi_02 MESSAGE-ID zc702_message.
+
+TABLES: zsc702_docu_h, zsc702_docu_i.
+
+TYPES: BEGIN OF gty_tab.
+        INCLUDE TYPE ztc702_docu_i.
+TYPES:  company_t(10),
+        docutype_t(10),
+       END OF gty_tab.
+
+DATA: ok_code LIKE sy-ucomm,
+      gv_subrc TYPE sy-subrc,
+      gv_mesg TYPE string.
+
+DATA: gt_tab TYPE TABLE OF gty_tab,
+      gt_tab2 TYPE TABLE OF gty_tab,
+      gs_tab LIKE LINE OF gt_tab,
+      gs_tab2 LIKE LINE OF gt_tab2.
+
+DATA: go_container TYPE REF TO cl_gui_custom_container,
+      go_container2 TYPE REF TO cl_gui_custom_container,
+      go_alv_grid TYPE REF TO cl_gui_alv_grid,
+      go_alv_grid2 TYPE REF TO cl_gui_alv_grid.
+
+DATA: gt_fcat TYPE lvc_t_fcat,
+      gt_fcat2 TYPE lvc_t_fcat,
+      gs_fcat TYPE lvc_s_fcat,
+      gs_fcat2 TYPE lvc_s_fcat,
+      gs_layout TYPE lvc_s_layo,
+      gs_variant TYPE disvariant,
+      gs_save TYPE c LENGTH 1.
+
+DATA: rd1 TYPE c LENGTH 1,
+      rd2 TYPE c LENGTH 1,
+      rd3 TYPE c LENGTH 1,
+      rd4 TYPE c LENGTH 1,
+      rd5 TYPE c LENGTH 1,
+      rd6 TYPE c LENGTH 1,
+      rd7 TYPE c LENGTH 1.
+
+CLASS lcl_handler DEFINITION.
+  PUBLIC SECTION.
+    CLASS-METHODS: on_double_click FOR EVENT double_click OF cl_gui_alv_grid IMPORTING es_row_no.
+ENDCLASS.
+
+CLASS lcl_handler IMPLEMENTATION.
+  METHOD: on_double_click.
+    READ TABLE gt_tab INTO gs_tab INDEX es_row_no-row_id.
+" 사용자 입장에서 필요한 더블클릭 성공/실패 메시지 라서 주석 처리함.
+*    IF sy-subrc = 0.
+*      MESSAGE i001 WITH gs_tab-docunum.
+*    ELSE.
+*      MESSAGE '더블클릭 실패하였습니다.' TYPE 'I'.
+*    ENDIF.
+
+  CALL METHOD cl_gui_cfw=>set_new_ok_code " PAI 강제 리셋.
+    EXPORTING
+      new_code = 'ENTER'.
+  CALL SCREEN 200.
+  ENDMETHOD.
+ENDCLASS.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

@@ -1,0 +1,212 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_MM_05_I01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  EXIT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE exit INPUT.
+  CASE ok_code.
+    WHEN 'EXIT'.
+      LEAVE PROGRAM.
+    WHEN 'CANCEL'.
+      IF sy-dynnr = 100.
+        LEAVE TO SCREEN 0.
+      ELSEIF sy-dynnr = 200.
+        CLEAR ysztc702_mpr.
+        LEAVE TO SCREEN 0.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  CHECK_MPRDATE  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE check_mprdate INPUT.
+  CASE ok_code.
+    WHEN 'ENTER' OR 'DISPLAY'.
+      IF ysztc702_mpr-mprdate_a IS INITIAL OR ysztc702_mpr-mprdate_b IS INITIAL.
+        MESSAGE: '조회하실 요청일자 범위를 입력해 주세요.' TYPE 'E'.
+      ELSEIF ysztc702_mpr-mprdate_b - ysztc702_mpr-mprdate_a > 364.
+        MESSAGE: '조회 기간을 1년 이내로 설정해 주세요.' TYPE 'E'.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+*      LEAVE PROGRAM.
+      LEAVE TO SCREEN 0.
+*    WHEN 'HELP'.
+*      CALL SCREEN 110 STARTING AT 10 3.
+    WHEN 'ENTER' OR 'DISPLAY'.
+      DATA: lt_ztc702_mpr TYPE TABLE OF gty_s_ztc702_mpr,
+            ls_ztc702_mpr LIKE LINE OF lt_ztc702_mpr.
+
+      DATA: lt_mprdate TYPE RANGE OF gty_s_ztc702_mpr-mprdate,
+            ls_mprdate LIKE LINE OF lt_mprdate.
+
+      DATA: lt_mprno TYPE RANGE OF gty_s_ztc702_mpr-mprno,
+            ls_mprno LIKE LINE OF lt_mprno.
+
+      DATA: lt_plcode TYPE RANGE OF gty_s_ztc702_mpr-plcode,
+            ls_plcode LIKE LINE OF lt_plcode.
+
+      DATA: lt_whcode TYPE RANGE OF gty_s_ztc702_mpr-whcode,
+            ls_whcode LIKE LINE OF lt_whcode.
+
+      DATA: lt_gdcode TYPE RANGE OF gty_s_ztc702_mpr-gdcode,
+            ls_gdcode LIKE LINE OF lt_gdcode.
+
+      CLEAR lt_mprdate.
+      CLEAR lt_mprno.
+      CLEAR lt_plcode.
+      CLEAR lt_whcode.
+      CLEAR lt_gdcode.
+
+      IF ysztc702_mpr-mprdate_a IS NOT INITIAL OR ysztc702_mpr-mprdate_b IS NOT INITIAL.
+        ls_mprdate-sign = 'I'.
+        ls_mprdate-option = 'BT'.
+        ls_mprdate-low = ysztc702_mpr-mprdate_a.
+        ls_mprdate-high = ysztc702_mpr-mprdate_b.
+        APPEND ls_mprdate TO lt_mprdate.
+      ENDIF.
+
+      IF ysztc702_mpr-mprno IS NOT INITIAL.
+        ls_mprno-sign = 'I'.
+        ls_mprno-option = 'EQ'.
+        ls_mprno-low = ysztc702_mpr-mprno.
+        APPEND ls_mprno TO lt_mprno.
+      ENDIF.
+
+      IF ysztc702_mpr-plcode IS NOT INITIAL.
+        ls_plcode-sign = 'I'.
+        ls_plcode-option = 'EQ'.
+        ls_plcode-low = ysztc702_mpr-plcode.
+        APPEND ls_plcode TO lt_plcode.
+      ENDIF.
+
+      IF ysztc702_mpr-whcode IS NOT INITIAL.
+        ls_whcode-sign = 'I'.
+        ls_whcode-option = 'EQ'.
+        ls_whcode-low = ysztc702_mpr-whcode.
+        APPEND ls_whcode TO lt_whcode.
+      ENDIF.
+
+      IF ysztc702_mpr-gdcode IS NOT INITIAL.
+        ls_gdcode-sign = 'I'.
+        ls_gdcode-option = 'EQ'.
+        ls_gdcode-low = ysztc702_mpr-gdcode.
+        APPEND ls_gdcode TO lt_gdcode.
+      ENDIF.
+
+*      IF ysztc702_mpr-mprdate_a IS INITIAL OR ysztc702_mpr-mprdate_b IS INITIAL.
+*        MESSAGE: '조회하실 요청일자 범위를 입력해 주세요.' TYPE 'W'.
+*      ELSE.
+      CASE 'X'.
+        WHEN ra1. "전체
+          SELECT r~status r~mprno r~plcode p~plname r~whcode r~mprdate r~rddate
+            FROM ztc702_mpr AS r INNER JOIN ztc702_plant AS p ON r~plcode = p~plcode
+            INTO CORRESPONDING FIELDS OF TABLE gt_ztc702_mpr
+           WHERE mprdate IN lt_mprdate
+             AND r~mprno IN lt_mprno
+             AND r~plcode IN lt_plcode
+             AND r~whcode IN lt_whcode
+             AND r~gdcode IN lt_gdcode.
+
+          SORT gt_ztc702_mpr ASCENDING BY mprno.
+          DELETE ADJACENT DUPLICATES FROM gt_ztc702_mpr COMPARING mprno.
+
+        WHEN ra2. "구매오더 생성
+          SELECT r~status r~mprno r~plcode p~plname r~whcode r~mprdate r~rddate
+            FROM ztc702_mpr AS r INNER JOIN ztc702_plant AS p ON r~plcode = p~plcode
+            INTO CORRESPONDING FIELDS OF TABLE gt_ztc702_mpr
+           WHERE mprdate IN lt_mprdate
+             AND r~mprno IN lt_mprno
+             AND r~plcode IN lt_plcode
+             AND r~whcode IN lt_whcode
+             AND r~gdcode IN lt_gdcode
+             AND status = 'X'.
+
+          SORT gt_ztc702_mpr ASCENDING BY mprno.
+          DELETE ADJACENT DUPLICATES FROM gt_ztc702_mpr COMPARING mprno.
+
+        WHEN ra3. "구매오더 미생성
+          SELECT r~status r~mprno r~plcode p~plname r~whcode r~mprdate r~rddate
+            FROM ztc702_mpr AS r INNER JOIN ztc702_plant AS p ON r~plcode = p~plcode
+            INTO CORRESPONDING FIELDS OF TABLE gt_ztc702_mpr
+           WHERE mprdate IN lt_mprdate
+             AND r~mprno IN lt_mprno
+             AND r~plcode IN lt_plcode
+             AND r~whcode IN lt_whcode
+             AND r~gdcode IN lt_gdcode
+             AND status = ' '.
+
+          SORT gt_ztc702_mpr ASCENDING BY mprno.
+          DELETE ADJACENT DUPLICATES FROM gt_ztc702_mpr COMPARING mprno.
+      ENDCASE.
+*      ENDIF.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0110  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0110 INPUT.
+  CASE ok_code.
+    WHEN 'CONTINUE'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0200  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0200 INPUT.
+  DATA: lv_answer TYPE c LENGTH 1.
+
+  CASE ok_code.
+    WHEN 'ENTER'.
+    WHEN 'BACK'.
+      CLEAR ysztc702_mpr.
+*      CLEAR gt_ztc702_mpr.
+      LEAVE TO SCREEN 0.
+    WHEN 'CREATE'.
+      IF gs_ztc702_mpr_200-status = 'X'.
+        MESSAGE: '이미 구매오더가 생성된 건입니다.' TYPE 'E'.
+      ELSE.
+        CALL FUNCTION 'POPUP_TO_CONFIRM'
+          EXPORTING
+            titlebar              = '구매오더 생성'
+            text_question         = '구매오더를 생성하시겠습니까?'
+            text_button_1         = '예'
+            text_button_2         = '아니오'
+            display_cancel_button = space
+          IMPORTING
+            answer                = lv_answer
+          EXCEPTIONS
+            OTHERS                = 1.
+
+        IF sy-subrc <> 0.
+          WRITE: '에러가 발생했습니다.'.
+        ENDIF.
+
+        IF lv_answer = 1.
+          SET PARAMETER ID 'MPRNO' FIELD gs_ztc702_mpr_200-mprno.
+          CALL TRANSACTION 'ZC702_MM_07_V2'.
+        ENDIF.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

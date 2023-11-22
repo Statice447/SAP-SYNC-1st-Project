@@ -1,0 +1,94 @@
+*&---------------------------------------------------------------------*
+*& Include MZC702_MM_07_TOP                         - Module Pool      SAPMZC702_MM_07
+*&---------------------------------------------------------------------*
+PROGRAM sapmzc702_mm_07.
+
+TABLES: ztc702_mpo_h, ztc702_mpo_i, ysztc702_mpo, ysztc702_mpo_v2.
+
+TYPES: BEGIN OF gty_s_ztc702_mpo_h.
+    INCLUDE TYPE ztc702_mpo_h.
+TYPES: postatus TYPE ztc702_mpo_i-postatus,
+       wrdate   TYPE ztc702_mpo_i-wrdate,
+       pname    TYPE ztc702_employee-pname,
+       cuscode  TYPE ztc702_cusmaster-cuscode,
+       cusname  TYPE ztc702_cusmaster-cusname,
+       gdcode   TYPE ztc702_mtmaster-gdcode,
+       podate   TYPE ztc702_mpo_i-podate,
+       dedate   TYPE ztc702_mpo_i-dedate,
+       END OF gty_s_ztc702_mpo_h.
+
+TYPES: BEGIN OF gty_s_ztc702_mpo_i.
+    INCLUDE TYPE ztc702_mpo_i.
+TYPES: no           TYPE n LENGTH 2,
+       total_amount TYPE ysztc702_mpo_v2-total_amount,
+       cusname      TYPE ztc702_cusmaster-cusname,
+       gdname       TYPE ztc702_mtmaster-gdname,
+       END OF gty_s_ztc702_mpo_i.
+
+*TYPES: BEGIN OF gty_s_ztc702_mpo.
+*    INCLUDE TYPE ztc702_mpo_i.
+*TYPES: cusname TYPE ztc702_cusmaster-cusname,
+*       END OF gty_s_ztc702_mpo.
+
+DATA: gt_ztc702_mpo_h TYPE TABLE OF gty_s_ztc702_mpo_h,
+      gs_ztc702_mpo_h LIKE LINE OF gt_ztc702_mpo_h.
+
+DATA: gt_ztc702_mpo_i TYPE TABLE OF gty_s_ztc702_mpo_i,
+      gs_ztc702_mpo_i LIKE LINE OF gt_ztc702_mpo_i.
+
+DATA: gt_ztc702_mpo_210 TYPE TABLE OF gty_s_ztc702_mpo_i,
+      gs_ztc702_mpo_210 LIKE LINE OF gt_ztc702_mpo_210.
+
+DATA: gt_ztc702_mpo TYPE TABLE OF gty_s_ztc702_mpo_i,
+      gs_ztc702_mpo LIKE LINE OF gt_ztc702_mpo.
+
+DATA: go_container TYPE REF TO cl_gui_custom_container,
+      go_alv_grid  TYPE REF TO cl_gui_alv_grid.
+
+DATA: go_container_200 TYPE REF TO cl_gui_custom_container,
+      go_alv_grid_200  TYPE REF TO cl_gui_alv_grid.
+
+DATA: go_container_210 TYPE REF TO cl_gui_custom_container,
+      go_alv_grid_210  TYPE REF TO cl_gui_alv_grid.
+
+DATA: go_container_300 TYPE REF TO cl_gui_custom_container,
+      go_alv_grid_300  TYPE REF TO cl_gui_alv_grid.
+
+DATA: gt_fcat TYPE lvc_t_fcat,
+      gs_fcat TYPE lvc_s_fcat.
+
+DATA: gt_fcat_200 TYPE lvc_t_fcat,
+      gs_fcat_200 TYPE lvc_s_fcat.
+
+DATA: gt_fcat_210 TYPE lvc_t_fcat,
+      gs_fcat_210 TYPE lvc_s_fcat.
+
+DATA: gt_fcat_300 TYPE lvc_t_fcat,
+      gs_fcat_300 TYPE lvc_s_fcat.
+
+DATA: gt_exclude_100 TYPE ui_functions.
+DATA: gt_exclude_200 TYPE ui_functions.
+DATA: gt_exclude_210 TYPE ui_functions.
+DATA: gt_exclude_300 TYPE ui_functions.
+
+DATA: ok_code TYPE sy-ucomm.
+
+DATA: gv_switch TYPE c LENGTH 1.
+
+DATA: gv_switch_200 TYPE c LENGTH 1.
+
+DATA: gv_switch_300 TYPE c LENGTH 1.
+
+DATA: ra1 TYPE c LENGTH 1 VALUE 'X',
+      ra2 TYPE c LENGTH 1,
+      ra3 TYPE c LENGTH 1,
+      ra4 TYPE c LENGTH 1,
+      ra5 TYPE c LENGTH 1,
+      ra6 TYPE c LENGTH 1.
+
+DATA: gv_gdcode TYPE ztc702_mir-gdcode.
+
+DATA: gv_total_amount TYPE ysztc702_mpo_v2-total_amount.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

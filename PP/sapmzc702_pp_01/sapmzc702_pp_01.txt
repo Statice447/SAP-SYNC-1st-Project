@@ -1,0 +1,35 @@
+*&---------------------------------------------------------------------*
+*& Module Pool      SAPMZPPTEMP19_01
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+
+INCLUDE MZC702_PP_01TOP.
+*INCLUDE mzpptemp19_01top                        .    " Global Data
+
+INCLUDE MZC702_PP_01O01.
+*INCLUDE mzpptemp19_01o01                        .  " PBO-Modules
+INCLUDE MZC702_PP_01I01.
+*INCLUDE mzpptemp19_01i01                        .  " PAI-Modules
+INCLUDE MZC702_PP_01F01.
+*INCLUDE mzpptemp19_01f01                        .  " FORM-Routines
+
+*GUI Texts
+*----------------------------------------------------------
+* T0100 --> 공장 마스터 프로그램
+* T0111 --> 공장 등록 스크린
+* T0112 --> 공장 수정 스크린
+
+
+*Messages
+*----------------------------------------------------------
+*
+* Message class: Hard coded
+*   해당 공장코드는 존재하지 않습니다.
+*
+* Message class: ZC702_MESSAGE
+*000   등록 성공.  번호  ( & ).
+*012   변경 성공. 코드번호( & ).
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

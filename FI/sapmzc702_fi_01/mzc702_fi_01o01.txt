@@ -1,0 +1,190 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_FI_01O01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+ SET PF-STATUS 'P0100'.
+ SET TITLEBAR 'T0100'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_CONDITION OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_condition_200 OUTPUT.
+  PERFORM init_company_200. " 회사코드(DD) 초기값 설정.
+*  PERFORM init_acc_upd. " 200번 스크린, 필드 초기값 설정.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CREATE_AND_TRANSFER OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE create_and_transfer OUTPUT.
+  IF go_container IS INITIAL.
+    CREATE OBJECT go_container
+      EXPORTING
+        container_name    = 'MY_CONTROL_AREA'.
+    CREATE OBJECT go_alv_grid
+      EXPORTING
+        i_parent          = go_container.
+
+  SET HANDLER lcl_handler=>on_double_click FOR go_alv_grid.
+
+" 신호등으로 삭제여부 표시하려고 하였으나, 팀 내 통일을 위해 변경함.
+*  gs_fcat-fieldname       = 'Light'.
+*  gs_fcat-coltext         = '사용 여부'.
+*  gs_fcat-just            = 'Center'.
+*  gs_fcat-outputlen       = '100'.
+*  APPEND gs_fcat TO gt_fcat.
+
+  gs_fcat-fieldname       = 'COMPANY'.
+  gs_fcat-coltext         = '회사코드'.
+  gs_fcat-just            = 'Center'.
+  APPEND gs_fcat TO gt_fcat.
+
+  gs_fcat-fieldname       = 'COMPANY_T'.
+  gs_fcat-coltext         = '회사코드명'.
+  gs_fcat-just            = 'Center'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname       = 'ACCCLASS'.
+  gs_fcat-coltext         = '계정분류'.
+  gs_fcat-just            = 'Center'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname       = 'ACCCLASS_T'.
+  gs_fcat-coltext         = '계정분류명'.
+  gs_fcat-just            = 'Center'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname       = 'ACCCODE'.
+  gs_fcat-coltext         = '계정과목 코드'.
+  gs_fcat-just            = 'Center'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname       = 'ACCNAME'.
+  gs_fcat-coltext         = '계정과목명'.
+  gs_fcat-just            = 'Center'.
+  APPEND gs_fcat TO gt_fcat.
+
+*  CLEAR gs_fcat.
+*  gs_fcat-fieldname       = 'CRNAM'.
+*  gs_fcat-coltext         = '생성자'.
+*  gs_fcat-just            = 'Center'.
+*  APPEND gs_fcat TO gt_fcat.
+*
+*  CLEAR gs_fcat.
+*  gs_fcat-fieldname       = 'ERDAT'.
+*  gs_fcat-coltext         = '생성일'.
+*  gs_fcat-just            = 'Center'.
+*  APPEND gs_fcat TO gt_fcat.
+*
+*  CLEAR gs_fcat.
+*  gs_fcat-fieldname       = 'ERTIM'.
+*  gs_fcat-coltext         = '생성시간'.
+*  gs_fcat-just            = 'Center'.
+*  APPEND gs_fcat TO gt_fcat.
+*
+*  CLEAR gs_fcat.
+*  gs_fcat-fieldname       = 'CHNAM'.
+*  gs_fcat-coltext         = '변경자'.
+*  gs_fcat-just            = 'Center'.
+*  APPEND gs_fcat TO gt_fcat.
+*
+*  CLEAR gs_fcat.
+*  gs_fcat-fieldname       = 'CHDAT'.
+*  gs_fcat-coltext         = '변경일'.
+*  gs_fcat-just            = 'Center'.
+*  APPEND gs_fcat TO gt_fcat.
+*
+*  CLEAR gs_fcat.
+*  gs_fcat-fieldname       = 'CHTIM'.
+*  gs_fcat-coltext         = '변경시간'.
+*  gs_fcat-just            = 'Center'.
+*  APPEND gs_fcat TO gt_fcat.
+
+*  gs_layout-col_opt       = 'X'. " 삭제 했더니, 필드 데이터 잘 보임.
+  gs_layout-cwidth_opt    = 'X'. " 삭제 했더니, 필드 데이터 잘 보임.
+  gs_layout-grid_title    = '계정과목 리스트'.
+  gs_layout-zebra         = 'X'.
+  gs_layout-info_fname    = 'COLOR'.  " 삭제플래그에 'X' 체크된 계정과목이라면 빨간줄 표시.
+
+" 신호등으로 삭제여부 표시하려고 하였으나, 팀 내 통일을 위해 변경함.
+*  gs_layout-excp_fname    = 'Light'.  " 신호등 (빨노초).
+*  gs_layout-excp_led      = 'X'.  " 신호등 (한 개로 표시).
+
+  gs_variant-report       = sy-cprog.
+  gs_save                 = 'A'.
+
+  DATA: ls_excl TYPE ui_func,
+        lt_excl TYPE ui_functions.
+
+" 스탠다드 펑션 삭제용으로 넣었는데, 반영 안됨.
+  ls_excl = cl_gui_alv_grid=>mc_fc_excl_all.
+  APPEND ls_excl TO lt_excl.
+
+    CALL METHOD go_alv_grid->set_table_for_first_display
+      EXPORTING
+        is_variant                    = gs_variant
+*        is_layout                     = gs_layout
+      CHANGING
+        it_outtab                     = gt_tab
+        it_fieldcatalog               = gt_fcat
+        it_sort                       = gt_sort.
+  ENDIF.
+  CALL METHOD go_alv_grid->refresh_table_display. " Update되는 ALV 보여주고 싶을 때 사용하는 함수. set_table_* 함수로 써도 값은 동일하게 나옴.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CLEAR_OK_CODE OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE clear_ok_code OUTPUT.
+  CLEAR ok_code.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0200 OUTPUT.
+ SET PF-STATUS 'P0200'.
+ SET TITLEBAR 'T0200'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0300 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0300 OUTPUT.
+ SET PF-STATUS 'P0300'.
+ SET TITLEBAR 'T0300'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_CONDITION_CHA OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_condition_cha OUTPUT.
+  PERFORM init_condition_cha.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_CONDITION OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_condition OUTPUT.
+  PERFORM init_company. " 100번 스크린, 회사코드((주)술독)으로 설정.
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

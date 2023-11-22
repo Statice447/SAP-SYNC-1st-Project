@@ -1,0 +1,114 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_FI_01I01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  EXIT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE exit INPUT.
+  CASE ok_code.
+    WHEN 'EXIT'.
+      LEAVE PROGRAM.
+    WHEN 'CANC'.
+      " 스크린 100/200/300번 일때, CANC 버튼 누를때 각 다르게 설정.
+      CASE sy-dynnr.
+        WHEN 100.
+          LEAVE TO SCREEN 0.
+        WHEN 200.
+          CLEAR zsc702_account.
+          LEAVE TO SCREEN 0.
+        WHEN 300.
+          CLEAR zsc702_account.
+          LEAVE TO SCREEN 0.
+      ENDCASE.
+    WHEN OTHERS.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE ok_code.
+    WHEN 'ENTER'.
+    WHEN 'BACK'.
+      CLEAR zsc702_account.
+      LEAVE TO SCREEN 0.
+    WHEN 'SEARCH'.
+      PERFORM display_account.  " get_domain 설정 및 빨간색 줄 표시.
+    WHEN 'CREATE'.
+      CLEAR zsc702_account.
+      CALL SCREEN 200.
+    WHEN 'CHANGE'.
+      IF zsc702_account-acccode IS INITIAL.
+        MESSAGE 'ALV 데이터를 선택하세요.' TYPE 'I'.
+      ELSE.
+        MOVE-CORRESPONDING zsc702_account TO zsc702_acc_cha.
+        CALL SCREEN 300.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0200  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0200 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      CLEAR zsc702_account.
+      LEAVE TO SCREEN 0.
+    WHEN 'SAVE'.
+        PERFORM create_account.
+" 모든 필드 입력 완료되면, 테이블에 데이터 넘어가고 100번 스크린으로 복귀.
+*        LOOP AT gt_tab INTO gs_tab.
+*          IF zsc702_acc_upd-accclass IS NOT INITIAL AND zsc702_acc_upd-acccode IS NOT INITIAL
+*            AND zsc702_acc_upd-accname IS NOT INITIAL AND zsc702_acc_upd-acccode <> gs_tab-acccode.
+*            MOVE-CORRESPONDING zsc702_acc_upd TO gs_tab. " 200번 스크린에서 입력하는 자료.
+*            INSERT ztc702_account FROM gs_tab.           " 200번 스크린에서 입력한 자료를 테이블에 저장.
+*            CLEAR: zsc702_account, zsc702_acc_upd.
+*            LEAVE TO SCREEN 0.
+*          ENDIF.
+*        ENDLOOP.
+*        IF ztc702_account IS NOT INITIAL.
+*          CLEAR: zsc702_account, zsc702_acc_upd.
+*          LEAVE TO SCREEN 0.
+*        ELSE.
+*          CLEAR zsc702_acc_upd-acccode.
+*          PERFORM create_account.
+*        ENDIF.
+
+*        IF gs_tab IS INITIAL.
+*          CLEAR zsc702_acc_upd-acccode.
+*          PERFORM create_account.
+*        ELSE.
+*          PERFORM get_acc_data CHANGING gt_tab.
+*          PERFORM init_condition_cha.
+*          CLEAR: zsc702_account, zsc702_acc_upd.
+*          LEAVE TO SCREEN 0.
+*        ENDIF.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0300  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0300 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      CLEAR zsc702_account.
+      LEAVE TO SCREEN 0.
+    WHEN 'SAVE'.
+      PERFORM change_account.
+      PERFORM get_acc_data CHANGING gt_tab.
+      PERFORM init_condition_cha.
+      CLEAR: zsc702_account, zsc702_acc_cha.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

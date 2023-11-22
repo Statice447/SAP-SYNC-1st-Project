@@ -1,0 +1,226 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_PP_04O01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'S0100'.
+  SET TITLEBAR 'T0100'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CLEAR_OK_CODE OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE clear_ok_code OUTPUT.
+  CLEAR ok_code.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SET_ALV OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE set_alv OUTPUT.
+**** 최초 컨테이너 생성 시
+  IF go_container IS INITIAL.
+    CREATE OBJECT go_container
+      EXPORTING
+        container_name = 'ORD_H_ALV'.
+    gv_refresh     = abap_true.             " 리프레시 체크
+  ENDIF.
+
+***** 최초 ALV 생성 시
+  IF gv_refresh = abap_true.                " 리프레시 확인
+    CREATE OBJECT go_alv_grid
+      EXPORTING
+        i_parent = go_container.
+
+***** ALV 핸들러 설정
+    SET HANDLER lcl_handler=>on_double_click FOR go_alv_grid.
+
+***** ALV 레이아웃 및 필드카탈로그 설정
+    PERFORM set_layout.
+    PERFORM set_fcat.
+
+    CALL METHOD go_alv_grid->set_table_for_first_display
+      EXPORTING
+*       i_structure_name = 'ZTC702_PRDORD_H'
+*       is_variant      = gs_variant
+*       i_save          = gv_save
+        i_default       = 'X'
+        is_layout       = gs_layout
+      CHANGING
+        it_outtab       = gt_prdord_h
+        it_fieldcatalog = gt_fcat
+*       it_sort         =
+*       it_filter       =
+      EXCEPTIONS
+        OTHERS          = 4.
+    IF sy-subrc <> 0.
+*       Implement suitable error handling here
+    ENDIF.
+
+    gv_refresh = abap_false.                    " 리프레시 해제
+
+  ELSE.                                         " 기존 ALV가 있을경우 리프레시
+    go_alv_grid->refresh_table_display( ).
+  ENDIF.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0200 OUTPUT.
+  SET PF-STATUS 'S0200'.
+  SET TITLEBAR 'T0200'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_200 OUTPUT.
+***** 100번 화면 ALV 리스트 인덱스를 통해 데이터 불러오기
+  MOVE-CORRESPONDING gs_prdord_hf TO gs_prdord_200_h.
+
+  SELECT *
+    FROM ztc702_prdord_i INTO CORRESPONDING FIELDS OF TABLE gt_prdord_i
+    WHERE pornum = gs_prdord_200_h-pornum.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SET_ALV_200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE set_alv_200 OUTPUT.
+**** 최초 컨테이너 생성 시
+  IF go_container_200 IS INITIAL.
+    CREATE OBJECT go_container_200
+      EXPORTING
+        container_name = 'ORD_I_ALV'.
+    gv_refresh_200     = abap_true.            " 리프레시 체크
+  ENDIF.
+
+**** 최초 ALV 생성 시
+  IF gv_refresh_200 = abap_true.               " 리프레시 확인
+    CREATE OBJECT go_alv_grid_200
+      EXPORTING
+        i_parent = go_container_200.
+
+***** ALV 레이아웃 설정
+*    PERFORM set_layout_200.
+    PERFORM set_fcat_200.
+
+    CALL METHOD go_alv_grid_200->set_table_for_first_display
+      EXPORTING
+*       i_structure_name = 'ZTC702_PRDORD_I'
+*       is_variant      = gs_variant
+*       i_save          = gv_save
+        i_default       = 'X'
+*       is_layout       = gs_layout_200
+      CHANGING
+        it_outtab       = gt_prdord_i
+        it_fieldcatalog = gt_fcat_200
+*       it_sort         =
+*       it_filter       =
+      EXCEPTIONS
+        OTHERS          = 4.
+    IF sy-subrc <> 0.
+*       Implement suitable error handling here
+    ENDIF.
+
+    gv_refresh_200 = abap_false.                       " 리프레시 해제
+
+  ELSE.                                             " 기존 ALV가 있을경우 리프레시
+    go_alv_grid_200->refresh_table_display( ).
+  ENDIF.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0300 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0300 OUTPUT.
+  SET PF-STATUS 'S0300'.
+  SET TITLEBAR 'T0300'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SET_ALV_300 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE set_alv_300 OUTPUT.
+**** 최초 컨테이너 생성 시
+  IF go_container_300 IS INITIAL.
+    CREATE OBJECT go_container_300
+      EXPORTING
+        container_name = 'PRDORD_ADD'.
+    gv_refresh_300     = abap_true.             " 리프레시 체크
+  ENDIF.
+
+***** 최초 ALV 생성 시
+  IF gv_refresh_300 = abap_true.                " 리프레시 확인
+    CREATE OBJECT go_alv_grid_300
+      EXPORTING
+        i_parent = go_container_300.
+
+***** ALV 레이아웃 및 필드카탈로그 설정
+*    PERFORM set_layout.
+    PERFORM set_fcat_300.
+
+    CALL METHOD go_alv_grid_300->set_table_for_first_display
+      EXPORTING
+*       i_structure_name = 'ZTC702_PRDORD_I'
+*       is_variant      = gs_variant
+*       i_save          = gv_save
+        i_default       = 'X'
+*       is_layout       = gs_layout
+      CHANGING
+        it_outtab       = gt_prdord_i_300
+        it_fieldcatalog = gt_fcat_300
+*       it_sort         =
+*       it_filter       =
+      EXCEPTIONS
+        OTHERS          = 4.
+    IF sy-subrc <> 0.
+*       Implement suitable error handling here
+    ENDIF.
+
+    gv_refresh_300 = abap_false.                    " 리프레시 해제
+
+  ELSE.                                         " 기존 ALV가 있을경우 리프레시
+    go_alv_grid_300->refresh_table_display( ).
+  ENDIF.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_300 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_300 OUTPUT.
+  zsc702_prdord-unit = 'EA'.
+  IF gt_prdord_i_300 IS INITIAL.
+    LOOP AT SCREEN.
+      IF screen-group1 = 'GR1'.
+        screen-input = 1.
+        MODIFY SCREEN.
+      ENDIF.
+    ENDLOOP.
+  ELSE.
+    LOOP AT SCREEN.
+      IF screen-group1 = 'GR1'.
+        screen-input = 0.
+        MODIFY SCREEN.
+      ENDIF.
+    ENDLOOP.
+  ENDIF.
+
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

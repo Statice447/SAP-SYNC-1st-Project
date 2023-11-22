@@ -1,0 +1,67 @@
+*&---------------------------------------------------------------------*
+*& Include MZC702_SD_02TOP                          - Module Pool      SAPMZC702_SD_02
+*&---------------------------------------------------------------------*
+PROGRAM sapmzc702_sd_02.
+
+TABLES: ztc702_billing, zsc702_inc, zsc702_billing.
+
+TYPES : BEGIN OF gty_bill.
+    INCLUDE TYPE ztc702_billing.
+TYPES : led TYPE c LENGTH 1,
+        END OF gty_bill.
+
+TYPES: BEGIN OF gty_ord.
+TYPES :
+  ornum    TYPE zdvc702_inc-ornum,
+  gdcode   TYPE zdvc702_inc-gdcode,
+  gdname   TYPE zdvc702_inc-gdname,
+  quantity TYPE zdvc702_inc-quantity,
+  unit     TYPE zdvc702_inc-unit,
+  END OF gty_ord.
+
+DATA : ok_code  TYPE sy-ucomm,
+       gs_bill  TYPE gty_bill,
+       gt_bill  TYPE TABLE OF gty_bill,
+       gt_bill2 LIKE gt_bill,
+       gs_bill2 LIKE gs_bill,
+       gs_ordst TYPE gty_ord,
+       gt_ordst TYPE TABLE OF gty_ord,
+
+       go_con   TYPE REF TO cl_gui_custom_container,
+       go_con2  TYPE REF TO cl_gui_custom_container,
+       go_alv   TYPE REF TO cl_gui_alv_grid,
+       go_alv2  TYPE REF TO cl_gui_alv_grid,
+       gs_lay   TYPE lvc_s_layo,
+       gs_lay2  TYPE lvc_s_layo,
+       gs_sort  TYPE lvc_s_sort,
+       gt_sort  TYPE lvc_t_sort,
+       gs_cat   TYPE lvc_s_fcat,
+       gs_cat2  TYPE lvc_s_fcat,
+       gt_cat   TYPE lvc_t_fcat,
+       gt_cat2  TYPE lvc_t_fcat,
+       gs_excl  TYPE ui_func,
+       gt_excl  TYPE ui_functions,
+
+       gt_index TYPE lvc_t_row,
+       gs_index LIKE LINE OF gt_index,
+
+       rad1     TYPE c LENGTH 1,
+       rad2     TYPE c LENGTH 1,
+       rad3     TYPE c LENGTH 1,
+
+       gv_box   TYPE c LENGTH 1.
+
+DATA: gr_table    TYPE REF TO cl_salv_table,
+      go_sal_cols TYPE REF TO cl_salv_columns_table,
+      go_display  TYPE REF TO cl_salv_display_settings.
+
+CLASS lcl_class DEFINITION.
+  PUBLIC SECTION.
+
+    CLASS-METHODS:
+      on_double FOR EVENT double_click OF cl_gui_alv_grid
+        IMPORTING es_row_no.
+ENDCLASS.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

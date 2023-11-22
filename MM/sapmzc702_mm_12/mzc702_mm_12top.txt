@@ -1,0 +1,106 @@
+*&---------------------------------------------------------------------*
+*& Include MZC702_MM_12TOP                          - Module Pool      SAPMZC702_MM_12
+*&---------------------------------------------------------------------*
+PROGRAM sapmzc702_mm_12 MESSAGE-ID zc702_message.
+
+TABLES: ztc702_mpo_h, ztc702_mpo_i, zdvc702_inv.
+
+TYPES: BEGIN OF gty_mpo_h .
+    INCLUDE TYPE ztc702_mpo_h .
+TYPES: light TYPE c LENGTH 1,
+       END OF gty_mpo_h .
+
+DATA: gt_mpo_h     TYPE TABLE OF gty_mpo_h,
+      gs_mpo_hf    TYPE gty_mpo_h,
+      gs_mpo_h     TYPE gty_mpo_h,
+      gs_mpo_h_110 TYPE gty_mpo_h.   " 송장 입력을 위한 헤더
+
+DATA: gt_mpo_i     TYPE TABLE OF ztc702_mpo_i,
+      gt_mpo_i_110 TYPE TABLE OF ztc702_mpo_i,
+      gs_mpo_if    TYPE ztc702_mpo_i,
+      gs_mpo_i     TYPE ztc702_mpo_i.
+
+DATA: gt_exclude TYPE ui_functions.
+
+DATA: gt_inv TYPE TABLE OF zdvc702_inv,
+      gs_inv TYPE zdvc702_inv.
+
+* 100번 스크린 alv
+DATA: go_container TYPE REF TO cl_gui_custom_container,
+      go_alv_grid  TYPE REF TO cl_gui_custom_alv_grid,
+      gv_refresh   TYPE c LENGTH 1,
+      gv_mpono     TYPE ztc702_mpo_h-mpono,
+      gv_ra1       TYPE c LENGTH 1 VALUE 'X',
+      gv_ra2       TYPE c LENGTH 1,
+      gv_ra3       TYPE c LENGTH 1,
+      gv_ra4       TYPE c LENGTH 1,
+      gv_low       TYPE s_date,
+      gv_high      TYPE s_date,
+      gv_switch    TYPE c LENGTH 1 VALUE '1',
+      gv_switch2   TYPE c LENGTH 1.
+
+* 200번 상세 조회 스크린 alv
+DATA: go_container2 TYPE REF TO cl_gui_custom_container,
+      go_alv_grid2  TYPE REF TO cl_gui_custom_alv_grid,
+      gv_refresh2   TYPE c LENGTH 1.
+
+* 110번 송장 입력 모달 스크린 alv
+DATA: go_container3 TYPE REF TO cl_gui_custom_container,
+      go_alv_grid3  TYPE REF TO cl_gui_custom_alv_grid,
+      gv_refresh3   TYPE c LENGTH 1.
+
+DATA: ok_code       TYPE sy-ucomm,
+      gs_layout     TYPE lvc_s_layo,
+      gs_layout_200 TYPE lvc_s_layo.
+
+DATA: gt_fcat     TYPE lvc_t_fcat,
+      gt_fcat_110 TYPE lvc_t_fcat,
+      gt_fcat_200 TYPE lvc_t_fcat,
+      gs_fcat     TYPE lvc_s_fcat.
+
+DATA : gt_index TYPE lvc_t_row, "ALV 선택라인 저장 인터널테이블
+       gs_index LIKE LINE OF gt_index, "ALV 선택라인 저장 스트럭쳐
+       gv_lines TYPE i. "선택한 라인수를 저장할 변수
+
+DATA: gv_year TYPE n LENGTH 4.
+
+
+
+*DATA: gv_check1 TYPE c LENGTH 1,
+*      gv_check2 TYPE c LENGTH 1,
+*      gv_check3 TYPE c LENGTH 1.
+
+CLASS lcl_handler DEFINITION.
+  PUBLIC SECTION.
+    CLASS-METHODS: on_double_click
+                  FOR EVENT double_click OF cl_gui_alv_grid
+      IMPORTING es_row_no.
+
+    CLASS-METHODS: on_double_click3
+                  FOR EVENT double_click OF cl_gui_alv_grid
+      IMPORTING es_row_no.
+ENDCLASS.
+CLASS lcl_handler IMPLEMENTATION.
+  METHOD on_double_click.
+    READ TABLE gt_mpo_h  INTO gs_mpo_hf INDEX es_row_no-row_id.
+
+    CALL SCREEN 200
+    STARTING AT 10 10.
+
+  ENDMETHOD.
+
+  METHOD on_double_click3.
+    READ TABLE gt_mpo_i_110  INTO gs_mpo_if INDEX es_row_no-row_id.
+
+    PERFORM set_inv_field.
+    CALL METHOD cl_gui_cfw=>set_new_ok_code
+      EXPORTING
+        new_code = 'ENTER'.
+
+
+
+  ENDMETHOD.
+ENDCLASS.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

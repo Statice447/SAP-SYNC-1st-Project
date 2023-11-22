@@ -1,0 +1,117 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_PP_02I01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  EXIT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE exit INPUT.
+  CASE ok_code.
+    WHEN 'EXIT'.
+      LEAVE PROGRAM.
+    WHEN 'CANC'.
+      CASE sy-dynnr.
+        WHEN 100.
+          CLEAR: ztc702_bom_h, gt_bom_h.
+
+        WHEN 'CANCEL'.
+          IF sy-dynnr = 110.
+            LEAVE TO SCREEN 0.
+
+          ENDIF.
+      ENDCASE.
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN 'DISPLAY'.
+      PERFORM display_bom_head.     " BOM 헤더 조회 서브루틴
+*      PERFORM display_bom_item.     " BOM 아이템 조회 서브루틴
+**    WHEN 'CHANGE'.
+**      PERFORM change_disposal.
+    WHEN 'CREATE'.
+      CALL SCREEN 300.
+*      PERFORM create_bom_head.      " BOM 헤더 생성 서브루틴
+    WHEN 'CLEAR'.
+      CLEAR: ztc702_bom_h, gt_bom_h.
+    WHEN 'CHKDEL'.
+      PERFORM check_bom_head.
+*    WHEN 'CONFIRM' OR 'WAIT' OR 'STOP'.
+*      PERFORM change_status.
+    WHEN 'BDC'.
+      CALL TRANSACTION 'ZC702R_PP_01'.
+
+    WHEN 'BDCCREATE'.
+      CALL SCREEN 200.
+  ENDCASE.
+
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  CHECK_GDCODE  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE check_gdcode INPUT.
+  PERFORM check_gdcode.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0300  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0300 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      PERFORM back_screen.
+    WHEN 'CANC'.
+      PERFORM clear_screen.
+
+    WHEN 'SAVE'.
+      PERFORM save_bom.
+    WHEN 'ADD'.
+      PERFORM add_bom_item.
+    WHEN 'CLEAR'.
+
+  ENDCASE.
+
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0110  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0110 INPUT.
+  CASE ok_code.
+    WHEN 'OKAY'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0200  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0200 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN 'SAVE'.
+      PERFORM save_bdc_bom.
+  ENDCASE.
+
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

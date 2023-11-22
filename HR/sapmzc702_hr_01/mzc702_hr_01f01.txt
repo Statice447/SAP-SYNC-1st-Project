@@ -1,0 +1,376 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_HR_01F01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form SET_LAYOUT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_lay .
+  gs_lay-info_fname = 'COLOR'.
+  gs_lay-zebra = 'X'.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DISPLAY_EMP
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM display_emp .
+
+  PERFORM get_emp_data.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*& Form GET_EMP_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM get_emp_data .
+
+
+  DATA: lt_emp TYPE TABLE OF gty_emp,
+        ls_emp TYPE gty_emp.
+
+**** 조건 검색을 위한 range 타입 설정 -> 사용 필드만큼 선언
+  DATA: lt_pernr TYPE RANGE OF gty_emp-pernr,
+        ls_pernr LIKE LINE OF lt_pernr.
+  DATA: lt_orgeh TYPE RANGE OF gty_emp-orgeh,
+        ls_orgeh LIKE LINE OF lt_orgeh.
+
+**** 조건 검색을 위한 range 타입 조건 설정 => 필드가 입력되면 필드와 동일한 조건으로
+  IF zdvc702_emporg-pernr IS NOT INITIAL.
+    ls_pernr-sign = 'I'.
+    ls_pernr-option = 'EQ'.
+    ls_pernr-low = zdvc702_emporg-pernr.
+    APPEND ls_pernr TO lt_pernr.
+  ENDIF.
+
+  IF zdvc702_emporg-orgeh IS NOT INITIAL.
+    ls_orgeh-sign = 'I'.
+    ls_orgeh-option = 'EQ'.
+    ls_orgeh-low = zdvc702_emporg-orgeh.
+    APPEND ls_orgeh TO lt_orgeh.
+  ENDIF.
+
+  CLEAR gt_emp.
+
+  SELECT *
+    FROM zdvc702_emporg
+    INTO CORRESPONDING FIELDS OF TABLE lt_emp
+    WHERE pernr IN lt_pernr
+    AND orgeh IN lt_orgeh.
+
+  IF gv_check = space.
+    LOOP AT lt_emp INTO ls_emp WHERE delflag = ''.
+      APPEND ls_emp TO gt_emp.
+    ENDLOOP.
+  ELSE.
+    LOOP AT lt_emp INTO ls_emp WHERE delflag NE ''.
+      APPEND ls_emp TO gt_emp.
+    ENDLOOP.
+  ENDIF.
+
+  SORT gt_emp ASCENDING BY pernr.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*& Form SET_FCAT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_cat .
+
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'PERNR'.
+  gs_cat-coltext = '사원 번호'.
+  gs_cat-outputlen = '8'.
+  gs_cat-col_pos = '1'.
+  gs_cat-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'PNAME'.
+  gs_cat-coltext = '사원 이름'.
+  gs_cat-outputlen = '6'.
+  gs_cat-col_pos = '2'.
+  gs_cat-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'PID'.
+  gs_cat-coltext = '사원 아이디'.
+  gs_cat-outputlen = '7'.
+  gs_cat-col_pos = '3'.
+  gs_cat-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+
+  gs_cat-fieldname = 'ORGEH'.
+  gs_cat-coltext = '부서코드'.
+  gs_cat-outputlen = '6'.
+  gs_cat-col_pos = '4'.
+  gs_cat-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'OTEXT'.
+  gs_cat-coltext = '부서명'.
+  gs_cat-outputlen = '8'.
+  gs_cat-col_pos = '5'.
+  gs_cat-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'RANK'.
+  gs_cat-coltext = '직급'.
+  gs_cat-outputlen = '5'.
+  gs_cat-col_pos = '6'.
+  gs_cat-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'GENDER'.
+  gs_cat-coltext = '성별'.
+  gs_cat-outputlen = '4'.
+  gs_cat-col_pos = '7'.
+  gs_cat-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'PCONT'.
+  gs_cat-coltext = '연락처'.
+  gs_cat-outputlen = '10'.
+  gs_cat-col_pos = '8'.
+  gs_cat-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'EMAIL'.
+  gs_cat-coltext = '이메일'.
+  gs_cat-outputlen = '20'.
+  gs_cat-col_pos = '9'.
+  gs_cat-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'ISMANAGER'.
+  gs_cat-coltext = '부서장 여부'.
+  gs_cat-outputlen = '7'.
+  gs_cat-col_pos = '10'.
+  gs_cat-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'CRNAM'.
+  gs_cat-coltext = '생성자'.
+  gs_cat-outputlen = '7'.
+  gs_cat-col_pos = '11'.
+  gs_cat-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'ERDAT'.
+  gs_cat-coltext = '생성 일자'.
+  gs_cat-outputlen = '7'.
+  gs_cat-col_pos = '12'.
+  gs_cat-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+
+  gs_cat-fieldname = 'ERTIM'.
+  gs_cat-coltext = '생성 시간'.
+  gs_cat-outputlen = '7'.
+  gs_cat-col_pos = '13'.
+  gs_cat-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'CHNAM'.
+  gs_cat-coltext = '변경자'.
+  gs_cat-outputlen = '7'.
+  gs_cat-col_pos = '14'.
+  gs_cat-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'CHDAT'.
+  gs_cat-coltext = '변경일'.
+  gs_cat-outputlen = '7'.
+  gs_cat-just = 'C'.
+  gs_cat-col_pos = '15'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+
+  gs_cat-fieldname = 'CHTIM'.
+  gs_cat-coltext = '변경 시간'.
+  gs_cat-outputlen = '7'.
+  gs_cat-col_pos = '16'.
+  gs_cat-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CHECK_EMP
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM check_emp .
+  DATA: ls_emporg TYPE zdvc702_emporg,
+        ls_emp    TYPE ztc702_employee,
+        lt_row    TYPE lvc_t_row,
+        ls_row    TYPE lvc_s_row,
+        lv_line   TYPE i,
+        lv_answer TYPE c LENGTH 1.
+
+**** ALV ROW 인덱스 찾기
+  CALL METHOD go_alv->get_selected_rows
+    IMPORTING
+      et_index_rows = lt_row.
+
+  DESCRIBE TABLE lt_row LINES lv_line.
+
+  LOOP AT lt_row INTO ls_row.
+    READ TABLE gt_emp INTO ls_emporg INDEX ls_row-index.
+  ENDLOOP.
+  MOVE-CORRESPONDING ls_emporg TO ls_emp.
+
+
+**** 선택된 스트럭처의 삭제플래그가 없을 경우
+  IF ls_emp-delflag = space.
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        titlebar              = '사원 퇴직'
+        text_question         = '사원을 퇴직시키겠습니까?'
+        text_button_1         = '예'
+        text_button_2         = '아니오'
+        display_cancel_button = space
+      IMPORTING
+        answer                = lv_answer.
+
+    IF lv_answer = 1.
+**** 삭제플래그 변경 및 LOG 변경
+      ls_emp-delflag = 'X'.
+      ls_emp-chnam = sy-uname.
+      ls_emp-chdat = sy-datum.
+      ls_emp-chtim = sy-uzeit.
+
+      UPDATE ztc702_employee FROM ls_emp.
+      MESSAGE '사원 퇴직' TYPE 'I'.
+
+      COMMIT WORK.
+    ENDIF.
+**** 선택된 스트럭처의 삭제플래그가 있을 경우
+  ELSEIF ls_emp-delflag = 'X'.
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        titlebar              = '사원 정보'
+        text_question         = '사원을 복귀 시키겠습니까?'
+        text_button_1         = '예'
+        text_button_2         = '아니오'
+        display_cancel_button = space
+      IMPORTING
+        answer                = lv_answer.
+
+    IF lv_answer = 1.
+**** 삭제플래그 변경 및 LOG 변경
+      ls_emp-delflag = space.
+      ls_emp-chnam = sy-uname.
+      ls_emp-chdat = sy-datum.
+      ls_emp-chtim = sy-uzeit.
+
+      UPDATE ztc702_employee FROM ls_emp.
+      MESSAGE '사원 복직' TYPE 'I'.
+
+      COMMIT WORK.
+    ENDIF.
+
+  ENDIF.
+
+**** 업데이트 된 DB 다시 불러오기
+  PERFORM get_emp_data.
+
+
+ENDFORM.
+.
+*&---------------------------------------------------------------------*
+*& Form CREATE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM create .
+  CALL SCREEN 110
+    STARTING AT 15 5
+  ENDING AT 80 20.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form READ_LINE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*      -->P_GS_EMP  text
+*&---------------------------------------------------------------------*
+FORM read_line  USING    ps_emp.
+  CLEAR ps_emp.
+  CALL METHOD go_alv->get_selected_rows "선택된 열의 INDEX를 읽어 오는 함수
+    IMPORTING
+      et_index_rows = gt_index.
+
+  LOOP AT gt_index INTO gs_index. "INDEX에 해당하는 ALV의 정보를 저장
+    READ TABLE gt_emp INTO ps_emp INDEX gs_index-index.
+  ENDLOOP.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SAVE_EMP
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM save_emp .
+  DATA: ls_empc  TYPE ztc702_employee,
+        ls_pernr TYPE string.
+
+  CALL FUNCTION 'NUMBER_GET_NEXT'
+    EXPORTING
+      nr_range_nr = '01'
+      object      = 'ZNRC702HR2'
+    IMPORTING
+      number      = ls_pernr.
+
+  MOVE-CORRESPONDING zdvc702_emporg TO ls_empc.
+  TRANSLATE ls_empc-email TO LOWER CASE.
+  TRANSLATE ls_empc-pid TO UPPER CASE.
+  ls_empc-pernr = 'DD' && ls_pernr+2(6).
+  ls_empc-crnam = sy-uname.
+  ls_empc-erdat = sy-datum.
+  ls_empc-ertim = sy-uzeit.
+  MESSAGE ls_empc-pernr && ' / ' && ls_empc-pname && ' / 사원 정보를 등록합니다.' TYPE 'I'.
+  INSERT ztc702_employee FROM ls_empc.
+
+  IF sy-subrc = 0.
+    COMMIT WORK.
+    MESSAGE ls_empc-pernr && ' / 등록 성공' TYPE 'S'.
+    LEAVE TO SCREEN 0.
+  ELSE.
+    MESSAGE '등록 실패' TYPE 'S'.
+    ROLLBACK WORK.
+    LEAVE TO SCREEN 0.
+  ENDIF.
+
+
+ENDFORM.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

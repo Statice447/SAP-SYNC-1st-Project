@@ -1,0 +1,703 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_MM_03F01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form CREATE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM CREATE .
+* 로컬 테이블 오브젝트 선언.
+  DATA: LS_TABLE   TYPE ZTC702_CUSMASTER,
+        LV_CUSCODE TYPE ZTC702_CUSMASTER-CUSCODE.
+
+* 신규업체 정보 생성.
+  PERFORM CREATE_CUSCODE CHANGING LV_CUSCODE.
+
+  PERFORM CREATE_CUS USING LV_CUSCODE.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form EDIT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM EDIT .
+* 로컬 오브젝트 선언.
+  DATA: LT_ROW    TYPE LVC_T_ROW,
+        LS_ROW    TYPE LVC_S_ROW,
+        LV_ANSWER TYPE C LENGTH 1,
+        LV_CUSCODE TYPE ZTC702_CUSMASTER-CUSCODE.
+
+  IF ZTC702_CUSMASTER-CUSNAME = SPACE
+      OR ZTC702_CUSMASTER-CUSMANA = SPACE
+      OR GV_P1 = SPACE OR GV_P2 = SPACE OR GV_P3 = SPACE
+      OR ZTC702_CUSMASTER-CUSCEO = SPACE
+      OR ZTC702_CUSMASTER-CUSADDR = SPACE
+      OR ZTC702_CUSMASTER-BANKNAME = SPACE
+      OR ZTC702_CUSMASTER-ACNO = SPACE
+      OR ZTC702_CUSMASTER-ACHOLDER = SPACE.
+
+    MESSAGE '공란에 정보를 입력하십시오.' TYPE 'I'.
+    RETURN.
+  ELSE.
+
+  CALL METHOD GO_ALV_GRID->GET_SELECTED_ROWS
+    IMPORTING
+      ET_INDEX_ROWS = LT_ROW.
+
+  LOOP AT LT_ROW INTO LS_ROW.
+    READ TABLE GT_TABLE INTO GS_TABLE INDEX LS_ROW-INDEX.
+  ENDLOOP.
+
+SELECT *
+  FROM ZTC702_CUSMASTER
+  INTO CORRESPONDING FIELDS OF ZTC702_CUSMASTER
+ WHERE CUSCODE = GS_TABLE-CUSCODE.
+ENDSELECT.
+
+    LV_CUSCODE = ZTC702_CUSMASTER-CUSCODE.
+
+    LS_TABLE-CUSCODE = ZTC702_CUSMASTER-CUSCODE.
+    LS_TABLE-CUSNAME = ZTC702_CUSMASTER-CUSNAME.
+    LS_TABLE-CUSMANA = ZTC702_CUSMASTER-CUSMANA.
+
+    PERFORM GET_CELL.
+    CONCATENATE GV_C1 '-' GV_C2 '-' GV_C3 INTO ZTC702_CUSMASTER-CUSCELL.
+
+    LS_TABLE-CUSCELL = ZTC702_CUSMASTER-CUSCELL.
+    LS_TABLE-CUSCEO = ZTC702_CUSMASTER-CUSCEO.
+    LS_TABLE-TAXCODE = ZTC702_CUSMASTER-TAXCODE.
+    LS_TABLE-CUSADDR = ZTC702_CUSMASTER-CUSADDR.
+    LS_TABLE-BANKNAME = ZTC702_CUSMASTER-BANKNAME.
+    LS_TABLE-ACNO = ZTC702_CUSMASTER-ACNO.
+    LS_TABLE-ACHOLDER = ZTC702_CUSMASTER-ACHOLDER.
+
+    LS_TABLE-CHNAM  = SY-UNAME.
+    LS_TABLE-CHDAT  = SY-DATUM.
+    LS_TABLE-CHTIM  = SY-UZEIT.
+
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        TITLEBAR              = '업체 정보 수정'
+        TEXT_QUESTION         = '업체 정보를 수정하시겠습니까?'
+        TEXT_BUTTON_1         = '예'
+        TEXT_BUTTON_2         = '아니오'
+        DISPLAY_CANCEL_BUTTON = ''
+      IMPORTING
+        ANSWER                = LV_ANSWER.
+
+    IF LV_ANSWER = 1.
+      UPDATE ZTC702_CUSMASTER FROM LS_TABLE.
+
+      IF SY-SUBRC = 0.
+        MESSAGE '업체 정보 수정. (업체 번호 : ' && ZTC702_CUSMASTER-CUSCODE && ' )' TYPE 'I'.
+        COMMIT WORK.
+        GV_RA1 = GV_RA2 = GV_RA3 = GV_RA4 = SPACE.
+
+        CASE LV_CUSCODE(1).
+          WHEN 'C'.
+            GV_RA2 = 'X'.
+          WHEN 'E'.
+            GV_RA3 = 'X'.
+          WHEN 'D'.
+            GV_RA4 = 'X'.
+          WHEN OTHERS.
+            GV_RA1 = 'X'.
+        ENDCASE.
+        PERFORM SEARCH.
+        LEAVE TO SCREEN 0.
+      ELSE.
+        MESSAGE '수정 실패' TYPE 'I'.
+        ROLLBACK WORK.
+      ENDIF.
+    ELSE.
+      PERFORM CLEAR.
+    ENDIF.
+
+  ENDIF.
+  CLEAR: GT_TABLE, ZTC702_CUSMASTER, GV_P1, GV_P2, GV_P3, GV_TAXCODE.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SEARCH
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM SEARCH.
+
+  CLEAR GT_TABLE.
+
+  CASE 'X'.
+    WHEN GV_RA1. " 업체 리스트 조회.
+      IF GV_CH1 = 'X'.
+        SELECT *
+          FROM ZTC702_CUSMASTER
+          INTO CORRESPONDING FIELDS OF TABLE GT_TABLE
+          ORDER BY CUSTYPE CUSCODE.
+
+      ELSE.
+        SELECT *
+          FROM ZTC702_CUSMASTER
+          INTO CORRESPONDING FIELDS OF TABLE GT_TABLE
+         WHERE DELFLAG = SPACE
+          ORDER BY CUSTYPE CUSCODE.
+      ENDIF.
+
+    WHEN GV_RA2. " 고객 업체 리스트 조회.
+      IF GV_CH1 = 'X'.
+        SELECT *
+          FROM ZTC702_CUSMASTER
+          INTO CORRESPONDING FIELDS OF TABLE GT_TABLE
+          WHERE CUSTYPE = 'C'
+          ORDER BY CUSTYPE CUSCODE.
+
+      ELSE.
+        SELECT *
+        FROM ZTC702_CUSMASTER
+        INTO CORRESPONDING FIELDS OF TABLE GT_TABLE
+        WHERE CUSTYPE = 'C'
+          AND DELFLAG = SPACE
+        ORDER BY CUSTYPE CUSCODE.
+      ENDIF.
+
+    WHEN GV_RA3. " 공급 업체 리스트 조회.
+      IF GV_CH1 = 'X'.
+        SELECT *
+          FROM ZTC702_CUSMASTER
+          INTO CORRESPONDING FIELDS OF TABLE GT_TABLE
+          WHERE CUSTYPE = 'E'
+          ORDER BY CUSTYPE CUSCODE.
+
+      ELSE.
+        SELECT *
+        FROM ZTC702_CUSMASTER
+        INTO CORRESPONDING FIELDS OF TABLE GT_TABLE
+        WHERE CUSTYPE = 'E'
+          AND DELFLAG = SPACE
+        ORDER BY CUSTYPE CUSCODE.
+      ENDIF.
+
+    WHEN GV_RA4. " 배송 업체 리스트 조회.
+      IF GV_CH1 = 'X'.
+        SELECT *
+          FROM ZTC702_CUSMASTER
+          INTO CORRESPONDING FIELDS OF TABLE GT_TABLE
+          WHERE CUSTYPE = 'D'
+          ORDER BY CUSTYPE CUSCODE.
+
+      ELSE.
+        SELECT *
+        FROM ZTC702_CUSMASTER
+        INTO CORRESPONDING FIELDS OF TABLE GT_TABLE
+        WHERE CUSTYPE = 'D'
+          AND DELFLAG = SPACE
+        ORDER BY CUSTYPE CUSCODE.
+      ENDIF.
+  ENDCASE.
+
+  PERFORM CLEAR.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DELFLAG
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM DELFLAG .
+
+* 로컬 오브젝트 선언.
+  DATA: LS_TABLE  TYPE ZTC702_CUSMASTER,
+        LT_ROW    TYPE LVC_T_ROW,
+        LS_ROW    TYPE LVC_S_ROW,
+        LV_ANSWER TYPE C LENGTH 1.
+
+* ALV GRID 줄 선택.
+  CALL METHOD GO_ALV_GRID->GET_SELECTED_ROWS
+    IMPORTING
+      ET_INDEX_ROWS = LT_ROW.
+
+  IF LT_ROW IS INITIAL.
+    MESSAGE '라인을 선택하십시오.' TYPE 'I'.
+  ELSE.
+    LOOP AT LT_ROW INTO LS_ROW.
+      READ TABLE GT_TABLE INTO LS_TABLE INDEX LS_ROW-INDEX.
+    ENDLOOP.
+
+* 삭제 플래그 설정.
+    IF LS_TABLE-DELFLAG = ''.
+      CALL FUNCTION 'POPUP_TO_CONFIRM'
+        EXPORTING
+          TITLEBAR              = '업체 거래 정지'
+          TEXT_QUESTION         = '업체 거래를 정지하시겠습니까?'
+          TEXT_BUTTON_1         = '예'
+          TEXT_BUTTON_2         = '아니오'
+          DISPLAY_CANCEL_BUTTON = ''
+        IMPORTING
+          ANSWER                = LV_ANSWER.
+
+      IF LV_ANSWER = 1.
+        LS_TABLE-DELFLAG = 'X'.
+        LS_TABLE-CHNAM = SY-UNAME.
+        LS_TABLE-CHDAT = SY-DATUM.
+        LS_TABLE-CHTIM = SY-UZEIT.
+
+        UPDATE ZTC702_CUSMASTER FROM LS_TABLE.
+        MESSAGE '업체 거래 정지 (업체 번호 : ' && LS_TABLE-CUSCODE && ' )'  TYPE 'I'.
+
+        COMMIT WORK.
+      ENDIF.
+
+* 삭제 플래그 해제.
+    ELSEIF LS_TABLE-DELFLAG = 'X'.
+      CALL FUNCTION 'POPUP_TO_CONFIRM'
+        EXPORTING
+          TITLEBAR              = '업체 거래 시작'
+          TEXT_QUESTION         = '업체 거래를 시작하시겠습니까?'
+          TEXT_BUTTON_1         = '예'
+          TEXT_BUTTON_2         = '아니오'
+          DISPLAY_CANCEL_BUTTON = ''
+        IMPORTING
+          ANSWER                = LV_ANSWER.
+
+      IF LV_ANSWER = 1.
+        LS_TABLE-DELFLAG = ''.
+        LS_TABLE-CHNAM = SY-UNAME.
+        LS_TABLE-CHDAT = SY-DATUM.
+        LS_TABLE-CHTIM = SY-UZEIT.
+
+        UPDATE ZTC702_CUSMASTER FROM LS_TABLE.
+        MESSAGE '업체 거래 시작 (업체 번호 : ' && LS_TABLE-CUSCODE && ' )' TYPE 'I'.
+
+        COMMIT WORK.
+      ENDIF.
+    ENDIF.
+
+  ENDIF.
+
+* 스크린 데이터 갱신.
+  PERFORM SEARCH.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DELFLAG
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM GET_DATA .
+* 거래업체 마스터 리스트 조회.
+  SELECT *
+    FROM ZTC702_CUSMASTER
+    INTO CORRESPONDING FIELDS OF TABLE GT_TABLE
+    ORDER BY CUSTYPE CUSCODE.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form LAYOUT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM LAYOUT .
+  GS_LAYOUT-ZEBRA      = 'X'. " 지브라 패턴 설정.
+*  GS_LAYOUT-CWIDTH_OPT = 'A'. " 컬럼 가로 너비 최적화.
+  GS_LAYOUT-INFO_FNAME = 'COLOR'. " 라인 색 처리.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form FIELD_CATALOG
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM FIELD_CATALOG .
+* 필드 카탈로그 변경 내역.
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'CUSTYPE'.
+  GS_FIELD_CAT-COLTEXT   = '업체 구분'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-KEY       = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 6.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  GS_FIELD_CAT-FIELDNAME = 'CUSCODE'.
+  GS_FIELD_CAT-COLTEXT   = '업체 코드'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-KEY       = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 12.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'CUSNAME'.
+  GS_FIELD_CAT-COLTEXT   = '업체명'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-OUTPUTLEN = 20.
+  GS_FIELD_CAT-JUST      = 'L'.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'CUSMANA'.
+  GS_FIELD_CAT-COLTEXT   = '담당자명'.
+  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'CUSCELL'.
+  GS_FIELD_CAT-COLTEXT   = '담당자 연락처'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 18.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'TAXCODE'.
+  GS_FIELD_CAT-COLTEXT   = '사업자 등록번호'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 14.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'CUSADDR'.
+  GS_FIELD_CAT-COLTEXT   = '거래처 주소'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'L'.
+  GS_FIELD_CAT-OUTPUTLEN = 40.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'BANKNAME'.
+  GS_FIELD_CAT-COLTEXT   = '은행명'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'ACNO'.
+  GS_FIELD_CAT-COLTEXT   = '계좌번호'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'L'.
+  GS_FIELD_CAT-OUTPUTLEN = 16.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'ACHOLDER'.
+  GS_FIELD_CAT-COLTEXT   = '예금주'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 15.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'CRNAM'.
+  GS_FIELD_CAT-COLTEXT   = '생성자'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-OUTPUTLEN = 8.
+  GS_FIELD_CAT-JUST      = 'C'.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'ERDAT'.
+  GS_FIELD_CAT-COLTEXT   = '생성 일자'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 10.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'ERTIM'.
+  GS_FIELD_CAT-COLTEXT   = '생성 시간'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 10.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'CHNAM'.
+  GS_FIELD_CAT-COLTEXT   = '변경자'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-OUTPUTLEN = 8.
+  GS_FIELD_CAT-JUST      = 'C'.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'CHDAT'.
+  GS_FIELD_CAT-COLTEXT   = '변경 날짜'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 10.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'CHTIM'.
+  GS_FIELD_CAT-COLTEXT   = '변경 시간'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 10.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CLEAR
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM CLEAR .
+* 스크린 인풋 필드 초기화.
+  GV_rA2 = GV_RA3 = GV_RA4 = SPACE.
+  GV_RA1 = 'X'.
+  GV_CH1 = SPACE.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CREATE_CUSCODE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM CREATE_CUSCODE CHANGING PV_CUSCODE TYPE ZTC702_CUSMASTER-CUSCODE.
+  DATA: LS_TABLE TYPE ZTC702_CUSMASTER,
+        LV_NUM   TYPE C LENGTH 8,
+        LV_CUS   TYPE N LENGTH 10.
+
+  CASE ZTC702_CUSMASTER-CUSTYPE.
+    WHEN 'C'.
+      CALL FUNCTION 'NUMBER_GET_NEXT'
+        EXPORTING
+          NR_RANGE_NR = '1'
+          OBJECT      = 'ZNRC702_MM'
+        IMPORTING
+          NUMBER      = LV_NUM.
+
+      LV_CUS = LV_NUM+1(7).
+      CONCATENATE 'CU' LV_CUS INTO PV_CUSCODE.
+
+    WHEN 'E'.
+      CALL FUNCTION 'NUMBER_GET_NEXT'
+        EXPORTING
+          NR_RANGE_NR = '2'
+          OBJECT      = 'ZNRC702_MM'
+        IMPORTING
+          NUMBER      = LV_NUM.
+
+      LV_CUS = LV_NUM+1(7).
+      CONCATENATE 'ES' LV_CUS INTO PV_CUSCODE.
+
+    WHEN 'D'.
+      CALL FUNCTION 'NUMBER_GET_NEXT'
+        EXPORTING
+          NR_RANGE_NR = '3'
+          OBJECT      = 'ZNRC702_MM'
+        IMPORTING
+          NUMBER      = LV_NUM.
+
+      LV_CUS = LV_NUM+1(7).
+      CONCATENATE 'DE' LV_CUS INTO PV_CUSCODE.
+
+  ENDCASE.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CREATE_CUS
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM CREATE_CUS USING PV_CUSCODE TYPE ZTC702_CUSMASTER-CUSCODE.
+  DATA: LS_TABLE  TYPE ZTC702_CUSMASTER,
+        LV_ANSWER TYPE C LENGTH 1.
+
+  IF ZTC702_CUSMASTER-CUSTYPE = SPACE
+      OR ZTC702_CUSMASTER-CUSNAME = SPACE
+      OR ZTC702_CUSMASTER-CUSMANA = SPACE
+      OR GV_P1 = SPACE OR GV_P2 = SPACE OR GV_P3 = SPACE
+      OR ZTC702_CUSMASTER-CUSCEO = SPACE
+      OR GV_TAXCODE = SPACE
+      OR ZTC702_CUSMASTER-CUSADDR = SPACE
+      OR ZTC702_CUSMASTER-BANKNAME = SPACE
+      OR ZTC702_CUSMASTER-ACNO = SPACE
+      OR ZTC702_CUSMASTER-ACHOLDER = SPACE.
+
+    MESSAGE '공란에 정보를 입력하십시오.' TYPE 'I'.
+    RETURN.
+  ELSE.
+    LS_TABLE-CUSTYPE = ZTC702_CUSMASTER-CUSTYPE.
+    LS_TABLE-CUSCODE = PV_CUSCODE.
+    LS_TABLE-CUSNAME = ZTC702_CUSMASTER-CUSNAME.
+    LS_TABLE-CUSMANA = ZTC702_CUSMASTER-CUSMANA.
+
+    PERFORM GET_CELL.
+    CONCATENATE GV_C1 '-' GV_C2 '-' GV_C3 INTO ZTC702_CUSMASTER-CUSCELL.
+
+    LS_TABLE-CUSCELL = ZTC702_CUSMASTER-CUSCELL.
+    LS_TABLE-CUSCEO = ZTC702_CUSMASTER-CUSCEO.
+
+    CONCATENATE GV_TAXCODE(3) '-' GV_TAXCODE+3(2) '-' GV_TAXCODE+5(5) INTO ZTC702_CUSMASTER-TAXCODE.
+
+    LS_TABLE-TAXCODE = ZTC702_CUSMASTER-TAXCODE.
+    LS_TABLE-CUSADDR = ZTC702_CUSMASTER-CUSADDR.
+    LS_TABLE-BANKNAME = ZTC702_CUSMASTER-BANKNAME.
+    LS_TABLE-ACNO = ZTC702_CUSMASTER-ACNO.
+    LS_TABLE-ACHOLDER = ZTC702_CUSMASTER-ACHOLDER.
+
+* 생성/변경 정보.
+    LS_TABLE-CRNAM  = SY-UNAME.
+    LS_TABLE-ERDAT  = SY-DATUM.
+    LS_TABLE-ERTIM  = SY-UZEIT.
+    LS_TABLE-CHNAM  = SY-UNAME.
+    LS_TABLE-CHDAT  = SY-DATUM.
+    LS_TABLE-CHTIM  = SY-UZEIT.
+
+* DB 업데이트.
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        TITLEBAR              = '신규 업체 등록'
+        TEXT_QUESTION         = '신규업체를 등록하시겠습니까?'
+        TEXT_BUTTON_1         = '예'
+        TEXT_BUTTON_2         = '아니오'
+        DISPLAY_CANCEL_BUTTON = ''
+      IMPORTING
+        ANSWER                = LV_ANSWER.
+
+    IF LV_ANSWER = 1.
+      IF SY-SUBRC = 0.
+        INSERT ZTC702_CUSMASTER FROM LS_TABLE.
+        MESSAGE '신규업체 등록 (업체 번호 : ' && LS_TABLE-CUSCODE && ' )' TYPE 'I'.
+        COMMIT WORK. " 업데이트 확정.
+
+        GV_RA1 = GV_RA2 = GV_RA3 = GV_RA4 = SPACE.
+
+        CASE PV_CUSCODE(1).
+          WHEN 'C'.
+            GV_RA2 = 'X'.
+          WHEN 'E'.
+            GV_RA3 = 'X'.
+          WHEN 'D'.
+            GV_RA4 = 'X'.
+          WHEN OTHERS.
+            GV_RA1 = 'X'.
+        ENDCASE.
+        PERFORM SEARCH.
+        SET SCREEN 0.
+        LEAVE SCREEN.
+      ELSEIF SY-SUBRC = 4.
+        MESSAGE '업체가 이미 등록되어있습니다.' TYPE 'I'.
+        ROLLBACK WORK. " 업데이트 취소.
+        SET SCREEN 101.
+        LEAVE SCREEN.
+      ELSE.
+        MESSAGE '알 수 없는 에러가 발생했습니다.' TYPE 'I'.
+        ROLLBACK WORK. " 업데이트 취소.
+        SET SCREEN 101.
+        LEAVE SCREEN.
+      ENDIF.
+    ELSE.
+
+    ENDIF.
+  ENDIF.
+  CLEAR: GT_TABLE, ZTC702_CUSMASTER, GV_P1, GV_P2, GV_P3, GV_TAXCODE.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SELECT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM SELECT .
+  DATA: LT_ROW    TYPE LVC_T_ROW,
+        LS_ROW    TYPE LVC_S_ROW,
+        LV_ANSWER TYPE C LENGTH 1.
+
+  CALL METHOD GO_ALV_GRID->GET_SELECTED_ROWS
+    IMPORTING
+      ET_INDEX_ROWS = LT_ROW.
+
+  IF LT_ROW IS INITIAL.
+    MESSAGE '업체를 선택하십시오.' TYPE 'I'.
+  ELSE.
+    LOOP AT LT_ROW INTO LS_ROW.
+      READ TABLE GT_TABLE INTO LS_TABLE INDEX LS_ROW-INDEX.
+    ENDLOOP.
+
+    SPLIT LS_TABLE-CUSCELL AT '-' INTO GV_P1 GV_P2 GV_P3.
+
+    MOVE-CORRESPONDING LS_TABLE TO ZTC702_CUSMASTER.
+
+    CALL SCREEN 102 STARTING AT 10 10.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_CELL
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM GET_CELL .
+
+  GV_C1 = GV_P1.
+  IF GV_P1 < 10.
+    GV_C1 = GV_C1+1(2).
+  ENDIF.
+
+  GV_C2 = GV_P2.
+  IF GV_C2 < 1000.
+    GV_C2 = GV_C2+1(3).
+  ENDIF.
+
+  GV_C3 = GV_P3.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form EXCLUDE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM EXCLUDE .
+
+  APPEND CL_GUI_ALV_GRID=>MC_FC_DETAIL TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_FC_SORT_ASC TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_FC_SORT_DSC TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_FC_FIND TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_FC_FILTER TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_MB_SUM TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_FC_PRINT_BACK TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_MB_VIEW TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_MB_EXPORT TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_MB_VARIANT TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_FC_INFO TO GT_EXCLUDE.
+
+ENDFORM.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

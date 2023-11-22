@@ -1,0 +1,404 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_MM_06_I01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  EXIT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE exit INPUT.
+  CASE ok_code.
+    WHEN 'EXIT'.
+      LEAVE PROGRAM.
+    WHEN 'CANCEL'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  CHECK_GDCODE  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE check_gdcode INPUT.
+  CASE ok_code.
+    WHEN 'ENTER' OR 'DISPLAY'.
+      IF ztc702_mtmaster-gdcode IS INITIAL.
+        MESSAGE: '조회하실 품목 코드를 입력해 주세요.' TYPE 'E'.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN 'ENTER' OR 'DISPLAY'.
+      gv_switch = 'X'.
+
+      CLEAR ztc702_mtmaster-gdname.
+      IF ztc702_mtmaster-gdname IS INITIAL.
+        SELECT gdname
+          FROM ztc702_mtmaster
+          INTO ztc702_mtmaster-gdname
+         WHERE gdcode = ztc702_mtmaster-gdcode.
+        ENDSELECT.
+      ENDIF.
+
+      SELECT r~cuscode c~cusname m~gdcode m~gdname r~price r~currency r~qtno r~ctno r~exdate
+        FROM ztc702_mir AS r INNER JOIN ztc702_mtmaster AS m ON r~gdcode = m~gdcode
+                             INNER JOIN ztc702_cusmaster AS c ON r~cuscode = c~cuscode
+        INTO CORRESPONDING FIELDS OF TABLE gt_ztc702_mir
+        WHERE r~gdcode = ztc702_mtmaster-gdcode
+          AND r~delflag <> 'X'.
+*          AND r~exdate >= sy-datum.
+      SORT gt_ztc702_mir DESCENDING BY cuscode exdate. "ASCENDING price.
+
+      DELETE ADJACENT DUPLICATES FROM gt_ztc702_mir COMPARING cuscode.
+
+      SORT gt_ztc702_mir BY price cuscode.
+
+    WHEN 'CREATE'.
+      CLEAR ztc702_mtmaster.
+      CALL TRANSACTION 'ZC702_MM_06_V2'.
+
+    WHEN 'PREVIOUS'.
+      CLEAR ztc702_mtmaster.
+      CLEAR gt_ztc702_mir.
+*      gv_switch = ' '.
+      SET PF-STATUS 'S0100'.
+
+    WHEN 'DISPLAY2'.
+      CLEAR ysztc702_mir.
+
+      DATA: lt_row TYPE lvc_t_row,
+            ls_row TYPE lvc_s_row.
+
+      CALL METHOD go_alv_grid->get_selected_rows
+        IMPORTING
+          et_index_rows = lt_row.
+
+      LOOP AT lt_row INTO ls_row.
+        READ TABLE gt_ztc702_mir INTO gs_ztc702_mir INDEX ls_row-index.
+      ENDLOOP.
+
+      MOVE-CORRESPONDING gs_ztc702_mir TO ysztc702_mir.
+
+      CALL SCREEN 200.
+
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0200  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0200 INPUT.
+  CASE ok_code.
+    WHEN 'ENTER'.
+    WHEN 'BACK'.
+      CLEAR ztc702_mtmaster.
+*      CLEAR gt_ztc702_mir.
+      LEAVE TO SCREEN 0.
+    WHEN 'MORE_CREATE'.
+      gv_switch_200 = 'X'.
+
+      IF ysztc702_mir IS NOT INITIAL.
+        MOVE-CORRESPONDING ysztc702_mir TO ysztc702_mir_300.
+
+        SELECT cusmana cuscell
+          INTO CORRESPONDING FIELDS OF ysztc702_mir_300
+          FROM ztc702_cusmaster
+          WHERE cuscode = ysztc702_mir-cuscode.
+        ENDSELECT.
+
+        CALL SCREEN 300.
+      ENDIF.
+
+*      gs_ztc702_mir_200-mark = 'I'.
+*      APPEND gs_ztc702_mir_200 TO gt_ztc702_mir_200.
+
+*    WHEN 'CHANGE'.
+*      DATA: ls_style_200 TYPE lvc_s_styl.
+*
+*      gv_switch_200 = 'X'.
+*
+*      LOOP AT gt_ztc702_mir_200 INTO gs_ztc702_mir_200.
+*
+*        ls_style_200-fieldname = 'APPLICABLE_PERIOD'.
+*        ls_style_200-style = cl_gui_alv_grid=>mc_style_enabled.
+*        INSERT ls_style_200 INTO TABLE gs_ztc702_mir_200-style.
+*
+*        CLEAR ls_style_200.
+*        ls_style_200-fieldname = 'PRICE'.
+*        ls_style_200-style = cl_gui_alv_grid=>mc_style_enabled.
+*        INSERT ls_style_200 INTO TABLE gs_ztc702_mir_200-style.
+*
+*        CLEAR ls_style_200.
+*        ls_style_200-fieldname = 'QTNO'.
+*        ls_style_200-style = cl_gui_alv_grid=>mc_style_enabled.
+*        INSERT ls_style_200 INTO TABLE gs_ztc702_mir_200-style.
+*
+*        CLEAR ls_style_200.
+*        ls_style_200-fieldname = 'CTNO'.
+*        ls_style_200-style = cl_gui_alv_grid=>mc_style_enabled.
+*        INSERT ls_style_200 INTO TABLE gs_ztc702_mir_200-style.
+*
+*        CLEAR ls_style_200.
+*        ls_style_200-fieldname = 'CUSMANA'.
+*        ls_style_200-style = cl_gui_alv_grid=>mc_style_enabled.
+*        INSERT ls_style_200 INTO TABLE gs_ztc702_mir_200-style.
+*
+*        CLEAR ls_style_200.
+*        ls_style_200-fieldname = 'CUSCELL'.
+*        ls_style_200-style = cl_gui_alv_grid=>mc_style_enabled.
+*        INSERT ls_style_200 INTO TABLE gs_ztc702_mir_200-style.
+*
+*        MODIFY gt_ztc702_mir_200 FROM gs_ztc702_mir_200.
+*      ENDLOOP.
+*
+**      CALL METHOD go_alv_grid_200->set_ready_for_input
+**        EXPORTING
+**          i_ready_for_input = 1.
+
+    WHEN 'CANCEL2'.
+      DATA: lt_row_200 TYPE lvc_t_row,
+            ls_row_200 TYPE lvc_s_row.
+
+      DATA: lv_answer TYPE c LENGTH 1.
+
+      CALL FUNCTION 'POPUP_TO_CONFIRM'
+        EXPORTING
+          titlebar              = '상세 단가'
+          text_question         = '선택하신 구매정보를 삭제하시겠습니까?'
+          text_button_1         = '예'
+          text_button_2         = '아니오'
+          display_cancel_button = space
+        IMPORTING
+          answer                = lv_answer
+        EXCEPTIONS
+          OTHERS                = 1.
+
+      IF sy-subrc <> 0.
+        WRITE: '에러가 발생했습니다.'.
+      ENDIF.
+
+      IF lv_answer = 1.
+        CALL METHOD go_alv_grid_200->get_selected_rows
+          IMPORTING
+            et_index_rows = lt_row_200.
+
+        SORT lt_row_200 DESCENDING BY index.
+
+        IF lt_row_200 IS NOT INITIAL.
+
+          LOOP AT lt_row_200 INTO ls_row_200.
+            READ TABLE gt_ztc702_mir_200 INTO gs_ztc702_mir_200 INDEX ls_row_200-index.
+*          DELETE gt_ztc702_mir_200 INDEX ls_row_200-index.
+            UPDATE ztc702_mir SET delflag = 'X'
+                              WHERE cuscode = gs_ztc702_mir_200-cuscode
+                              AND gdcode = gs_ztc702_mir_200-gdcode
+                              AND stdate = gs_ztc702_mir_200-stdate.
+          ENDLOOP.
+        ENDIF.
+      ENDIF.
+*      go_alv_grid_200->refresh_table_display( ).
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0300  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0300 INPUT.
+  DATA: lv_answer_300 TYPE c LENGTH 1.
+  DATA: ls_ysztc702_mir_300 TYPE ztc702_mir.
+
+  CASE ok_code.
+    WHEN 'ENTER'.
+      CLEAR ysztc702_mir_300-cusname.
+      CLEAR ysztc702_mir_300-cusmana.
+      CLEAR ysztc702_mir_300-cuscell.
+      IF ysztc702_mir_300-cusname IS INITIAL AND ysztc702_mir_300-cusmana IS INITIAL AND ysztc702_mir_300-cuscell IS INITIAL.
+        SELECT cusname cusmana cuscell
+          FROM ztc702_cusmaster
+          INTO CORRESPONDING FIELDS OF ysztc702_mir_300
+         WHERE cuscode = ysztc702_mir_300-cuscode.
+        ENDSELECT.
+      ENDIF.
+      CLEAR ysztc702_mir_300-gdname.
+
+      IF ysztc702_mir_300-gdname IS INITIAL.
+        SELECT gdname
+          FROM ztc702_mtmaster
+          INTO CORRESPONDING FIELDS OF ysztc702_mir_300
+          WHERE gdcode = ysztc702_mir_300-gdcode.
+        ENDSELECT.
+      ENDIF.
+
+    WHEN 'BACK'.
+      IF ysztc702_mir_300-cuscode     IS NOT INITIAL OR ysztc702_mir_300-gdcode  IS NOT INITIAL
+         OR ysztc702_mir_300-price   IS NOT INITIAL OR ysztc702_mir_300-qtno    IS NOT INITIAL
+         OR ysztc702_mir_300-ctno    IS NOT INITIAL OR ysztc702_mir_300-stdate  IS NOT INITIAL
+         OR ysztc702_mir_300-exdate  IS NOT INITIAL OR ysztc702_mir_300-cusmana IS NOT INITIAL
+         OR ysztc702_mir_300-cuscell IS NOT INITIAL.
+        CALL FUNCTION 'POPUP_TO_CONFIRM'
+          EXPORTING
+            titlebar              = '구매정보 등록'
+            text_question         = '저장되지 않은 데이터는 삭제됩니다.'
+            text_button_1         = '예'
+            text_button_2         = '아니오'
+            display_cancel_button = space
+          IMPORTING
+            answer                = lv_answer_300
+          EXCEPTIONS
+            OTHERS                = 1.
+
+        IF sy-subrc <> 0.
+          WRITE: '에러가 발생했습니다.'.
+        ENDIF.
+
+        IF lv_answer_300 = 1.
+          LEAVE TO SCREEN 0.
+        ENDIF.
+      ELSEIF ysztc702_mir_300-cuscode     IS INITIAL AND ysztc702_mir_300-gdcode  IS INITIAL
+             AND ysztc702_mir_300-price   IS INITIAL AND ysztc702_mir_300-qtno    IS INITIAL
+             AND ysztc702_mir_300-ctno    IS INITIAL AND ysztc702_mir_300-stdate  IS INITIAL
+             AND ysztc702_mir_300-exdate  IS INITIAL AND ysztc702_mir_300-cusmana IS INITIAL
+             AND ysztc702_mir_300-cuscell IS INITIAL.
+        LEAVE TO SCREEN 0.
+      ENDIF.
+
+    WHEN 'SAVE'.
+      ysztc702_mir_300-price = ysztc702_mir_300-price / 100.
+
+      MOVE-CORRESPONDING ysztc702_mir_300 TO ls_ysztc702_mir_300.
+*      ls_ysztc702_mir_300-cuscode = ysztc702_mir_300-cuscode.
+*      ls_ysztc702_mir_300-gdcode = ysztc702_mir_300-gdcode.
+*      ls_ysztc702_mir_300-price = ysztc702_mir_300-price.
+*      ls_ysztc702_mir_300-currency = ysztc702_mir_300-currency.
+*      ls_ysztc702_mir_300-qtno = ysztc702_mir_300-qtno.
+*      ls_ysztc702_mir_300-ctno = ysztc702_mir_300-ctno.
+*      ls_ysztc702_mir_300-stdate = ysztc702_mir_300-stdate.
+*      ls_ysztc702_mir_300-exdate = ysztc702_mir_300-exdate.
+      ls_ysztc702_mir_300-crnam  = sy-uname.
+      ls_ysztc702_mir_300-erdat  = sy-datum.
+      ls_ysztc702_mir_300-ertim  = sy-uzeit.
+*      ls_ysztc702_mir_300-chnam  = sy-uname.
+*      ls_ysztc702_mir_300-chdat  = sy-datum.
+*      ls_ysztc702_mir_300-chtim  = sy-uzeit.
+
+      INSERT ztc702_mir FROM ls_ysztc702_mir_300.
+      CLEAR ysztc702_mir_300.
+
+      IF sy-subrc = 0.
+        MESSAGE: '구매정보가 정상적으로 등록되었습니다.' TYPE 'S'.
+      ELSE.
+        MESSAGE: '구매정보 등록에 실패하셨습니다.' TYPE 'E'.
+      ENDIF.
+
+      LEAVE TO SCREEN 0.
+      LEAVE SCREEN.
+
+    WHEN 'CANCEL3'.
+      CALL FUNCTION 'POPUP_TO_CONFIRM'
+        EXPORTING
+          titlebar              = '구매정보 등록'
+          text_question         = '구매정보 등록을 취소하시겠습니까?'
+          text_button_1         = '예'
+          text_button_2         = '아니오'
+          display_cancel_button = space
+        IMPORTING
+          answer                = lv_answer_300
+        EXCEPTIONS
+          OTHERS                = 1.
+
+      IF sy-subrc <> 0.
+        WRITE: '에러가 발생했습니다.'.
+      ENDIF.
+
+      IF lv_answer_300 = 1.
+        LEAVE TO SCREEN 0.
+      ENDIF.
+
+    WHEN 'RESET'.
+      CLEAR ysztc702_mir_300.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  CHECK_CUSCODE_300  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE check_cuscode_300 INPUT.
+  CASE ok_code.
+    WHEN 'SAVE'.
+      IF ysztc702_mir_300-cuscode IS INITIAL.
+        MESSAGE: '업체코드를 입력해 주세요.' TYPE 'E'.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  CHECK_GDCODE_300  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE check_gdcode_300 INPUT.
+  CASE ok_code.
+    WHEN 'SAVE'.
+      IF ysztc702_mir_300-gdcode IS INITIAL.
+        MESSAGE: '품목코드를 입력해 주세요.' TYPE 'E'.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  CHECK_PRICE_300  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE check_price_300 INPUT.
+  CASE ok_code.
+    WHEN 'SAVE'.
+      IF ysztc702_mir_300-price IS INITIAL.
+        MESSAGE: '단가를 입력해 주세요.' TYPE 'E'.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  CHECK_DOCUMENT_300  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE check_document_300 INPUT.
+  CASE ok_code.
+    WHEN 'SAVE'.
+      IF ysztc702_mir_300-qtno IS INITIAL AND ysztc702_mir_300-ctno IS INITIAL.
+        MESSAGE: '증빙문서 번호를 입력해 주세요.' TYPE 'E'.
+      ELSEIF ysztc702_mir_300-qtno IS NOT INITIAL AND ysztc702_mir_300-ctno IS NOT INITIAL.
+        MESSAGE: '증빙문서는 1개만 등록 가능합니다.' TYPE 'E'.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  CHECK_DATE_300  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE check_date_300 INPUT.
+  CASE ok_code.
+    WHEN 'SAVE'.
+      IF ysztc702_mir_300-stdate IS INITIAL AND ysztc702_mir_300-exdate IS INITIAL.
+        MESSAGE: '적용 시작일과 종료일을 입력해 주세요.' TYPE 'E'.
+      ELSEIF ysztc702_mir_300-stdate IS INITIAL.
+        MESSAGE: '적용 시작일을 입력해 주세요.' TYPE 'E'.
+      ELSEIF ysztc702_mir_300-exdate IS INITIAL.
+        MESSAGE: '적용 종료일을 입력해 주세요.' TYPE 'E'.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

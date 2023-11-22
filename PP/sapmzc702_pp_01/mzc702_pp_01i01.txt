@@ -1,0 +1,106 @@
+*&---------------------------------------------------------------------*
+*& Include          MZPPTEMP19_01I01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  EXIT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE exit INPUT.
+  CASE ok_code.
+    WHEN 'EXIT'.
+      LEAVE PROGRAM.
+    WHEN 'CANC'.
+      IF sy-dynnr = 100.
+        LEAVE PROGRAM.
+      ELSEIF sy-dynnr = 200.
+        CLEAR ztc702_plant.
+        LEAVE TO SCREEN 0.
+      ENDIF.
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN 'DISPLAY'.
+      PERFORM display_plant.        " 공장 조회 서브루틴
+    WHEN 'CHANGE'.
+      PERFORM change_plant2.
+    WHEN 'CREATE'.
+      PERFORM create_plant2.
+    WHEN 'CLEAR'.
+      CLEAR: ztc702_plant, gt_plant.             " 필드 초기화
+    WHEN 'CHKDEL'.
+      PERFORM check_plant.          " 공장 삭제 플래그 서브루틴
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  CHECK_CONT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE check_cont INPUT.
+*  DATA: lv_check TYPE string.
+*
+*  IF ok_code = 'CLEAR'.
+*    CLEAR ztc702_plant.
+*  ELSEIF ok_code = 'BACK'.
+*    CLEAR ztc702_plant.
+*    LEAVE TO SCREEN 0.
+*
+*  ELSE.
+*    lv_check = ztc702_plant-plcont.
+*
+*    CALL FUNCTION 'ZFMC702_CONT'
+*      EXPORTING
+*        fv_cont        = lv_check
+*      IMPORTING
+*        fv_change_cont = gv_cont.
+*
+*
+*  ENDIF.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0110  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0110 INPUT.
+  CASE ok_code.
+    WHEN 'OKAY'.
+      CASE gv_dynnr_check.
+        WHEN 'CREATE'.
+          PERFORM save_create_data.
+        WHEN 'CHANGE'.
+          PERFORM save_change_data.
+      ENDCASE.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN 'CANCEL'.
+      CLEAR zsc702_plant.
+      LEAVE TO SCREEN 0.
+
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  CHECK_CREATE_FIELD  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE check_create_field INPUT.
+  PERFORM check_create_field.
+
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

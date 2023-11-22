@@ -1,0 +1,239 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_HR_01I01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  EXIT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE exit INPUT.
+  CASE ok_code.
+    WHEN 'EXIT' OR 'CANC'.
+      LEAVE PROGRAM.
+    WHEN 'CANCLE'.
+      CLEAR zdvc702_emporg.
+      MESSAGE '작업 취소' TYPE 'S'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN 'DISPLAY'.
+      PERFORM display_emp.
+    WHEN 'CHANGE'.
+      PERFORM change.
+      CLEAR gt_emp.
+      IF gv_check = space.
+        SELECT *
+          FROM zdvc702_emporg
+          INTO CORRESPONDING FIELDS OF TABLE gt_emp
+          WHERE delflag = ''.
+      ELSE.
+        SELECT *
+          FROM zdvc702_emporg
+          INTO CORRESPONDING FIELDS OF TABLE gt_emp
+          WHERE delflag NE ''.
+      ENDIF.
+
+      SORT gt_emp ASCENDING BY pernr.
+    WHEN 'CREATE'.
+      PERFORM create.
+      IF gv_check = space.
+        SELECT *
+          FROM zdvc702_emporg
+          INTO CORRESPONDING FIELDS OF TABLE gt_emp
+          WHERE delflag = ''.
+      ELSE.
+        SELECT *
+          FROM zdvc702_emporg
+          INTO CORRESPONDING FIELDS OF TABLE gt_emp
+          WHERE delflag NE ''.
+      ENDIF.
+
+      SORT gt_emp ASCENDING BY pernr.
+    WHEN 'CREATE'.
+  ENDCASE.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0110  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0110 INPUT.
+  CASE ok_code.
+    WHEN 'ENROLL'.
+
+      PERFORM save_emp.
+
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0120  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0120 INPUT.
+  CASE ok_code.
+    WHEN 'OKAY'.
+      DATA : ls_empu TYPE ztc702_employee.
+
+      MESSAGE zdvc702_emporg-pernr && ' / 정보를 수정합니다.' TYPE 'I'.
+
+      MOVE-CORRESPONDING zdvc702_emporg TO ls_empu.
+      TRANSLATE ls_empu-email TO LOWER CASE.
+      TRANSLATE ls_empu-pid TO UPPER CASE.
+      ls_empu-chnam = sy-uname.
+      ls_empu-chdat = sy-datum.
+      ls_empu-chtim = sy-uzeit.
+      UPDATE ztc702_employee FROM ls_empu.
+
+      IF sy-subrc = 0.
+        MESSAGE zdvc702_emporg-pernr && ' / 수정 성공' TYPE 'S'.
+
+        LEAVE TO SCREEN 0.
+      ELSE.
+        MESSAGE '수정 실패' TYPE 'S'.
+        LEAVE TO SCREEN 0.
+      ENDIF.
+      PERFORM display_emp.
+      CLEAR gt_emp.
+      IF gv_check = space.
+        SELECT *
+          FROM zdvc702_emporg
+          INTO CORRESPONDING FIELDS OF TABLE gt_emp
+          WHERE delflag = ''.
+      ELSE.
+        SELECT *
+    FROM zdvc702_emporg
+    INTO CORRESPONDING FIELDS OF TABLE gt_emp
+    WHERE delflag NE ''.
+      ENDIF.
+
+      SORT gt_emp ASCENDING BY pernr.
+    WHEN 'FLAG'.
+      DATA: lv_answer TYPE c LENGTH 1.
+      IF gs_emp-delflag = space.
+        CALL FUNCTION 'POPUP_TO_CONFIRM'
+          EXPORTING
+            titlebar              = '사원 정보 삭제'
+            text_question         = '해당 사원의 정보를 삭제하시겠습니까?'
+            text_button_1         = '예'
+            text_button_2         = '아니오'
+            display_cancel_button = space
+          IMPORTING
+            answer                = lv_answer.
+
+        IF lv_answer = 1.
+**** 삭제플래그 변경 및 LOG 변경
+          MOVE-CORRESPONDING zdvc702_emporg TO ls_empu.
+          TRANSLATE ls_empu-email TO LOWER CASE.
+          TRANSLATE ls_empu-pid TO UPPER CASE.
+          ls_empu-delflag = 'X'.
+          ls_empu-chnam = sy-uname.
+          ls_empu-chdat = sy-datum.
+          ls_empu-chtim = sy-uzeit.
+          UPDATE ztc702_employee FROM ls_empu.
+
+          IF sy-subrc = 0.
+            CLEAR gt_emp.
+            MESSAGE zdvc702_emporg-pernr && ' / 삭제 성공' TYPE 'S'.
+            LEAVE TO SCREEN 0.
+          ELSE.
+            MESSAGE '작업 실패' TYPE 'S'.
+            LEAVE TO SCREEN 0.
+          ENDIF.
+        ENDIF.
+**** 선택된 스트럭처의 삭제플래그가 있을 경우
+      ELSEIF gs_emp-delflag = 'X'.
+        CALL FUNCTION 'POPUP_TO_CONFIRM'
+          EXPORTING
+            titlebar              = '사원 정보 복원'
+            text_question         = '해당 사원의 정보를 복원하시겠습니까?'
+            text_button_1         = '예'
+            text_button_2         = '아니오'
+            display_cancel_button = space
+          IMPORTING
+            answer                = lv_answer.
+
+        IF lv_answer = 1.
+**** 삭제플래그 변경 및 LOG 변경
+          MOVE-CORRESPONDING zdvc702_emporg TO ls_empu.
+          ls_empu-delflag = space.
+          ls_empu-chnam = sy-uname.
+          ls_empu-chdat = sy-datum.
+          ls_empu-chtim = sy-uzeit.
+          UPDATE ztc702_employee FROM ls_empu.
+
+          IF sy-subrc = 0.
+            CLEAR gt_emp.
+            MESSAGE zdvc702_emporg-pernr && ' / 수정 및 복원 성공' TYPE 'S'.
+            LEAVE TO SCREEN 0.
+          ELSE.
+            MESSAGE '작업 실패' TYPE 'S'.
+            LEAVE TO SCREEN 0.
+          ENDIF.
+        ENDIF.
+      ENDIF.
+      CLEAR gt_emp.
+      PERFORM display_emp.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Form CHANGE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM change .
+  PERFORM read_line USING gs_emp.
+
+  IF gs_emp IS INITIAL.
+    MESSAGE '라인을 선택하세요.' TYPE 'I'.
+  ELSE.
+    MOVE-CORRESPONDING gs_emp TO zdvc702_emporg.
+    CALL SCREEN 120
+    STARTING AT 15 5
+    ENDING AT 80 20.
+  ENDIF.
+  "CLEAR gt_emp.
+  "PERFORM display_emp.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*&      Module  SET_OTEXT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE set_pname INPUT.
+  SELECT SINGLE pname
+    FROM ztc702_employee
+    INTO zdvc702_emporg-pname
+    WHERE pernr = zdvc702_emporg-pernr.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  INPUT_WARNIG  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE input_warnig INPUT.
+  IF   zdvc702_emporg-pname IS INITIAL OR
+   zdvc702_emporg-gender IS INITIAL OR
+   zdvc702_emporg-orgeh IS INITIAL OR
+   zdvc702_emporg-rank IS INITIAL.
+    MESSAGE '데이터를 입력하세요.' TYPE 'E'.
+  ENDIF.
+
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

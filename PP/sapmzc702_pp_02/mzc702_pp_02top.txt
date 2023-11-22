@@ -1,0 +1,143 @@
+*&---------------------------------------------------------------------*
+*& Include MZC702_PP_02TOP                          - Module Pool      SAPMZC702_PP_02
+*&---------------------------------------------------------------------*
+PROGRAM sapmzc702_pp_02 MESSAGE-ID zc702_message.
+.
+
+TABLES: ztc702_bom_h, ztc702_bom_i, zdvc702_bom, zsc702_bom_h.
+
+***** 레이아웃 설정을 위한 self-define 선언
+TYPES: BEGIN OF gty_bom_h .
+    INCLUDE TYPE ztc702_bom_h .
+TYPES: color TYPE c LENGTH 4,
+*       light TYPE c LENGTH 1,
+       END OF gty_bom_h .
+
+***** BOM 헤더를 위한 데이터 선언
+DATA: gt_bom_h     TYPE TABLE OF gty_bom_h,
+      gs_bom_hf    TYPE gty_bom_h,
+      gs_bom_h     TYPE gty_bom_h,
+      gs_bom_h_200 TYPE ztc702_bom_h.
+
+***** BOM 아이템을 위한 데이터 선언
+DATA: gt_bom_i  TYPE TABLE OF ztc702_bom_i,
+      gs_bom_if TYPE ztc702_bom_i,
+      gs_bom_i  TYPE ztc702_bom_i.
+
+***** 200번 스크린에서 사용되는 BOM 아이템 데이터 선언
+DATA: gt_bom_200_i TYPE TABLE OF ztc702_bom_i,
+      gs_bom_200_i TYPE ztc702_bom_i.
+
+***** BOM 헤더 컨테이너 및 ALV 오브젝트 선언
+DATA: go_container TYPE REF TO cl_gui_custom_container,
+      go_alv_grid  TYPE REF TO cl_gui_custom_alv_grid,
+      gv_refresh   TYPE c LENGTH 1.
+
+***** BOM 아이템 컨테이너 및 ALV 오브젝트 선언 - 110번 스크린
+DATA: go_container2 TYPE REF TO cl_gui_custom_container,
+      go_alv_grid2  TYPE REF TO cl_gui_custom_alv_grid,
+      gv_refresh2   TYPE c LENGTH 1.
+
+***** BOM 아이템 컨테이너 및 ALV 오브젝트 선언 - 300번 스크린
+DATA: go_container3 TYPE REF TO cl_gui_custom_container,
+      go_alv_grid3  TYPE REF TO cl_gui_custom_alv_grid,
+      gv_refresh3   TYPE c LENGTH 1.
+
+***** ok_code 및 기타 데이터 선언
+DATA: ok_code    TYPE sy-ucomm,
+      gs_layout  TYPE lvc_s_layo,
+      gs_layout2 TYPE lvc_s_layo.
+
+DATA: gt_fcat TYPE lvc_t_fcat,
+      gs_fcat TYPE lvc_s_fcat.
+
+DATA: gt_fcat_200 TYPE lvc_t_fcat,
+      gs_fcat_200 TYPE lvc_s_fcat.
+
+DATA: gt_fcat_300 TYPE lvc_t_fcat,
+      gs_fcat_300 TYPE lvc_s_fcat.
+
+***** ALV Select Row 사용을 위한 인덱스 선언
+DATA : gt_index TYPE lvc_t_row, "ALV 선택라인 저장 인터널테이블
+       gs_index LIKE LINE OF gt_index, "ALV 선택라인 저장 스트럭쳐
+       gv_lines TYPE i. "선택한 라인수를 저장할 변수
+
+DATA: gt_exclude TYPE ui_functions.
+
+DATA: gv_rad        TYPE c  LENGTH 1,
+      gv_rad_chkdel TYPE c  LENGTH 1,
+      gv_rad_all    TYPE c  LENGTH 1.
+
+***** BDC를 위한 파일 스타일
+DATA: BEGIN OF itab,
+*        mandt     TYPE s_mandt,
+        gdcode   TYPE ztc702_bom_h-gdcode,
+        gdname   TYPE ztc702_bom_h-gdname,
+        gdcode_m TYPE ztc702_bom_i-gdcode_m,
+        mtcode_m TYPE ztc702_bom_i-mtcode_m,
+        gdname_m TYPE ztc702_bom_i-gdname_m,
+        quan     TYPE ztc702_bom_i-quan,
+        unit     TYPE ztc702_bom_i-unit,
+      END OF itab.
+
+DATA: gv_quan TYPE c LENGTH 5.       " bdc 수량 넣기 위한 데이터필드
+
+DATA: gv_rc      TYPE i,
+      gv_file    TYPE localfile,
+      gt_file    TYPE filetable,
+      gv_data    TYPE truxs_t_text_data,
+      g_frontend TYPE REF TO cl_gui_frontend_services.     "업로드용 파일 선택창
+
+DATA: p_file TYPE localfile.             " 엑셀 파일 불러올 필드 데이터.
+
+DATA: gs_itab  LIKE itab,
+      gt_itab  LIKE TABLE OF itab,
+      gs_excel TYPE alsmex_tabline,      "엑셀 업로드 데이터 담을 work area
+      gt_excel TYPE TABLE OF alsmex_tabline.     "엑셀 업로드 데이터 담을 인터널 테이블
+
+*"--------------<BDC 관련 데이터 선언>----------------
+DATA: gt_bdc TYPE TABLE OF bdcdata,  "레코딩 담을 int
+      gs_bdc TYPE bdcdata, "레코딩 데이터 입력 위한 wa
+      gt_msg TYPE TABLE OF bdcmsgcoll, "처리결과 담을 int
+      gs_msg TYPE bdcmsgcoll. "처리 결과 메세지 입력 위한 wa
+
+DATA: gs_opt     TYPE ctu_params, "call transaction 옵션을 넣어줄 wa
+      gv_move    LIKE ctu_params-dismode VALUE 'N',     "display 메세지 옵션,메세지 옵션 주려고
+      gv_message LIKE bapireturn-message.          "실질적으로 메세지 담기는 변수
+
+CONSTANTS : c_filter TYPE string VALUE
+            'EXCEL FILES (*.XLSX)|*.XLSX|EXCEL FILES (*.XLS)|*.XLS|'.
+
+FIELD-SYMBOLS <fs>.
+
+
+***** 이벤트 핸들러 클래스 선언
+CLASS lcl_handler DEFINITION.
+  PUBLIC SECTION.
+
+***** 더블클릭 정의
+    CLASS-METHODS: on_double_click
+                  FOR EVENT double_click OF cl_gui_alv_grid
+      IMPORTING es_row_no.
+ENDCLASS.
+CLASS lcl_handler IMPLEMENTATION.
+***** 더블클릭 구현
+  METHOD on_double_click.
+*    DATA: ls_dvmt TYPE ztc702_dvmt.
+
+    READ TABLE gt_bom_h  INTO gs_bom_hf INDEX es_row_no-row_id.
+
+    CALL SCREEN 110
+    STARTING AT 5 5
+    ENDING AT 71 20.
+    LEAVE SCREEN.
+
+*    CALL METHOD cl_gui_cfw=>set_new_ok_code
+*      EXPORTING
+*        new_code = 'ENTER'.
+
+  ENDMETHOD.
+ENDCLASS.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

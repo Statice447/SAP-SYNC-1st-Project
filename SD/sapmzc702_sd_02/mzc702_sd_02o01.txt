@@ -1,0 +1,107 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_SD_02O01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+ SET PF-STATUS '0100'.
+ SET TITLEBAR '0100'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CREATE_ALV OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE create_alv OUTPUT.
+  IF go_con IS INITIAL.
+    CREATE OBJECT go_con
+      EXPORTING
+        container_name = 'CON'.
+
+    CREATE OBJECT go_alv
+      EXPORTING
+        i_parent = go_con.
+
+    PERFORM alv_setting.
+    set HANDLER lcl_class=>on_double for go_alv.
+
+    go_alv->set_table_for_first_display(
+    EXPORTING
+      is_layout = gs_lay
+
+        CHANGING
+      it_outtab = gt_bill
+      it_sort = gt_sort
+      it_fieldcatalog = gt_cat
+       ).
+  ENDIF.
+  go_alv->refresh_table_display( ).
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CLEAR_OK OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE clear_ok OUTPUT.
+ CLEAR ok_code.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0200 OUTPUT.
+ SET PF-STATUS '0200'.
+ SET TITLEBAR '0200'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_LED OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_led OUTPUT.
+LOOP AT gt_bill into gs_bill.
+  IF gs_bill-status = 'A'.
+    gs_bill-led = '3'.
+    elseif  gs_bill-status = ''.
+      gs_bill-led = '1'.
+  ENDIF.
+  modify gt_bill from gs_bill TRANSPORTING led.
+ENDLOOP.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CREATE_ALV2 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE create_alv2 OUTPUT.
+  IF go_con2 IS INITIAL.
+    CREATE OBJECT go_con2
+      EXPORTING
+        container_name = 'CON2'.
+
+    CREATE OBJECT go_alv2
+      EXPORTING
+        i_parent = go_con2.
+
+    PERFORM alv_setting2.
+
+    go_alv2->set_table_for_first_display(
+    EXPORTING
+      is_layout = gs_lay2
+      it_toolbar_excluding = gt_excl
+
+        CHANGING
+      it_outtab = gt_bill2
+      "it_sort = gt_sort
+      it_fieldcatalog = gt_cat2
+       ).
+  ENDIF.
+  go_alv2->refresh_table_display( ).
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

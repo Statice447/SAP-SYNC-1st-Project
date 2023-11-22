@@ -1,0 +1,42 @@
+*&---------------------------------------------------------------------*
+*& Module Pool      SAPMZC702_SD_03
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+
+INCLUDE mzc702_sd_03top                         .    " Global Data
+INCLUDE mzc702_sd_03o01                         .  " PBO-Modules
+INCLUDE mzc702_sd_03i01                         .  " PAI-Modules
+INCLUDE mzc702_sd_03f01                         .  " FORM-Routines
+
+LOAD-OF-PROGRAM.
+
+  DATA: lv_date LIKE sy-datum.
+
+  CALL FUNCTION 'RP_CALC_DATE_IN_INTERVAL'  "지정한 날짜에서 원하는만큼 +/-된 날짜를 계산해주는 함수
+    EXPORTING
+      date      = sy-datum
+      days      = '0'
+      months    = '1'
+      signum    = '-'
+      years     = '0'
+    IMPORTING
+      calc_date = lv_date.
+  zsc702_reor_con-ordate_b = sy-datum.
+  zsc702_reor_con-ordate_a = lv_date.
+  "날짜 조건의 초기값 지정
+
+*GUI Texts
+*----------------------------------------------------------
+* 0100 --> 출하 요청 관리
+* 0200 --> 배송 관리
+
+
+*Messages
+*----------------------------------------------------------
+*
+* Message class: Hard coded
+*   배송 정보를 입력하세요.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

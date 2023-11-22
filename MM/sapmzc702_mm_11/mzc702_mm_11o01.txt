@@ -1,0 +1,213 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_MM_06O01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE STATUS_0100 OUTPUT.
+  SET PF-STATUS 'S0100'.
+  SET TITLEBAR 'T0100'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CLEAR_OKCODE OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE CLEAR_OKCODE OUTPUT.
+  CLEAR OK_CODE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module ALV_GRID OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE ALV_GRID OUTPUT.
+  IF GO_CONTAINER IS INITIAL.
+    CREATE OBJECT GO_CONTAINER
+      EXPORTING
+        CONTAINER_NAME = 'MY_CON'
+      EXCEPTIONS
+        OTHERS         = 1.
+    IF SY-SUBRC <> 0.
+      MESSAGE E021(ZC702_MESSAGE).
+    ENDIF.
+
+    GV_REFRESH     = ABAP_TRUE.
+  ENDIF.
+
+  IF GV_REFRESH = ABAP_TRUE.
+    CREATE OBJECT GO_ALV_GRID
+      EXPORTING
+        I_PARENT = GO_CONTAINER
+      EXCEPTIONS
+        OTHERS   = 1.
+    IF SY-SUBRC <> 0.
+      MESSAGE E021(ZC702_MESSAGE).
+    ENDIF.
+
+    SET HANDLER LCL_HANDLE=>ON_DOUBLE_CLICK FOR GO_ALV_GRID.
+
+    GS_VARIANT-REPORT = SY-CPROG.
+
+    PERFORM LAYOUT.
+
+    PERFORM FIELD_CATALOG.
+
+    PERFORM EXCLUDE.
+
+    CALL METHOD GO_ALV_GRID->SET_TABLE_FOR_FIRST_DISPLAY
+      EXPORTING
+        IS_VARIANT      = GS_VARIANT
+        I_DEFAULT       = 'X'
+        IS_LAYOUT       = GS_LAYOUT
+        IT_TOOLBAR_EXCLUDING = GT_EXCLUDE      " 버튼 숨기기 적용.
+      CHANGING
+        IT_FIELDCATALOG = GT_FIELD_CAT
+        IT_OUTTAB       = GT_TABLE
+      EXCEPTIONS
+        OTHERS          = 4.
+    IF SY-SUBRC <> 0.
+      MESSAGE E021(ZC702_MESSAGE).
+    ENDIF.
+
+    GV_REFRESH = ABAP_FALSE.
+
+  ELSE.
+    GO_ALV_GRID->REFRESH_TABLE_DISPLAY( ).
+  ENDIF.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0101 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE STATUS_0101 OUTPUT.
+  SET PF-STATUS 'S0101'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module ALV_GRID2 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE ALV_GRID2 OUTPUT.
+  IF GO_CONTAINER2 IS INITIAL.
+    CREATE OBJECT GO_CONTAINER2
+      EXPORTING
+        CONTAINER_NAME = 'MY_CON2'
+      EXCEPTIONS
+        OTHERS         = 1.
+    IF SY-SUBRC <> 0.
+      MESSAGE E021(ZC702_MESSAGE).
+    ENDIF.
+
+    GV_REFRESH     = ABAP_TRUE.
+  ENDIF.
+
+  IF GV_REFRESH = ABAP_TRUE.
+    CREATE OBJECT GO_ALV_GRID2
+      EXPORTING
+        I_PARENT = GO_CONTAINER2
+      EXCEPTIONS
+        OTHERS   = 1.
+    IF SY-SUBRC <> 0.
+      MESSAGE E021(ZC702_MESSAGE).
+    ENDIF.
+
+    GS_VARIANT-REPORT = SY-CPROG.
+
+    PERFORM LAYOUT2.
+
+    PERFORM FIELD_CATALOG2.
+
+    CALL METHOD GO_ALV_GRID2->SET_TABLE_FOR_FIRST_DISPLAY
+      EXPORTING
+        IS_VARIANT      = GS_VARIANT
+        I_DEFAULT       = 'X'
+        IS_LAYOUT       = GS_LAYOUT
+        IT_TOOLBAR_EXCLUDING = GT_EXCLUDE      " 버튼 숨기기 적용.
+      CHANGING
+        IT_FIELDCATALOG = GT_FIELD_CAT2
+        IT_OUTTAB       = GT_EXP
+      EXCEPTIONS
+        OTHERS          = 4.
+    IF SY-SUBRC <> 0.
+      MESSAGE E021(ZC702_MESSAGE).
+    ENDIF.
+
+    GV_REFRESH = ABAP_FALSE.
+
+  ELSE.
+    GO_ALV_GRID2->REFRESH_TABLE_DISPLAY( ).
+  ENDIF.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE STATUS_0200 OUTPUT.
+  SET PF-STATUS 'S0200'.
+  SET TITLEBAR 'T0200'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_0200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE INIT_0200 OUTPUT.
+  DATA LV_DATE TYPE I.
+
+LOOP AT GT_EXP INTO GS_EXP.
+
+CALL FUNCTION 'HR_AUPBS_MONTH_DAY'
+  EXPORTING BEG_DA     = SY-DATUM    " Here you should put the first day of the year
+            END_DA     = GS_EXP-EXPFIN    " Here you put the date
+  IMPORTING NO_CAL_DAY = LV_DATE. " This is what you want
+IF SY-SUBRC <> 0.
+* Implement suitable error handling here
+ENDIF.
+
+    IF LV_DATE < 0.
+      GS_EXP-LIGHT = 1.
+      GS_EXP-COLOR = 'C610'.
+      ELSEIF  LV_DATE < 60.
+        GS_eXP-LIGHT = 2.
+      ELSEIF LV_DATE >= 60.
+        GS_eXP-LIGHT = 3.
+    ENDIF.
+
+    IF GS_EXP-DELFLAG = 'X'.
+      GS_EXP-COLOR = 'C610'.
+    ENDIF.
+
+SELECT GDNAME
+  FROM ZTC702_MTMASTER
+  INTO CORRESPONDING FIELDS OF GS_EXP
+ WHERE GDCODE = GS_EXP-GDCODE.
+ENDSELECT.
+
+    MODIFY GT_EXP FROM GS_EXP TRANSPORTING COLOR LIGHT GDNAME.
+  ENDLOOP.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE INIT_0100 OUTPUT.
+  LOOP AT GT_TABLE INTO GS_TABLE.
+
+    IF GS_TABLE-DELFLAG = 'X'.
+      GS_TABLE-COLOR = 'C610'.
+    ENDIF.
+
+    MODIFY GT_TABLE FROM GS_TABLE TRANSPORTING COLOR.
+  ENDLOOP.
+
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

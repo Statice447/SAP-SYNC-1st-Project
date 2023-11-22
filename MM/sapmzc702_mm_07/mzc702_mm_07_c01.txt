@@ -1,0 +1,90 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_MM_07_C01
+*&---------------------------------------------------------------------*
+CLASS lcl_handler DEFINITION. "정의부(변수 선언)
+  PUBLIC SECTION.
+
+    CLASS-METHODS: handle_on_f4
+                  FOR EVENT onf4 OF cl_gui_alv_grid IMPORTING sender
+                                                              e_fieldname
+                                                              e_fieldvalue
+                                                              es_row_no
+                                                              er_event_data
+                                                              et_bad_cells
+                                                              e_display.
+
+    CLASS-METHODS: on_double_click_100
+          FOR EVENT double_click OF cl_gui_alv_grid IMPORTING es_row_no.
+
+    CLASS-METHODS: on_double_click
+              FOR EVENT double_click OF cl_gui_alv_grid IMPORTING es_row_no.
+ENDCLASS.
+*
+CLASS lcl_handler IMPLEMENTATION. "구현부(실제 사용하는 코딩)
+  METHOD handle_on_f4.
+    PERFORM on_f4 USING sender
+                        e_fieldname
+                        e_fieldvalue
+                        es_row_no
+                        er_event_data
+                        et_bad_cells
+                        e_display.
+  ENDMETHOD.
+
+  METHOD on_double_click_100.
+    READ TABLE gt_ztc702_mpo_h INTO gs_ztc702_mpo_h INDEX es_row_no-row_id.
+    gs_ztc702_mpo-mpono = gs_ztc702_mpo_h-mpono.
+
+    SELECT mpono podate dedate deplace delterm payterm remark
+      FROM ztc702_mpo_i
+      INTO CORRESPONDING FIELDS OF ysztc702_mpo_v2
+     WHERE mpono =  gs_ztc702_mpo-mpono.
+    ENDSELECT.
+
+    gv_switch_300 = 'X'.
+    CALL SCREEN 300.
+*    LEAVE SCREEN.
+
+*    READ TABLE gt_ztc702_mpo_h INTO gs_ztc702_mpo INDEX es_row_no-row_id.
+*
+*    SELECT c~cusname c~cusmana c~cuscell e~pname e~rank e~pcont
+*       FROM ztc702_mpo_i AS o_i INNER JOIN ztc702_cusmaster AS c ON o_i~cuscode = c~cuscode
+*                                INNER JOIN ztc702_mpo_h AS o_h ON o_i~mpono = o_h~mpono
+*                                INNER JOIN ztc702_employee AS e ON o_h~pernr = e~pernr
+*       INTO CORRESPONDING FIELDS OF ysztc702_mpo_v2
+*       WHERE o_i~mpono = gs_ztc702_mpo-mpono.
+*    ENDSELECT.
+*
+*    SELECT m~gdname o_i~quantity o_i~unit o_i~price o_i~amount o_i~currency
+*      FROM ztc702_mpo_i AS o_i INNER JOIN ztc702_mtmaster AS m ON o_i~gdcode = m~gdcode
+*      INTO CORRESPONDING FIELDS OF TABLE gt_ztc702_mpo
+*      WHERE o_i~mpono = gs_ztc702_mpo-mpono.
+*
+*    LOOP AT gt_ztc702_mpo INTO gs_ztc702_mpo.
+*      gs_ztc702_mpo-no = sy-tabix.
+*      MODIFY gt_ztc702_mpo FROM gs_ztc702_mpo TRANSPORTING no.
+*    ENDLOOP.
+*
+*    CALL TRANSACTION 'ZC702_MM_07_V3'.
+*    LEAVE SCREEN.
+  ENDMETHOD.
+
+  METHOD on_double_click.
+
+    CLEAR ysztc702_mpo_v2.
+    READ TABLE gt_ztc702_mpo_210 INTO gs_ztc702_mpo INDEX es_row_no-row_id.
+
+    SELECT mpono
+      FROM ztc702_mpo_i
+      INTO CORRESPONDING FIELDS OF ysztc702_mpo_v2
+     WHERE mpono =  gs_ztc702_mpo-mpono.
+    ENDSELECT.
+
+    CALL SCREEN 300.
+    CLEAR ysztc702_mpo_v2.
+*    LEAVE PROGRAM.
+  ENDMETHOD.
+ENDCLASS.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

@@ -1,0 +1,72 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_SD_06I01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN 'SEARCH'.
+      PERFORM get_data3.
+    WHEN 'CHECK'.
+      PERFORM check_stock.
+    WHEN 'MAKE'.
+      PERFORM make_req.
+    WHEN 'WAIT'.
+      PERFORM wait_out.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  EXIT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE exit INPUT.
+  CASE ok_code.
+    WHEN 'EXIT'.
+      LEAVE PROGRAM.
+    WHEN 'CANC'.
+      LEAVE PROGRAM.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0110  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0110 INPUT.
+  CASE ok_code.
+    WHEN 'OKAY'.
+      UPDATE ztc702_inc_i SET flag = 'E'
+      WHERE ornum = gs_inc-ornum AND gdcode = gs_inc-gdcode.
+      PERFORM to_pp .
+      "PERFORM to_reor USING gs_inc.
+      "MESSAGE '출하 대기 / ' && gv_msg && ' 생산 요청 완료' TYPE 'I'.
+      LEAVE TO SCREEN 0.
+    WHEN 'CANC'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0120  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0120 INPUT.
+  CASE ok_code.
+    WHEN 'OKAY'.
+      UPDATE ztc702_inc_i SET flag = 'F'
+      WHERE ornum = gs_inc-ornum AND gdcode = gs_inc-gdcode.
+      PERFORM to_pp.
+      LEAVE TO SCREEN 0.
+    WHEN 'CANC'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

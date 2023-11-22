@@ -1,0 +1,66 @@
+*&---------------------------------------------------------------------*
+*& Include ZC702R_FI_01TOP                          - Report ZC702R_FI_01
+*&---------------------------------------------------------------------*
+REPORT zc702r_fi_01.
+
+" Period: 조회기간 필드 설정 스트럭처.
+" get: 데이터 가져오는 스트럭처 / set: ALV에 넣을 데이터를 담아두는 스트럭처.
+TABLES: zsc702_period, zsc702_get_ledger, zsc702_set_ledger, zdvc702_docu, zsc702_income.
+
+TYPES: node_table_type LIKE STANDARD TABLE OF mtreesnode WITH DEFAULT KEY.
+
+TYPES: BEGIN OF gty_sum.
+    INCLUDE TYPE zsc702_set_ledger.
+TYPES: END OF gty_sum.
+
+TYPES: BEGIN OF gty_tab.
+        INCLUDE TYPE zsc702_income.
+TYPES: END OF gty_tab.
+
+DATA: gt_tab TYPE TABLE OF zsc702_get_ledger,
+      gs_tab LIKE LINE OF gt_tab,
+      gt_tab2 TYPE TABLE OF gty_tab,
+      gt_tab3 TYPE TABLE OF gty_tab,
+      gs_tab2 TYPE gty_tab,
+      gs_tab3 TYPE gty_tab,
+      gt_sum TYPE TABLE OF zsc702_set_ledger,
+      gs_sum LIKE LINE OF gt_sum.
+
+DATA: tree_con_ref TYPE REF TO cl_gui_custom_container,
+      g_tree TYPE REF TO cl_gui_simple_tree.
+
+DATA: go_container TYPE REF TO cl_gui_custom_container,
+      go_container2 TYPE REF TO cl_gui_custom_container,
+      go_container3 TYPE REF TO cl_gui_custom_container,
+      go_alv_grid TYPE REF TO cl_gui_alv_grid,
+      go_alv_grid2 TYPE REF TO cl_gui_alv_grid,
+      go_alv_grid3 TYPE REF TO cl_gui_alv_grid.
+
+DATA: ok_code LIKE sy-ucomm,
+      gv_subrc TYPE sy-subrc.
+
+FIELD-SYMBOLS: <fcat> TYPE lvc_t_fcat.
+
+DATA: gs_layo TYPE lvc_s_layo,
+      gt_fcat TYPE lvc_t_fcat,
+      gt_fcat2 TYPE lvc_t_fcat,
+      gt_fcat3 TYPE lvc_t_fcat,
+      gs_fcat TYPE lvc_s_fcat,
+      gs_fcat2 TYPE lvc_s_fcat,
+      gs_fcat3 TYPE lvc_s_fcat.
+
+CLASS lcl_handler DEFINITION.
+  PUBLIC SECTION.
+    METHODS: on_double_click FOR EVENT node_double_click OF cl_gui_simple_tree IMPORTING node_key.
+ENDCLASS.
+
+CLASS lcl_handler IMPLEMENTATION.
+  METHOD: on_double_click.
+    PERFORM node_double_click_100 USING node_key.
+  ENDMETHOD.
+ENDCLASS.
+
+DATA: go_handler TYPE REF TO lcl_handler.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

@@ -1,0 +1,155 @@
+*&---------------------------------------------------------------------*
+*& Report ZC702_DD_EXCEL
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT zc702_pp_excel_02.
+
+DATA: BEGIN OF itab.
+
+    INCLUDE TYPE ztc702_prdmanage.                      " include
+
+DATA:     END OF itab.
+
+DATA: gv_rc      TYPE i,
+      gv_file    TYPE localfile,
+      gt_file    TYPE filetable,
+      gv_data    TYPE truxs_t_text_data,
+      g_frontend TYPE REF TO cl_gui_frontend_services.     "업로드용 파일 선택창
+
+DATA: gs_itab  LIKE itab,
+      gt_itab  LIKE TABLE OF itab,
+      gs_excel TYPE alsmex_tabline,      "엑셀 업로드 데이터 담을 work area
+      gt_excel TYPE TABLE OF alsmex_tabline.     "엑셀 업로드 데이터 담을 인터널 테이블
+
+DATA: gv_subrc  TYPE string.
+
+CONSTANTS : c_filter TYPE string VALUE
+            'EXCEL FILES (*.XLSX)|*.XLSX|EXCEL FILES (*.XLS)|*.XLS|'.
+
+FIELD-SYMBOLS <fs>.
+
+
+SELECTION-SCREEN BEGIN OF BLOCK b2 WITH FRAME TITLE TEXT-000. "파일경로
+PARAMETERS : p_file TYPE localfile.
+
+SELECTION-SCREEN END OF BLOCK b2.
+
+INITIALIZATION.
+  CREATE OBJECT g_frontend.
+
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_file.
+
+  PERFORM get_filepath.
+
+START-OF-SELECTION.
+  PERFORM call_func1.
+
+END-OF-SELECTION.
+
+  CHECK gt_itab[] IS NOT INITIAL.
+
+  INSERT ztc702_prdmanage FROM TABLE gt_itab.
+
+  IF sy-subrc = 0.
+    MESSAGE '업로드 완료' TYPE 'I'.
+  ELSE.
+    gv_subrc = sy-subrc.
+    MESSAGE '업로드 실패 ' && gv_subrc TYPE 'I' .
+  ENDIF.
+
+
+
+*&---------------------------------------------------------------------*
+*& Form GET_FILEPATH
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM get_filepath .
+  CLEAR : gv_rc, gt_file[].
+  CALL METHOD g_frontend->file_open_dialog
+    EXPORTING
+      file_filter       = c_filter
+      initial_directory = 'C:'
+      default_filename  = space
+    CHANGING
+      file_table        = gt_file
+      rc                = gv_rc
+    EXCEPTIONS
+      OTHERS            = 1.
+
+  CLEAR p_file.
+  READ TABLE gt_file INTO p_file INDEX 1.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CALL_FUNC1
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM call_func1 .
+  CLEAR gt_excel[].
+  CALL FUNCTION 'ALSM_EXCEL_TO_INTERNAL_TABLE'
+    EXPORTING
+      filename                = p_file
+      i_begin_col             = 1
+      i_begin_row             = 2
+      i_end_col               = 20
+      i_end_row               = 10000
+    TABLES
+      intern                  = gt_excel[]
+    EXCEPTIONS
+      inconsistent_parameters = 1
+      upload_ole              = 2
+      OTHERS                  = 3.
+
+  " 업로드된 엑셀을 LINE/COL 별로 MOVE
+  IF gt_excel[] IS NOT INITIAL.
+    CLEAR gt_itab[].
+    LOOP AT gt_excel INTO gs_excel.
+      UNASSIGN <fs>.
+      ASSIGN COMPONENT gs_excel-col OF STRUCTURE gs_itab TO <fs>.
+
+      IF <fs> IS ASSIGNED.
+        <fs> = gs_excel-value.
+      ENDIF.
+
+      AT END OF row.
+        APPEND gs_itab TO gt_itab.
+        CLEAR gs_itab.
+      ENDAT.
+    ENDLOOP.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form BDC_RUN
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+
+*Text elements
+*----------------------------------------------------------
+* 003 엑셀 파일 경로
+
+
+*Selection texts
+*----------------------------------------------------------
+* PA_1         파일경로
+
+
+*Messages
+*----------------------------------------------------------
+*
+* Message class: Hard coded
+*   업로드 완료
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

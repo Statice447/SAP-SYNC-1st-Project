@@ -1,0 +1,286 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_HR_01F01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form SET_LAYOUT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_lay .
+  gs_lay-info_fname = 'COLOR'.
+  gs_lay-zebra = 'X'.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DISPLAY_EMP
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM display_emp .
+
+  PERFORM get_emp_data.
+
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*& Form GET_EMP_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM get_emp_data .
+
+
+  DATA: lt_emp TYPE TABLE OF gty_emp,
+        ls_emp TYPE gty_emp.
+
+**** 조건 검색을 위한 range 타입 설정 -> 사용 필드만큼 선언
+  DATA: lt_pernr TYPE RANGE OF gty_emp-gdcode,
+        ls_pernr LIKE LINE OF lt_pernr.
+
+**** 조건 검색을 위한 range 타입 조건 설정 => 필드가 입력되면 필드와 동일한 조건으로
+  IF ZTC702_CONMASTER-gdcode IS NOT INITIAL.
+    ls_pernr-sign = 'I'.
+    ls_pernr-option = 'EQ'.
+    ls_pernr-low = ZTC702_CONMASTER-gdcode.
+    APPEND ls_pernr TO lt_pernr.
+  ENDIF.
+
+  CLEAR gt_emp.
+
+  SELECT *
+    FROM ZTC702_CONMASTER
+    INTO CORRESPONDING FIELDS OF TABLE gt_emp2
+    WHERE GDCODE IN lt_pernr.
+
+
+  IF gv_check = space.
+    LOOP AT gt_emp2 INTO ls_emp WHERE delflag = space.
+      APPEND ls_emp TO gt_emp.
+    ENDLOOP.
+  ELSE.
+    LOOP AT gt_emp2 INTO ls_emp WHERE delflag NE space.
+      APPEND ls_emp TO gt_emp.
+    ENDLOOP.
+  ENDIF.
+
+  SORT GT_EMP ASCENDING BY GDCODE.
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*& Form SET_FCAT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_cat .
+
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'GDCODE'.
+  gs_cat-coltext = '품목 코드'.
+  gs_cat-outputlen = '6'.
+  gs_cat-col_pos = '1'.
+  GS_CAT-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'GDNAME'.
+  gs_cat-coltext = '품목명'.
+  gs_cat-outputlen = '22'.
+  gs_cat-col_pos = '2'.
+  GS_CAT-just = 'L'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'PRICE'.
+  gs_cat-coltext = '단가'.
+  gs_cat-cfieldname = 'CURRENCY'.
+  gs_cat-outputlen = '8'.
+  gs_cat-col_pos = '3'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'CURRENCY'.
+  gs_cat-coltext = '단위'.
+  gs_cat-outputlen = '6'.
+  "gs_cat-quantity  = 'EA'.
+  gs_cat-col_pos = '4'.
+  GS_CAT-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'CRNAM'.
+  gs_cat-coltext = '생성자'.
+  gs_cat-outputlen = '6'.
+  gs_cat-col_pos = '5'.
+  GS_CAT-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+    CLEAR gs_cat.
+  gs_cat-fieldname = 'ERDAT'.
+  gs_cat-coltext = '생성일'.
+  gs_cat-outputlen = '10'.
+  gs_cat-col_pos = '6'.
+  GS_CAT-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+    CLEAR gs_cat.
+  gs_cat-fieldname = 'ERTIM'.
+  gs_cat-coltext = '생성 시간'.
+  gs_cat-outputlen = '6'.
+  gs_cat-col_pos = '7'.
+  GS_CAT-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+    gs_cat-fieldname = 'CHNAM'.
+  gs_cat-coltext = '변경자'.
+  gs_cat-outputlen = '7'.
+  gs_cat-col_pos = '8'.
+  GS_CAT-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'CHDAT'.
+  gs_cat-coltext = '변경일'.
+  gs_cat-outputlen = '7'.
+  GS_CAT-just = 'C'.
+  gs_cat-col_pos = '9'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+
+  gs_cat-fieldname = 'CHTIM'.
+  gs_cat-coltext = '변경 시간'.
+  gs_cat-outputlen = '7'.
+  gs_cat-col_pos = '10'.
+  GS_CAT-just = 'C'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CHECK_EMP
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM check_emp .
+  DATA: ls_emporg TYPE ZTC702_CONMASTER,
+        ls_emp    TYPE ZTC702_CONMASTER,
+        lt_row    TYPE lvc_t_row,
+        ls_row    TYPE lvc_s_row,
+        lv_line   TYPE i,
+        lv_answer TYPE c LENGTH 1.
+
+**** ALV ROW 인덱스 찾기
+  CALL METHOD go_alv->get_selected_rows
+    IMPORTING
+      et_index_rows = lt_row.
+
+  DESCRIBE TABLE lt_row LINES lv_line.
+
+**** ALV ROW 체크
+  IF lt_row IS INITIAL.
+    MESSAGE '라인을 선택해주세요.' TYPE 'I'.
+  ELSEIF lv_line > 1.
+    MESSAGE '라인을 하나만 선택해주세요.' TYPE 'I'.
+  ELSE.
+    LOOP AT lt_row INTO ls_row.
+      READ TABLE gt_emp INTO ls_emporg INDEX ls_row-index.
+    ENDLOOP.
+    MOVE-CORRESPONDING ls_emporg TO ls_emp.
+  ENDIF.
+
+**** 선택된 스트럭처의 삭제플래그가 없을 경우
+  IF ls_emp-delflag = space.
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        titlebar              = '사원 퇴직'
+        text_question         = '사원을 퇴직시키겠습니까?'
+        text_button_1         = '예'
+        text_button_2         = '아니오'
+        display_cancel_button = space
+      IMPORTING
+        answer                = lv_answer.
+
+    IF lv_answer = 1.
+**** 삭제플래그 변경 및 LOG 변경
+      ls_emp-delflag = 'X'.
+      ls_emp-chnam = sy-uname.
+      ls_emp-chdat = sy-datum.
+      ls_emp-chtim = sy-uzeit.
+
+      UPDATE ZTC702_CONMASTER FROM ls_emp.
+      MESSAGE '사원 퇴직' TYPE 'I'.
+
+      COMMIT WORK.
+    ENDIF.
+**** 선택된 스트럭처의 삭제플래그가 있을 경우
+  ELSEIF ls_emp-delflag = 'X'.
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        titlebar              = '사원 정보'
+        text_question         = '사원을 복귀 시키겠습니까?'
+        text_button_1         = '예'
+        text_button_2         = '아니오'
+        display_cancel_button = space
+      IMPORTING
+        answer                = lv_answer.
+
+    IF lv_answer = 1.
+**** 삭제플래그 변경 및 LOG 변경
+      ls_emp-delflag = space.
+      ls_emp-chnam = sy-uname.
+      ls_emp-chdat = sy-datum.
+      ls_emp-chtim = sy-uzeit.
+
+      UPDATE ZTC702_CONMASTER FROM ls_emp.
+      MESSAGE '사원 복직' TYPE 'I'.
+
+      COMMIT WORK.
+    ENDIF.
+
+  ENDIF.
+
+**** 업데이트 된 DB 다시 불러오기
+  PERFORM get_emp_data.
+
+
+ENDFORM.
+.
+*&---------------------------------------------------------------------*
+*& Form CREATE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM create .
+  CALL SCREEN 110
+    STARTING AT 15 5
+  ENDING AT 60 15.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form READ_LINE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*      -->P_GS_EMP  text
+*&---------------------------------------------------------------------*
+FORM read_line  USING    ps_emp.
+  CLEAR ps_emp.
+  CALL METHOD go_alv->get_selected_rows "선택된 열의 INDEX를 읽어 오는 함수
+    IMPORTING
+      et_index_rows = gt_index.
+
+  LOOP AT gt_index INTO gs_index. "INDEX에 해당하는 ALV의 정보를 저장
+    READ TABLE gt_emp INTO ps_emp INDEX gs_index-index.
+  ENDLOOP.
+ENDFORM.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

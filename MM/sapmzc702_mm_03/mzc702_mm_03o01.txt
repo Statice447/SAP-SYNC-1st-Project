@@ -1,0 +1,132 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_MM_03O01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE STATUS_0100 OUTPUT.
+  SET PF-STATUS 'S0100'.
+  SET TITLEBAR 'T0100'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CLEAR_OK_CODE OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE CLEAR_OK_CODE OUTPUT.
+  CLEAR OK_CODE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module ALV_GRID OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE ALV_GRID OUTPUT.
+
+* 컨테이너 생성.
+  IF GO_CONTAINER IS INITIAL.
+    CREATE OBJECT GO_CONTAINER
+      EXPORTING
+        CONTAINER_NAME = 'MY_CON'
+      EXCEPTIONS
+        OTHERS         = 1.
+    IF SY-SUBRC <> 0.
+      MESSAGE E021(ZC702_MESSAGE).
+    ENDIF.
+
+    GV_REFRESH     = ABAP_TRUE.
+  ENDIF.
+
+* ALV GRID와 컨테이너 연결.
+  IF GV_REFRESH = ABAP_TRUE.
+    CREATE OBJECT GO_ALV_GRID
+      EXPORTING
+        I_PARENT = GO_CONTAINER
+      EXCEPTIONS
+        OTHERS   = 1.
+    IF SY-SUBRC <> 0.
+      MESSAGE E021(ZC702_MESSAGE).
+    ENDIF.
+
+    GS_VARIANT-REPORT = SY-CPROG.
+
+* 레이아웃 변경.
+    PERFORM LAYOUT.
+
+* 스탠다드 툴바 버튼 변경.
+    PERFORM EXCLUDE.
+
+* 필드 카탈로그 변경.
+    PERFORM FIELD_CATALOG.
+
+* ALV GRID 디스플레이 설정.
+    CALL METHOD GO_ALV_GRID->SET_TABLE_FOR_FIRST_DISPLAY
+      EXPORTING
+        IS_VARIANT      = GS_VARIANT
+        I_DEFAULT       = 'X'
+        IS_LAYOUT       = GS_LAYOUT
+        IT_TOOLBAR_EXCLUDING = GT_EXCLUDE      " 버튼 숨기기 적용.
+      CHANGING
+        IT_FIELDCATALOG = GT_FIELD_CAT
+        IT_OUTTAB       = GT_TABLE
+      EXCEPTIONS
+        OTHERS          = 4.
+    IF SY-SUBRC <> 0.
+      MESSAGE E021(ZC702_MESSAGE).
+    ENDIF.
+
+    GV_REFRESH = ABAP_FALSE.
+
+  ELSE.
+    GO_ALV_GRID->REFRESH_TABLE_DISPLAY( ). " ALV GRID 새로고침.
+  ENDIF.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE INIT_0100 OUTPUT.
+* 스크린에 데이터 전달.
+  MOVE-CORRESPONDING GS_TABLE TO ZTC702_CUSMASTER.
+
+* 삭제 플래그 적색 셀 처리.
+  LOOP AT GT_TABLE INTO GS_TABLE.
+
+    IF GS_TABLE-DELFLAG = 'X'.
+      GS_TABLE-COLOR = 'C610'.
+    ENDIF.
+
+    MODIFY GT_TABLE FROM GS_TABLE TRANSPORTING COLOR.
+  ENDLOOP.
+
+* 키 필드 인풋 입력불가 처리.
+  LOOP AT SCREEN.
+    IF SCREEN-GROUP1 = 'KEY'.
+      SCREEN-INPUT = 0.
+      MODIFY SCREEN.
+    ENDIF.
+  ENDLOOP.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0101 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE STATUS_0101 OUTPUT.
+  SET PF-STATUS 'S0101'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_0101 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE INIT_0101 OUTPUT.
+  CLEAR: ZTC702_CUSMASTER, GV_P1, GV_P2, GV_P3.
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

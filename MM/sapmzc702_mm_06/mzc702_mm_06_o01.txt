@@ -1,0 +1,346 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_MM_06_O01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+  IF gt_ztc702_mir IS INITIAL.
+    SET PF-STATUS 'S0100'.
+  ELSE.
+    SET PF-STATUS 'S0101'.
+  ENDIF.
+  SET TITLEBAR 'T0100'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0200 OUTPUT.
+  SET PF-STATUS 'S0200'.
+  SET TITLEBAR 'T0200' WITH gs_ztc702_mir-cusname gs_ztc702_mir-gdname.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0300 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0300 OUTPUT.
+  SET PF-STATUS 'S0300'.
+  SET TITLEBAR 'T0300'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CLEAR_OK_CODE OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE clear_ok_code OUTPUT.
+  CLEAR ok_code.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init OUTPUT.
+  IF gv_switch = 'X'.
+    LOOP AT SCREEN.
+      CASE screen-name.
+        WHEN 'ZTC702_MTMASTER-GDCODE'.
+          screen-input = 0.
+          MODIFY SCREEN.
+          CLEAR gv_switch.
+      ENDCASE.
+    ENDLOOP.
+  ENDIF.
+
+  LOOP AT gt_ztc702_mir INTO gs_ztc702_mir.
+    IF gs_ztc702_mir-exdate < sy-datum.
+      gs_ztc702_mir-color = 'C610'.
+    ENDIF.
+    MODIFY gt_ztc702_mir FROM gs_ztc702_mir TRANSPORTING color.
+  ENDLOOP.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_300 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_300 OUTPUT.
+  ysztc702_mir_300-currency = 'KRW'.
+  IF gv_switch_200 = 'X'.
+    LOOP AT SCREEN.
+      CASE screen-name.
+        WHEN 'YSZTC702_MIR_300-CUSCODE' OR 'YSZTC702_MIR_300-GDCODE'.
+          screen-input = 0.
+          MODIFY SCREEN.
+          CLEAR gv_switch_200.
+      ENDCASE.
+    ENDLOOP.
+  ENDIF.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module GET_DATA_200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE get_data_200 OUTPUT.
+  DATA: lv_st TYPE string,
+        lv_ex TYPE string.
+
+*  SELECT r~stdate r~exdate r~price r~currency r~qtno r~ctno c~cusmana c~cuscell "담당자와 연락처가
+*    FROM ztc702_mir AS r INNER JOIN ztc702_cusmaster AS c ON r~cuscode = c~cuscode
+*    INTO CORRESPONDING FIELDS OF TABLE gt_ztc702_mir_200
+*   WHERE r~cuscode = ysztc702_mir-cuscode
+*     AND r~gdcode = ysztc702_mir-gdcode.
+
+ CLEAR gt_ztc702_mir_200.
+  SELECT *
+    FROM ztc702_mir
+    INTO CORRESPONDING FIELDS OF TABLE gt_ztc702_mir_200
+   WHERE cuscode = ysztc702_mir-cuscode
+     AND gdcode = ysztc702_mir-gdcode
+     AND delflag <> 'X'.
+
+  SORT gt_ztc702_mir_200 DESCENDING BY stdate.
+
+  LOOP AT gt_ztc702_mir_200 INTO gs_ztc702_mir_200.
+    lv_st = gs_ztc702_mir_200-stdate.
+    lv_ex = gs_ztc702_mir_200-exdate.
+    gs_ztc702_mir_200-applicable_period = lv_st(4) && '.' && lv_st+4(2) && '.' && lv_st+6(2) && '　~　' && lv_ex(4) && '.' && lv_ex+4(2) && '.' && lv_ex+6(2).
+    MODIFY gt_ztc702_mir_200 FROM gs_ztc702_mir_200.
+  ENDLOOP.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SET_ALV OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE set_alv OUTPUT.
+  IF go_container IS INITIAL.
+
+    CREATE OBJECT go_container
+      EXPORTING
+        container_name = 'MY_CONTROL_AREA'.
+
+    CREATE OBJECT go_alv_grid
+      EXPORTING
+        i_parent = go_container.
+
+    APPEND cl_gui_alv_grid=>mc_fc_detail TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_fc_sort_asc TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_fc_sort_dsc TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_fc_find TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_fc_filter TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_mb_sum TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_fc_print_back TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_mb_view TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_mb_export TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_mb_variant TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_fc_info TO gt_exclude_100.
+
+*    gs_layout-sel_mode = 'D'.
+    gs_layout-info_fname = 'COLOR'.
+
+    gs_fcat-fieldname = 'CUSCODE'.
+    gs_fcat-coltext = '업체코드'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 13.
+    APPEND gs_fcat TO gt_fcat.
+
+    gs_fcat-fieldname = 'CUSNAME'.
+    gs_fcat-coltext = '업체명'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 20.
+    APPEND gs_fcat TO gt_fcat.
+
+    gs_fcat-fieldname = 'PRICE'.
+    gs_fcat-coltext = '단가'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 10.
+    gs_fcat-cfieldname = 'CURRENCY'.
+    APPEND gs_fcat TO gt_fcat.
+
+    gs_fcat-fieldname = 'CURRENCY'.
+    gs_fcat-coltext = '통화'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 7.
+    gs_fcat-currency = 'KRW'. "단가 뒤에 소수점이 안나옴
+    APPEND gs_fcat TO gt_fcat.
+
+    gs_fcat-fieldname = 'QTNO'.
+    gs_fcat-coltext = '견적서 번호'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 15.
+    APPEND gs_fcat TO gt_fcat.
+
+    gs_fcat-fieldname = 'CTNO'.
+    gs_fcat-coltext = '계약서 번호'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 15.
+    APPEND gs_fcat TO gt_fcat.
+
+    gs_fcat-fieldname = 'EXDATE'.
+    gs_fcat-coltext = '유효기간'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 10.
+    APPEND gs_fcat TO gt_fcat.
+
+    CALL METHOD go_alv_grid->set_table_for_first_display
+      EXPORTING
+*       i_buffer_active      =
+*       i_bypassing_buffer   =
+*       i_consistency_check  =
+*       i_structure_name     =
+*       is_variant           =
+*       i_save               =
+*       i_default            = 'X'
+        is_layout            = gs_layout
+*       is_print             =
+*       it_special_groups    =
+        it_toolbar_excluding = gt_exclude_100
+*       it_hyperlink         =
+*       it_alv_graphics      =
+*       it_except_qinfo      =
+*       ir_salv_adapter      =
+      CHANGING
+        it_outtab            = gt_ztc702_mir
+        it_fieldcatalog      = gt_fcat
+*       it_sort              =
+*       it_filter            =
+      EXCEPTIONS
+        OTHERS               = 1.
+
+    IF sy-subrc <> 0.
+      WRITE: '에러가 발생했습니다.'.
+    ENDIF.
+
+  ELSE.
+    go_alv_grid->refresh_table_display( ).
+
+  ENDIF.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SET_ALV_200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE set_alv_200 OUTPUT.
+  IF go_container_200 IS INITIAL.
+
+    CREATE OBJECT go_container_200
+      EXPORTING
+        container_name = 'MY_CONTROL_AREA_200'.
+
+    CREATE OBJECT go_alv_grid_200
+      EXPORTING
+        i_parent = go_container_200.
+
+    APPEND cl_gui_alv_grid=>mc_fc_detail TO gt_exclude_200.
+    APPEND cl_gui_alv_grid=>mc_fc_sort_asc TO gt_exclude_200.
+    APPEND cl_gui_alv_grid=>mc_fc_sort_dsc TO gt_exclude_200.
+    APPEND cl_gui_alv_grid=>mc_fc_find TO gt_exclude_200.
+    APPEND cl_gui_alv_grid=>mc_fc_filter TO gt_exclude_200.
+    APPEND cl_gui_alv_grid=>mc_mb_sum TO gt_exclude_200.
+    APPEND cl_gui_alv_grid=>mc_fc_print_back TO gt_exclude_200.
+    APPEND cl_gui_alv_grid=>mc_mb_view TO gt_exclude_200.
+    APPEND cl_gui_alv_grid=>mc_mb_export TO gt_exclude_200.
+    APPEND cl_gui_alv_grid=>mc_mb_variant TO gt_exclude_200.
+    APPEND cl_gui_alv_grid=>mc_fc_info TO gt_exclude_200.
+
+*    gs_layout_200-stylefname = 'STYLE'.
+
+    gs_fcat_200-fieldname = 'APPLICABLE_PERIOD'.
+    gs_fcat_200-coltext = '적용기간'.
+    gs_fcat_200-just = 'C'.
+    gs_fcat_200-outputlen = 25.
+*    gs_fcat_200-edit = 'X'.
+    APPEND gs_fcat_200 TO gt_fcat_200.
+
+    gs_fcat_200-fieldname = 'PRICE'.
+    gs_fcat_200-coltext = '단가'.
+    gs_fcat_200-just = 'C'.
+    gs_fcat_200-outputlen = 10.
+    gs_fcat_200-cfieldname = 'CURRENCY'.
+*    gs_fcat_200-edit = 'X'.
+    APPEND gs_fcat_200 TO gt_fcat_200.
+
+    gs_fcat_200-fieldname = 'CURRENCY'.
+    gs_fcat_200-coltext = '통화'.
+    gs_fcat_200-just = 'C'.
+    gs_fcat_200-outputlen = 7.
+    gs_fcat_200-currency = 'KRW'.
+    APPEND gs_fcat_200 TO gt_fcat_200.
+
+    gs_fcat_200-fieldname = 'QTNO'.
+    gs_fcat_200-coltext = '견적서 번호'.
+    gs_fcat_200-just = 'C'.
+    gs_fcat_200-outputlen = 15.
+*    gs_fcat_200-edit = 'X'.
+    APPEND gs_fcat_200 TO gt_fcat_200.
+
+    gs_fcat_200-fieldname = 'CTNO'.
+    gs_fcat_200-coltext = '계약서 번호'.
+    gs_fcat_200-just = 'C'.
+    gs_fcat_200-outputlen = 15.
+*    gs_fcat_200-edit = 'X'.
+    APPEND gs_fcat_200 TO gt_fcat_200.
+
+    gs_fcat_200-fieldname = 'CUSMANA'.
+    gs_fcat_200-coltext = '담당자'.
+    gs_fcat_200-just = 'C'.
+    gs_fcat_200-outputlen = 10.
+*    gs_fcat_200-edit = 'X'.
+    APPEND gs_fcat_200 TO gt_fcat_200.
+
+    gs_fcat_200-fieldname = 'CUSCELL'.
+    gs_fcat_200-coltext = '연락처'.
+    gs_fcat_200-just = 'C'.
+    gs_fcat_200-outputlen = 15.
+*    gs_fcat_200-edit = 'X'.
+    APPEND gs_fcat_200 TO gt_fcat_200.
+
+*    CALL METHOD go_alv_grid_200->register_edit_event
+*      EXPORTING
+*        i_event_id = go_alv_grid_200->mc_evt_modified.
+
+    CALL METHOD go_alv_grid_200->set_table_for_first_display
+      EXPORTING
+*       i_buffer_active      =
+*       i_bypassing_buffer   =
+*       i_consistency_check  =
+*       i_structure_name     =
+*       is_variant           =
+*       i_save               =
+*       i_default            = 'X'
+*       is_layout            =
+*       is_print             =
+*       it_special_groups    =
+        it_toolbar_excluding = gt_exclude_200
+*       it_hyperlink         =
+*       it_alv_graphics      =
+*       it_except_qinfo      =
+*       ir_salv_adapter      =
+      CHANGING
+        it_outtab            = gt_ztc702_mir_200
+        it_fieldcatalog      = gt_fcat_200
+*       it_sort              =
+*       it_filter            =
+      EXCEPTIONS
+        OTHERS               = 1.
+    IF sy-subrc <> 0.
+      WRITE: '에러가 발생했습니다.'.
+    ENDIF.
+
+  ELSE.
+*    CALL METHOD go_alv_grid_200->refresh_table_display.
+    go_alv_grid_200->refresh_table_display( ).
+
+  ENDIF.
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

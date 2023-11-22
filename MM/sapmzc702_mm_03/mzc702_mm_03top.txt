@@ -1,0 +1,57 @@
+*&---------------------------------------------------------------------*
+*& Include MZC702_MM_03TOP                          - Module Pool      SAPMZC702_MM_03
+*&---------------------------------------------------------------------*
+PROGRAM SAPMZC702_MM_03.
+
+* 거래업체 마스터 테이블 사용.
+TABLES: ZTC702_CUSMASTER.
+
+* 데이터 오브젝트 정의.
+DATA: OK_CODE    LIKE SY-UCOMM,
+      GV_REFRESH TYPE C LENGTH 1,
+      GV_SWITCH  TYPE C LENGTH 1 VALUE '1',
+      GV_TAXCODE TYPE N LENGTH 10.
+
+* 전화번호 채번 데이터 오브젝트 정의.
+DATA: GV_P1 TYPE N LENGTH 3,
+      GV_P2 TYPE N LENGTH 4,
+      GV_P3 TYPE N LENGTH 4,
+      GV_C1 TYPE C LENGTH 3,
+      GV_C2 TYPE C LENGTH 4,
+      GV_C3 TYPE C LENGTH 4.
+
+* 업체구분 라디오 버튼 정의.
+DATA: GV_RA1 TYPE C LENGTH 1 VALUE 'X',
+      GV_RA2 TYPE C LENGTH 1,
+      GV_RA3 TYPE C LENGTH 1,
+      GV_RA4 TYPE C LENGTH 1,
+      GV_CH1 TYPE C LENGTH 1.
+
+* 인터널 테이블 정의.
+TYPES: BEGIN OF GTY_TABLE.
+    INCLUDE TYPE ZTC702_CUSMASTER.
+TYPES: COLOR TYPE C LENGTH 4,
+       END OF GTY_TABLE.
+
+DATA: GT_TABLE TYPE TABLE OF GTY_TABLE,
+      GS_TABLE TYPE GTY_TABLE,
+      LS_TABLE TYPE ZTC702_CUSMASTER.
+
+* ALV GRID 정의.
+DATA: GO_CONTAINER TYPE REF TO CL_GUI_CUSTOM_CONTAINER,
+      GO_ALV_GRID  TYPE REF TO CL_GUI_ALV_GRID.
+
+* ALV GRID 변수 선언.
+DATA: GS_VARIANT TYPE DISVARIANT.
+
+* ALV GRID 버튼 숨기기 함수.
+DATA: GT_EXCLUDE TYPE UI_FUNCTIONS.
+
+* LAV GRID 화면 편집 변수.
+DATA: GS_LAYOUT      TYPE LVC_S_LAYO,
+      GS_FIELD_COLOR TYPE LVC_S_SCOL,
+      GT_FIELD_CAT   TYPE LVC_T_FCAT,
+      GS_FIELD_CAT   TYPE LVC_S_FCAT.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

@@ -1,0 +1,744 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_PP_04F01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form DISPLAY_ORD_H
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM display_ord .
+  PERFORM get_prdord_h.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_PRDORD_H
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM get_prdord_h .
+  DATA: lt_prdord_h TYPE TABLE OF gty_prdord_h,
+        ls_prdord_h TYPE gty_prdord_h.
+
+**** 조건 검색을 위한 range 타입 설정 -> 사용 필드만큼 선언
+  DATA: lt_pornum TYPE RANGE OF gty_prdord_h-pornum,
+        ls_pornum LIKE LINE OF lt_pornum.
+
+  DATA: lt_plcode TYPE RANGE OF gty_prdord_h-plcode,
+        ls_plcode LIKE LINE OF lt_plcode.
+
+
+**** 조건 검색을 위한 range 타입 조건 설정 => 필드가 입력되면 필드와 동일한 조건으로
+  IF ztc702_prdord_h-pornum IS NOT INITIAL.
+    ls_pornum-sign = 'I'.
+    ls_pornum-option = 'EQ'.
+    ls_pornum-low = ztc702_prdord_h-pornum.
+    APPEND ls_pornum TO lt_pornum.
+  ENDIF.
+
+  IF ztc702_prdord_h-plcode IS NOT INITIAL.
+    ls_plcode-sign = 'I'.
+    ls_plcode-option = 'EQ'.
+    ls_plcode-low = ztc702_prdord_h-plcode.
+    APPEND ls_plcode TO lt_plcode.
+  ENDIF.
+
+  CLEAR gt_prdord_h.
+**** Select문 range 타입으로 선언했으므로 where ~ in 조건 + 삭제플래그가 체크가 안될 경우 검색.
+  SELECT *
+    FROM ztc702_prdord_h INTO CORRESPONDING FIELDS OF TABLE lt_prdord_h
+    WHERE pornum IN lt_pornum
+    AND plcode IN lt_plcode.
+
+**** 데이터를 화면테이블에 넣기 위해 클리어
+
+**** 라디오 버튼에 따라 검색이 다르게 설정
+
+  CASE 'X'.
+    WHEN gv_rad_all.            " 전체 리스트
+      LOOP AT lt_prdord_h INTO ls_prdord_h.
+        APPEND ls_prdord_h TO gt_prdord_h.
+      ENDLOOP.
+    WHEN gv_rad_reject.         " 반려 리스트
+      LOOP AT lt_prdord_h INTO ls_prdord_h WHERE status = '1'.
+        APPEND ls_prdord_h TO gt_prdord_h.
+      ENDLOOP.
+    WHEN gv_rad_wait.           " 대기 리스트
+      LOOP AT lt_prdord_h INTO ls_prdord_h WHERE status = '2'.
+        APPEND ls_prdord_h TO gt_prdord_h.
+      ENDLOOP.
+    WHEN gv_rad_confirm.        " 승인 리스트
+      LOOP AT lt_prdord_h INTO ls_prdord_h WHERE status = '3'.
+        APPEND ls_prdord_h TO gt_prdord_h.
+      ENDLOOP.
+  ENDCASE.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_LAYOUT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_layout .
+  gs_layout-info_fname = 'COLOR'.
+  gs_layout-excp_fname = 'LIGHT'.
+  gs_layout-zebra = 'X'.
+  gs_layout-sel_mode = 'A'.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_FCAT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_fcat .
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'LIGHT'.
+  gs_fcat-ref_table = 'GTY_PRDORD_H'.
+  gs_fcat-coltext = '상태표시'.
+  gs_fcat-outputlen = 4.
+  gs_fcat-just = 'C'.
+  gs_fcat-col_pos = 1.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'PORNUM'.
+  gs_fcat-coltext = '생산오더번호'.
+  gs_fcat-just = 'C'.
+  gs_fcat-key = 'X'.
+  gs_fcat-outputlen = 14.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'PLCODE'.
+  gs_fcat-coltext = '공장코드'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 7.
+  APPEND gs_fcat TO gt_fcat.
+*
+*  CLEAR gs_fcat.
+*  gs_fcat-fieldname = 'GDCODE'.
+*  gs_fcat-coltext = '품목코드'.
+*  gs_fcat-outputlen = 6.
+*  APPEND gs_fcat TO gt_fcat.
+*
+*  CLEAR gs_fcat.
+*  gs_fcat-fieldname = 'GDNAME'.
+*  gs_fcat-coltext = '품목명'.
+*  gs_fcat-outputlen = 20.
+*  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'PPLNUM'.
+  gs_fcat-coltext = '참조문서번호'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 14.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'PNAME'.
+  gs_fcat-coltext = '담당자이름'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 8.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'CRNAM'.
+  gs_fcat-coltext = '생성자'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 8.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'ERDAT'.
+  gs_fcat-coltext = '생성 일자'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 11.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'ERTIM'.
+  gs_fcat-coltext = '생성 시간'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 8.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'CHNAM'.
+  gs_fcat-coltext = '변경자'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 8.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'CHDAT'.
+  gs_fcat-coltext = '변경 일자'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 11.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'CHTIM'.
+  gs_fcat-coltext = '변경 시간'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 11.
+  APPEND gs_fcat TO gt_fcat.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DISPLAY_ORD_I
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM display_ord_i .
+***** alv row 인데스 찾기
+  CALL METHOD go_alv_grid->get_selected_rows
+    IMPORTING
+      et_index_rows = gt_index.
+
+***** 선택된 ROW 개수 찾기
+  DESCRIBE TABLE gt_index LINES gv_lines.
+
+
+  LOOP AT gt_index INTO gs_index.
+
+  ENDLOOP.
+
+  CALL SCREEN 200.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_FCAT_200
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_fcat_200 .
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'PPLNUM'.
+  gs_fcat-coltext = '참조문서번호'.
+  gs_fcat-key = 'X'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 13.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDCODE'.
+  gs_fcat-coltext = '품목코드'.
+  gs_fcat-key = 'X'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 7.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDNAME'.
+  gs_fcat-coltext = '품목명'.
+  gs_fcat-outputlen = 40.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'QUAN'.
+  gs_fcat-coltext = '수량'.
+  gs_fcat-qfieldname = 'UNIT'.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'UNIT'.
+  gs_fcat-coltext = '단위'.
+  gs_fcat-just = 'C'.
+  gs_fcat-quantity = 'EA'.
+  gs_fcat-outputlen = 3.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'PPSTDAT'.
+  gs_fcat-coltext = '생산시작날짜'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 11.
+  APPEND gs_fcat TO gt_fcat_200.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CHECK_PRDORD_H
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM check_prdord_h .
+  DATA: ls_prdord_h TYPE ztc702_prdord_h,
+        lt_row      TYPE lvc_t_row,
+        ls_row      TYPE lvc_s_row,
+        lv_line     TYPE i,
+        lv_answer   TYPE c LENGTH 1.
+
+**** ALV ROW 인덱스 찾기
+  CALL METHOD go_alv_grid->get_selected_rows
+    IMPORTING
+      et_index_rows = lt_row.
+
+  DESCRIBE TABLE lt_row LINES lv_line.
+
+**** ALV ROW 체크
+  IF lt_row IS INITIAL.
+    MESSAGE '라인을 선택해주세요.' TYPE 'I'.
+  ELSEIF lv_line > 1.
+    MESSAGE '라인을 하나만 선택해주세요.' TYPE 'I'.
+  ELSE.
+    LOOP AT lt_row INTO ls_row.
+      READ TABLE gt_prdord_h INTO ls_prdord_h INDEX ls_row-index.
+    ENDLOOP.
+
+**** 선택된 스트럭처의 삭제플래그가 없을 경우
+    IF ls_prdord_h-delflag = space.
+      CALL FUNCTION 'POPUP_TO_CONFIRM'
+        EXPORTING
+          titlebar              = '생산 오더 중지'
+          text_question         = '생산 오더를 중지시키겠습니까?'
+          text_button_1         = '예'
+          text_button_2         = '아니오'
+          display_cancel_button = space
+        IMPORTING
+          answer                = lv_answer.
+
+      IF lv_answer = 1.
+**** 삭제플래그 변경 및 LOG 변경
+        ls_prdord_h-delflag = 'X'.
+        ls_prdord_h-chnam = sy-uname.
+        ls_prdord_h-chdat = sy-datum.
+        ls_prdord_h-chtim = sy-uzeit.
+
+        UPDATE ztc702_prdord_h FROM ls_prdord_h.
+        MESSAGE '생산 오더 중지' TYPE 'I'.
+
+        COMMIT WORK.
+      ENDIF.
+
+**** 선택된 스트럭처의 삭제플래그가 있을 경우
+    ELSEIF ls_prdord_h-delflag = 'X'.
+      CALL FUNCTION 'POPUP_TO_CONFIRM'
+        EXPORTING
+          titlebar              = '생산 오더 재가동'
+          text_question         = '생산 오더를 재가동 시키겠습니까?'
+          text_button_1         = '예'
+          text_button_2         = '아니오'
+          display_cancel_button = space
+        IMPORTING
+          answer                = lv_answer.
+
+      IF lv_answer = 1.
+**** 삭제플래그 변경 및 LOG 변경
+        ls_prdord_h-delflag = space.
+        ls_prdord_h-chnam = sy-uname.
+        ls_prdord_h-chdat = sy-datum.
+        ls_prdord_h-chtim = sy-uzeit.
+
+        UPDATE ztc702_prdord_h FROM ls_prdord_h.
+        MESSAGE '생산 오더 재가동' TYPE 'I'.
+
+        COMMIT WORK.
+      ENDIF.
+
+    ENDIF.
+  ENDIF.
+
+
+
+**** 업데이트 된 DB 다시 불러오기
+  PERFORM get_prdord_h.
+
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ADD_ORD_ITEM
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM add_ord_item .
+  DATA: lt_ord_item TYPE TABLE OF ztc702_prdord_i,
+        ls_ord_item TYPE ztc702_prdord_i,
+        ls_chk_ord  TYPE ztc702_prdord_i.
+
+  DATA: lt_ord_header TYPE TABLE OF ztc702_prdord_h,
+        ls_ord_header TYPE ztc702_prdord_h.
+
+  DATA: ls_ord_check TYPE ztc702_prdord_i,
+        lv_check     TYPE c  LENGTH 1,
+        lv_answer    TYPE c LENGTH 1.
+
+
+
+**** 필드 조건 설정
+  IF zsc702_prdord-plcode IS INITIAL OR
+     zsc702_prdord-gdcode IS INITIAL OR
+     zsc702_prdord-gdname IS INITIAL OR
+     zsc702_prdord-pernr IS INITIAL OR
+     zsc702_prdord-pname IS INITIAL OR
+     zsc702_prdord-quan IS INITIAL OR
+     ztc702_prdord_i-ppstdat IS INITIAL.
+
+    MESSAGE '모든 데이터를 입력해 주세요.' TYPE 'I'.
+
+  ELSEIF zsc702_prdord-pplnum IS INITIAL.
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        titlebar              = '참조 문서 없음'
+        text_question         = '참조 문서가 정해지지 않았습니다. 진행하시겠습니까?'
+        text_button_1         = '예'
+        text_button_2         = '아니오'
+        display_cancel_button = space
+      IMPORTING
+        answer                = lv_answer.
+
+**** 팝업에서 YES 일 경우 데이터 생성 작업
+    IF lv_answer = 1.
+      MOVE-CORRESPONDING zsc702_prdord TO ls_ord_item.
+      ls_ord_item-ppstdat = ztc702_prdord_i-ppstdat.
+      APPEND ls_ord_item TO gt_prdord_i_300.
+    ENDIF.
+
+  ELSE.
+**** 추가된 인터널 테이블에 중복된 완제품 있는지 검사
+    LOOP AT gt_prdord_i_300 INTO ls_chk_ord.
+      IF ls_chk_ord-gdcode = zsc702_prdord-gdcode.
+        MESSAGE '중복된 완제품이 존재합니다.' TYPE 'I'.
+        RETURN.
+      ENDIF.
+    ENDLOOP.
+
+    MOVE-CORRESPONDING zsc702_prdord TO ls_ord_item.
+    ls_ord_item-ppstdat = ztc702_prdord_i-ppstdat.
+    APPEND ls_ord_item TO gt_prdord_i_300.
+
+    gv_check = 'O'.
+
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SAVE_PRDORD
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM save_prdord .
+  DATA: lt_ord_item TYPE TABLE OF ztc702_prdord_i,
+        ls_ord_item TYPE ztc702_prdord_i.
+
+  DATA: lt_ord_header TYPE TABLE OF ztc702_prdord_h,
+        ls_ord_header TYPE ztc702_prdord_h.
+
+  DATA: lv_text   TYPE string,
+        lv_answer TYPE c LENGTH 1.
+
+  CALL FUNCTION 'POPUP_TO_CONFIRM'
+    EXPORTING
+      titlebar              = '오더 생성'
+      text_question         = '새로운 오더를 등록하시겠습니까?'
+      text_button_1         = '예'
+      text_button_2         = '아니오'
+      display_cancel_button = space
+    IMPORTING
+      answer                = lv_answer.
+
+**** 팝업에서 YES 일 경우 데이터 생성 작업
+  IF lv_answer = 1.
+
+**** 채번 펑션 모듈 실행
+    CALL FUNCTION 'ZFMC702_CNRO'
+      EXPORTING
+        fv_module_name   = 'POR'
+        fv_cnro_nr       = '04'
+        fv_object        = 'ZNRC702PP1'
+      CHANGING
+        fv_change_codenr = lv_text.
+
+**** 채번코드 및 생성자 입력
+    MOVE-CORRESPONDING  zsc702_prdord TO ls_ord_header.
+    ls_ord_header-pornum = lv_text.
+    ls_ord_header-status = '2'.
+    ls_ord_header-crnam = sy-uname.
+    ls_ord_header-erdat = sy-datum.
+    ls_ord_header-ertim = sy-uzeit.
+
+    LOOP AT gt_prdord_i_300 INTO ls_ord_item.
+      ls_ord_item-pornum = lv_text.
+      MODIFY gt_prdord_i_300 FROM ls_ord_item TRANSPORTING pornum.
+
+    ENDLOOP.
+
+    INSERT ztc702_prdord_h FROM ls_ord_header.
+    IF sy-subrc = 0.
+
+    ELSE.
+      MESSAGE '등록 실패 - 헤더' TYPE 'I'.          " 실패 시 이전 작업들 롤백
+      ROLLBACK WORK.
+    ENDIF.
+
+    INSERT ztc702_prdord_i FROM TABLE gt_prdord_i_300.
+
+**** SY-SUBRC 체크
+    IF sy-subrc = 0.
+      MESSAGE i000 WITH lv_text.
+*      PERFORM get_prdord_h.
+      CLEAR: ztc702_prdord_i, zsc702_prdord.
+      PERFORM get_prdord_h.
+      COMMIT WORK.
+      LEAVE TO SCREEN 0.
+    ELSE.
+      MESSAGE '등록 실패' TYPE 'I'.          " 실패 시 이전 작업들 롤백
+      ROLLBACK WORK.
+
+    ENDIF.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_FCAT_300
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_fcat_300 .
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDCODE'.
+  gs_fcat-coltext = '품목코드'.
+  gs_fcat-key = 'X'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 7.
+  APPEND gs_fcat TO gt_fcat_300.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDNAME'.
+  gs_fcat-coltext = '품목명'.
+  gs_fcat-outputlen = 40.
+  APPEND gs_fcat TO gt_fcat_300.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'QUAN'.
+  gs_fcat-coltext = '수량'.
+  gs_fcat-outputlen = 5.
+  APPEND gs_fcat TO gt_fcat_300.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'UNIT'.
+  gs_fcat-coltext = '단위'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 3.
+  APPEND gs_fcat TO gt_fcat_300.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'PPLNUM'.
+  gs_fcat-coltext = '생산계획번호'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 13.
+  APPEND gs_fcat TO gt_fcat_300.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'PPSTDAT'.
+  gs_fcat-coltext = '생산시작일'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 10.
+  APPEND gs_fcat TO gt_fcat_300.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DEL_ORD_ITEM
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM del_ord_item .
+  DATA : lt_index TYPE lvc_t_row, "ALV 선택라인 저장 인터널테이블
+         ls_index LIKE LINE OF gt_index, "ALV 선택라인 저장 스트럭쳐
+         lv_lines TYPE i. "선택한 라인수를 저장할 변수
+***** alv row 인데스 찾기
+  CALL METHOD go_alv_grid_300->get_selected_rows
+    IMPORTING
+      et_index_rows = lt_index.
+
+***** 선택된 ROW 개수 찾기
+  DESCRIBE TABLE lt_index LINES lv_lines.
+
+  IF lt_index IS INITIAL.
+    MESSAGE '라인을 선택해주세요.' TYPE 'I'.
+  ELSE.
+    LOOP AT lt_index INTO ls_index.
+      DELETE gt_prdord_i_300 INDEX ls_index.
+    ENDLOOP.
+
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CONFIRM_PRDORD
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM confirm_prdord .
+  DATA : lt_index  TYPE lvc_t_row, "ALV 선택라인 저장 인터널테이블
+         ls_index  LIKE LINE OF gt_index, "ALV 선택라인 저장 스트럭쳐
+         lv_lines  TYPE i, "선택한 라인수를 저장할 변수
+         lv_answer TYPE c LENGTH 1.   " 팝업 체크 용 변수.
+
+  DATA: ls_prdord_h TYPE ztc702_prdord_h.
+
+***** alv row 인데스 찾기
+  CALL METHOD go_alv_grid->get_selected_rows
+    IMPORTING
+      et_index_rows = lt_index.
+
+***** 선택된 ROW 개수 찾기
+  DESCRIBE TABLE lt_index LINES lv_lines.
+
+  IF lt_index IS INITIAL.
+    MESSAGE '라인을 선택해주세요.' TYPE 'I'.
+  ELSEIF lv_lines > 1.
+    MESSAGE '라인을 하나만 선택해주세요.' TYPE 'I'.
+  ELSE.
+    LOOP AT lt_index INTO ls_index.
+      READ TABLE gt_prdord_h INTO ls_prdord_h INDEX ls_index.
+      IF ls_prdord_h-status = '1' OR ls_prdord_h-status = '3'.
+        MESSAGE '승인 또는 반려된 생성 오더는 변경 할 수 없습니다.' TYPE 'I'.
+      ELSE.
+        CALL FUNCTION 'POPUP_TO_CONFIRM'
+          EXPORTING
+            titlebar              = '생산 오더 승인'
+            text_question         = '생산 오더를 승인 하시겠습니까?'
+            text_button_1         = '예'
+            text_button_2         = '아니오'
+            display_cancel_button = space
+          IMPORTING
+            answer                = lv_answer.
+
+**** 팝업에서 YES 일 경우 데이터 생성 작업
+        IF lv_answer = 1.
+          ls_prdord_h-chnam = sy-uname.
+          ls_prdord_h-chdat = sy-datum.
+          ls_prdord_h-chtim = sy-uzeit.
+          ls_prdord_h-status = '3'.         " 신호등 승인(초록색)으로 변경
+          UPDATE ztc702_prdord_h FROM ls_prdord_h.
+
+**** SY-SUBRC 체크
+          IF sy-subrc = 0.
+            MESSAGE i012 WITH ls_prdord_h-pornum.
+            PERFORM get_prdord_h.
+            COMMIT WORK.
+
+          ELSE.
+            MESSAGE '등록 실패' TYPE 'I'.          " 실패 시 이전 작업들 롤백
+            ROLLBACK WORK.
+
+          ENDIF.
+
+
+        ENDIF.
+      ENDIF.
+
+    ENDLOOP.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form REJECT_PRDORD
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM reject_prdord .
+  DATA : lt_index  TYPE lvc_t_row, "ALV 선택라인 저장 인터널테이블
+         ls_index  LIKE LINE OF gt_index, "ALV 선택라인 저장 스트럭쳐
+         lv_lines  TYPE i, "선택한 라인수를 저장할 변수
+         lv_answer TYPE c LENGTH 1.   " 팝업 체크 용 변수.
+
+  DATA: ls_prdord_h TYPE ztc702_prdord_h.
+
+***** alv row 인데스 찾기
+  CALL METHOD go_alv_grid->get_selected_rows
+    IMPORTING
+      et_index_rows = lt_index.
+
+***** 선택된 ROW 개수 찾기
+  DESCRIBE TABLE lt_index LINES lv_lines.
+
+  IF lt_index IS INITIAL.
+    MESSAGE '라인을 선택해주세요.' TYPE 'I'.
+  ELSEIF lv_lines > 1.
+    MESSAGE '라인을 하나만 선택해주세요.' TYPE 'I'.
+  ELSE.
+    LOOP AT lt_index INTO ls_index.
+      READ TABLE gt_prdord_h INTO ls_prdord_h INDEX ls_index.
+      IF ls_prdord_h-status = '1' OR ls_prdord_h-status = '3'.
+        MESSAGE '승인 또는 반려된 생성 오더는 변경 할 수 없습니다.' TYPE 'I'.
+      ELSE.
+        CALL FUNCTION 'POPUP_TO_CONFIRM'
+          EXPORTING
+            titlebar              = '생산 오더 반려'
+            text_question         = '생산 오더를 반려 하시겠습니까?'
+            text_button_1         = '예'
+            text_button_2         = '아니오'
+            display_cancel_button = space
+          IMPORTING
+            answer                = lv_answer.
+
+**** 팝업에서 YES 일 경우 데이터 생성 작업
+        IF lv_answer = 1.
+          ls_prdord_h-chnam = sy-uname.
+          ls_prdord_h-chdat = sy-datum.
+          ls_prdord_h-chtim = sy-uzeit.
+          ls_prdord_h-status = '1'.         " 신호등 승인(빨간색)으로 변경
+          UPDATE ztc702_prdord_h FROM ls_prdord_h.
+
+**** SY-SUBRC 체크
+          IF sy-subrc = 0.
+            MESSAGE i012 WITH ls_prdord_h-pornum.
+            PERFORM get_prdord_h.
+            COMMIT WORK.
+
+          ELSE.
+            MESSAGE '등록 실패' TYPE 'I'.          " 실패 시 이전 작업들 롤백
+            ROLLBACK WORK.
+
+          ENDIF.
+
+
+        ENDIF.
+      ENDIF.
+    ENDLOOP.
+  ENDIF.
+
+
+ENDFORM.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

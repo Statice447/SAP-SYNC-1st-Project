@@ -1,0 +1,767 @@
+*&---------------------------------------------------------------------*
+*& Form SEARCH
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM SEARCH.
+  DATA: LT_GDCODE TYPE RANGE OF ZTC702_BIMANAGE-GDCODE,
+        LS_GDCODE LIKE LINE OF LT_GDCODE.
+
+* 검색 날짜 LOW 값이 공백일 때.
+  IF GV_LOW IS INITIAL.
+    GV_LOW = '00010101'.
+  ENDIF.
+
+* 검색 날짜 HIGH 값이 공백일 때.
+  IF GV_HIG IS INITIAL.
+    GV_HIG = '99991231'.
+  ENDIF.
+
+* 시작일자가 종료일자보다 느릴 때.
+  IF GV_LOW > GV_HIG.
+    MESSAGE '시작일자와 종료일자가 잘못 입력되었습니다.' TYPE 'I'.
+    RETURN.
+  ENDIF.
+
+* 품목 코드에 값이 입력됬을 때.
+  IF ZTC702_BIMANAGE-GDCODE IS NOT INITIAL.
+    LS_GDCODE-SIGN = 'I'.
+    LS_GDCODE-OPTION = 'EQ'.
+    LS_GDCODE-LOW = ZTC702_BIMANAGE-GDCODE.
+    APPEND LS_GDCODE TO LT_GDCODE.
+  ENDIF.
+
+    SELECT *
+    FROM ZTC702_BIMANAGE
+    INTO CORRESPONDING FIELDS OF TABLE GT_TABLE
+   WHERE DELFLAG = SPACE
+     AND ISSUEDATE BETWEEN GV_LOW AND GV_HIG
+     AND GDCODE IN LT_GDCODE
+    ORDER BY IVNUM GDCODE.
+
+  CLEAR GS_TABLE.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form LAYOUT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM LAYOUT .
+  GS_LAYOUT-ZEBRA      = 'X'.
+  GS_LAYOUT-INFO_FNAME = 'COLOR'. " 라인 색 처리.
+*    GS_LAYOUT-CWIDTH_OPT = 'X'.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form FIELD_CATALOG
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM FIELD_CATALOG .
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'IVNUM'.
+  GS_FIELD_CAT-COLTEXT   = '송장 번호'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-KEY       = 'X'.
+  GS_FIELD_CAT-OUTPUTLEN = 12.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'ISSUEDATE'.
+  GS_FIELD_CAT-COLTEXT   = '발행 날짜'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 12.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'GDCODE'.
+  GS_FIELD_CAT-COLTEXT   = '품목 코드'.
+  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'GDNAME'.
+  GS_FIELD_CAT-COLTEXT   = '품목명'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-OUTPUTLEN = 32.
+  GS_FIELD_CAT-JUST      = 'L'.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'QUANTITY'.
+  GS_FIELD_CAT-COLTEXT   = '품목 수량'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-QFIELDNAME = 'UNIT'.
+  GS_FIELD_CAT-JUST      = 'R'.
+  GS_FIELD_CAT-OUTPUTLEN = 8.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'UNIT'.
+  GS_FIELD_CAT-COLTEXT   = '단위'.
+  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-QUANTITY  = 'EA'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'PRICE'.
+  GS_FIELD_CAT-COLTEXT   = '품목 단가'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-CFIELDNAME = 'CURRENCY'.
+  GS_FIELD_CAT-JUST      = 'R'.
+  GS_FIELD_CAT-OUTPUTLEN = 12.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'CURRENCY'.
+  GS_FIELD_CAT-COLTEXT   = '통화'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-OUTPUTLEN = 3.
+  GS_FIELD_CAT-CURRENCY  = 'KRW'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'AMOUNT'.
+  GS_FIELD_CAT-COLTEXT   = '합계 금액'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-CFIELDNAME = 'CURRENCY'.
+  GS_FIELD_CAT-JUST      = 'R'.
+  GS_FIELD_CAT-OUTPUTLEN = 12.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'CUSCODE'.
+  GS_FIELD_CAT-COLTEXT   = '거래처 코드'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 12.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'CUSNAME'.
+  GS_FIELD_CAT-COLTEXT   = '거래처명'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-OUTPUTLEN = 18.
+  GS_FIELD_CAT-JUST      = 'L'.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'CRNAM'.
+  GS_FIELD_CAT-COLTEXT   = '생성자'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-OUTPUTLEN = 8.
+  GS_FIELD_CAT-JUST      = 'C'.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'ERDAT'.
+  GS_FIELD_CAT-COLTEXT   = '생성 일자'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 10.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'ERTIM'.
+  GS_FIELD_CAT-COLTEXT   = '생성 시간'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 10.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'CHNAM'.
+  GS_FIELD_CAT-COLTEXT   = '변경자'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-OUTPUTLEN = 8.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 8.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'CHDAT'.
+  GS_FIELD_CAT-COLTEXT   = '변경 일자'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 10.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'CHTIM'.
+  GS_FIELD_CAT-COLTEXT   = '변경 시간'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 10.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CALC_GV_LOW
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM CALC_GV_LOW .
+* 검색 날짜 LOW 값 계산.(한 달 전 날짜)
+  CALL FUNCTION 'RP_CALC_DATE_IN_INTERVAL'
+    EXPORTING
+      DATE      = GV_HIG
+      DAYS      = '00'
+      MONTHS    = '01'
+      SIGNUM    = '-'
+      YEARS     = '00'
+    IMPORTING
+      CALC_DATE = GV_LOW.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form TRANS
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM TRANS .
+  DATA: LS_DOCU_H TYPE GTY_DOCU_H,
+        LS_DOCU_I TYPE GTY_DOCU_I,
+        LT_ROW    TYPE LVC_T_ROW,
+        LS_ROW    TYPE LVC_S_ROW,
+        LV_MTCODE TYPE C LENGTH 2,
+        LV_NUM    TYPE C LENGTH 8,
+        LV_TEMNUM TYPE C LENGTH 12,
+        LV_RECNUM TYPE C LENGTH 12,
+        LV_PERNR  TYPE ZDEC702_PERNR,
+        LV_PNAME  TYPE ZDEC702_PNAME,
+        LT_BIM    TYPE TABLE OF ZTC702_BIMANAGE,
+        LS_BIM    TYPE ZTC702_BIMANAGE,
+        LV_INUM   TYPE C LENGTH 8,
+        LV_ITEMNUM TYPE C LENGTH 12.
+
+* 라인 선택 메소드.
+  CALL METHOD GO_ALV_GRID->GET_SELECTED_ROWS
+    IMPORTING
+      ET_INDEX_ROWS = LT_ROW.
+
+* 라인을 선택하지 않았을 때.
+  IF LT_ROW IS INITIAL.
+    MESSAGE '문서를 선택하십시오.' TYPE 'I'.
+
+* 라인을 선택하였을 때.
+  ELSE.
+
+* ABAP 초기화.
+    CLEAR GS_TABLE.
+
+* 선택한 라인의 데이터 조회.
+    LOOP AT LT_ROW INTO LS_ROW.
+      READ TABLE GT_TABLE INTO GS_TABLE INDEX LS_ROW-INDEX.
+    ENDLOOP.
+
+* 문서 작성자.
+ LV_PERNR = 'DD000003'.
+ LV_PNAME = '김의중'.
+
+SELECT *
+  FROM ZTC702_BIMANAGE
+  INTO CORRESPONDING FIELDS OF TABLE LT_BIM
+ WHERE IVNUM = GS_TABLE-IVNUM.
+
+* 문서 번호 채번.
+    CALL FUNCTION 'NUMBER_GET_NEXT'
+      EXPORTING
+        NR_RANGE_NR = '01'
+        OBJECT      = 'ZNRC702SD4'
+      IMPORTING
+        NUMBER      = LV_NUM.
+
+    LV_MTCODE = GS_TABLE-GDCODE.
+    CONCATENATE SY-DATUM(4) LV_NUM+2(6) INTO LV_TEMNUM.
+
+    CASE LV_MTCODE(1).
+      WHEN 'R'.
+* 입고, 153, 자산, 원자재.
+        LS_DOCU_H-COMPANY = 'DD'.
+        LS_DOCU_H-ACCYEAR = SY-DATUM(4).
+        LS_DOCU_H-DOCUTYPE = 'A1'.
+
+        CLEAR LV_RECNUM.
+        CONCATENATE 'A1' LV_TEMNUM INTO LV_RECNUM.
+
+        LS_DOCU_H-DOCUNUM  = LV_RECNUM.
+        LS_DOCU_H-DOCUDATE = GS_TABLE-ISSUEDATE.
+        LS_DOCU_H-DOCUPERNR = LV_PERNR.
+        LS_DOCU_H-DOCUPNAME = LV_PNAME.
+
+        LS_DOCU_H-CRNAM = SY-UNAME.
+        LS_DOCU_H-ERDAT = SY-DATUM.
+        LS_DOCU_H-ERTIM = SY-UZEIT.
+        LS_DOCU_H-CHNAM = SY-UNAME.
+        LS_DOCU_H-CHDAT = SY-DATUM.
+        LS_DOCU_H-CHTIM = SY-UZEIT.
+
+        INSERT ZTC702_DOCU_H FROM LS_DOCU_H.
+        IF SY-SUBRC = 0.
+          ELSE.
+            MESSAGE '전표 헤더 문서를 생성하는데 실패했습니다. SY-SUBRC : ' && SY-SUBRC TYPE 'I'.
+            ROLLBACK WORK.
+            RETURN.
+        ENDIF.
+
+
+* 매입, 153, 자산, 원자재, 차변.
+        LS_DOCU_H-COMPANY = 'DD'.
+        LS_DOCU_H-ACCYEAR = SY-DATUM(4).
+        LS_DOCU_H-DOCUTYPE = 'B1'.
+
+        CLEAR LV_RECNUM.
+        CONCATENATE 'B1' LV_TEMNUM INTO LV_RECNUM.
+
+        LS_DOCU_H-DOCUNUM  = LV_RECNUM.
+        LS_DOCU_H-DOCUDATE = GS_TABLE-ISSUEDATE.
+        LS_DOCU_H-DOCUPERNR = LV_PERNR.
+        LS_DOCU_H-DOCUPNAME = LV_PNAME.
+
+        LS_DOCU_H-CRNAM = SY-UNAME.
+        LS_DOCU_H-ERDAT = SY-DATUM.
+        LS_DOCU_H-ERTIM = SY-UZEIT.
+        LS_DOCU_H-CHNAM = SY-UNAME.
+        LS_DOCU_H-CHDAT = SY-DATUM.
+        LS_DOCU_H-CHTIM = SY-UZEIT.
+
+        INSERT ZTC702_DOCU_H FROM LS_DOCU_H.
+        IF SY-SUBRC = 0.
+          ELSE.
+            MESSAGE '전표 헤더 문서를 생성하는데 실패했습니다. SY-SUBRC : ' && SY-SUBRC TYPE 'I'.
+            ROLLBACK WORK.
+            RETURN.
+        ENDIF.
+
+      WHEN 'A'.
+* 입고, 153, 자산, 부자재.
+        LS_DOCU_H-COMPANY = 'DD'.
+        LS_DOCU_H-ACCYEAR = SY-DATUM(4).
+        LS_DOCU_H-DOCUTYPE = 'A1'.
+
+        CLEAR LV_RECNUM.
+        CONCATENATE 'A1' LV_TEMNUM INTO LV_RECNUM.
+
+        LS_DOCU_H-DOCUNUM  = LV_RECNUM.
+        LS_DOCU_H-DOCUDATE = GS_TABLE-ISSUEDATE.
+        LS_DOCU_H-DOCUPERNR = LV_PERNR.
+        LS_DOCU_H-DOCUPNAME = LV_PNAME.
+
+        LS_DOCU_H-CRNAM = SY-UNAME.
+        LS_DOCU_H-ERDAT = SY-DATUM.
+        LS_DOCU_H-ERTIM = SY-UZEIT.
+        LS_DOCU_H-CHNAM = SY-UNAME.
+        LS_DOCU_H-CHDAT = SY-DATUM.
+        LS_DOCU_H-CHTIM = SY-UZEIT.
+
+        INSERT ZTC702_DOCU_H FROM LS_DOCU_H.
+        IF SY-SUBRC = 0.
+          ELSE.
+            MESSAGE '전표 헤더 문서를 생성하는데 실패했습니다. SY-SUBRC : ' && SY-SUBRC TYPE 'I'.
+            ROLLBACK WORK.
+            RETURN.
+        ENDIF.
+
+* 매입, 153, 자산, 부자재, 차변.
+        LS_DOCU_H-COMPANY = 'DD'.
+        LS_DOCU_H-ACCYEAR = SY-DATUM(4).
+        LS_DOCU_H-DOCUTYPE = 'B1'.
+
+        CLEAR LV_RECNUM.
+        CONCATENATE 'B1' LV_TEMNUM INTO LV_RECNUM.
+
+        LS_DOCU_H-DOCUNUM  = LV_RECNUM.
+        LS_DOCU_H-DOCUDATE = GS_TABLE-ISSUEDATE.
+        LS_DOCU_H-DOCUPERNR = LV_PERNR.
+        LS_DOCU_H-DOCUPNAME = LV_PNAME.
+
+        LS_DOCU_H-CRNAM = SY-UNAME.
+        LS_DOCU_H-ERDAT = SY-DATUM.
+        LS_DOCU_H-ERTIM = SY-UZEIT.
+        LS_DOCU_H-CHNAM = SY-UNAME.
+        LS_DOCU_H-CHDAT = SY-DATUM.
+        LS_DOCU_H-CHTIM = SY-UZEIT.
+
+        INSERT ZTC702_DOCU_H FROM LS_DOCU_H.
+        IF SY-SUBRC = 0.
+          ELSE.
+            MESSAGE '전표 헤더 문서를 생성하는데 실패했습니다. SY-SUBRC : ' && SY-SUBRC TYPE 'I'.
+            ROLLBACK WORK.
+            RETURN.
+        ENDIF.
+      endcase.
+
+LOOP AT LT_BIM INTO LS_BIM.
+    CASE LV_MTCODE(1).
+      WHEN 'R'.
+
+        CLEAR LS_DOCU_I.
+        MOVE-CORRESPONDING GS_TABLE TO LS_DOCU_I.
+        LS_DOCU_I-COMPANY = 'DD'.
+        LS_DOCU_I-ACCYEAR = SY-DATUM(4).
+        LS_DOCU_I-DOCUTYPE = 'A1'.
+
+        CLEAR LV_RECNUM.
+        CONCATENATE 'A1' LV_TEMNUM INTO LV_RECNUM.
+
+        LS_DOCU_I-DOCUNUM  = LV_RECNUM.
+        LS_DOCU_I-ACCCODE = '153'.
+        LS_DOCU_I-GDCODE = LS_BIM-GDCODE.
+        LS_DOCU_I-GDNAME = LS_BIM-GDNAME.
+        LS_DOCU_I-DRCRSORT = SPACE.
+        LS_DOCU_I-ACCNAME = '원자재'.
+*        LS_DOCU_I-PRICE = SPACE.
+*        LS_DOCU_I-AMOUNT = SPACE.
+*        LS_DOCU_I-CURRENCY = SPACE.
+        LS_DOCU_I-CUSNUM = GS_TABLE-CUSCODE.
+
+        SELECT TAXCODE BANKNAME ACNO ACHOLDER
+          FROM ZTC702_CUSMASTER
+          INTO CORRESPONDING FIELDS OF LS_DOCU_I
+         WHERE CUSCODE = GS_TABLE-CUSCODE.
+        ENDSELECT.
+
+        LS_DOCU_I-CRNAM = SY-UNAME.
+        LS_DOCU_I-ERDAT = SY-DATUM.
+        LS_DOCU_I-ERTIM = SY-UZEIT.
+        LS_DOCU_I-CHNAM = SY-UNAME.
+        LS_DOCU_I-CHDAT = SY-DATUM.
+        LS_DOCU_I-CHTIM = SY-UZEIT.
+
+        INSERT ZTC702_DOCU_I FROM LS_DOCU_I.
+        IF SY-SUBRC = 0.
+          ELSE.
+            MESSAGE '전표 아이템 문서를 생성하는데 실패했습니다. SY-SUBRC : ' && SY-SUBRC TYPE 'I'.
+            ROLLBACK WORK.
+            RETURN.
+        ENDIF.
+
+* 매입, 153, 자산, 원자재, 차변.
+
+        CLEAR LS_DOCU_I.
+        MOVE-CORRESPONDING GS_TABLE TO LS_DOCU_I.
+        LS_DOCU_I-COMPANY = 'DD'.
+        LS_DOCU_I-ACCYEAR = SY-DATUM(4).
+        LS_DOCU_I-DOCUTYPE = 'B1'.
+
+        CLEAR LV_RECNUM.
+        CONCATENATE 'B1' LV_TEMNUM INTO LV_RECNUM.
+
+        LS_DOCU_I-DOCUNUM  = LV_RECNUM.
+        LS_DOCU_I-ACCCODE = '153'.
+        LS_DOCU_I-GDCODE = LS_BIM-GDCODE.
+        LS_DOCU_I-GDNAME = LS_BIM-GDNAME.
+        LS_DOCU_I-DRCRSORT = 'DR'.
+        LS_DOCU_I-ACCNAME = '원자재'.
+        LS_DOCU_I-GDCODE = LS_BIM-GDCODE.
+        LS_DOCU_I-CUSNUM = GS_TABLE-CUSCODE.
+
+        SELECT TAXCODE BANKNAME ACNO ACHOLDER
+          FROM ZTC702_CUSMASTER
+          INTO CORRESPONDING FIELDS OF LS_DOCU_I
+         WHERE CUSCODE = GS_TABLE-CUSCODE.
+        ENDSELECT.
+
+        LS_DOCU_I-CRNAM = SY-UNAME.
+        LS_DOCU_I-ERDAT = SY-DATUM.
+        LS_DOCU_I-ERTIM = SY-UZEIT.
+        LS_DOCU_I-CHNAM = SY-UNAME.
+        LS_DOCU_I-CHDAT = SY-DATUM.
+        LS_DOCU_I-CHTIM = SY-UZEIT.
+
+        INSERT ZTC702_DOCU_I FROM LS_DOCU_I.
+        IF SY-SUBRC = 0.
+          ELSE.
+            MESSAGE '전표 아이템 문서를 생성하는데 실패했습니다. SY-SUBRC : ' && SY-SUBRC TYPE 'I'.
+            ROLLBACK WORK.
+            RETURN.
+        ENDIF.
+
+* 매입, 251, 부채, 외상매입금, 대변.
+
+        CLEAR LS_DOCU_I.
+        MOVE-CORRESPONDING GS_TABLE TO LS_DOCU_I.
+        LS_DOCU_I-COMPANY = 'DD'.
+        LS_DOCU_I-ACCYEAR = SY-DATUM(4).
+        LS_DOCU_I-DOCUTYPE = 'B1'.
+
+        CLEAR LV_RECNUM.
+        CONCATENATE 'B1' LV_TEMNUM INTO LV_RECNUM.
+
+        LS_DOCU_I-DOCUNUM  = LV_RECNUM.
+        LS_DOCU_I-ACCCODE = '251'.
+        LS_DOCU_I-GDCODE = LS_BIM-GDCODE.
+        LS_DOCU_I-GDNAME = LS_BIM-GDNAME.
+        LS_DOCU_I-DRCRSORT = 'CR'.
+        LS_DOCU_I-ACCNAME = '외상매입금'.
+        LS_DOCU_I-CUSNUM = GS_TABLE-CUSCODE.
+
+        SELECT TAXCODE BANKNAME ACNO ACHOLDER
+          FROM ZTC702_CUSMASTER
+          INTO CORRESPONDING FIELDS OF LS_DOCU_I
+         WHERE CUSCODE = GS_TABLE-CUSCODE.
+        ENDSELECT.
+
+        LS_DOCU_I-CRNAM = SY-UNAME.
+        LS_DOCU_I-ERDAT = SY-DATUM.
+        LS_DOCU_I-ERTIM = SY-UZEIT.
+        LS_DOCU_I-CHNAM = SY-UNAME.
+        LS_DOCU_I-CHDAT = SY-DATUM.
+        LS_DOCU_I-CHTIM = SY-UZEIT.
+
+        INSERT ZTC702_DOCU_I FROM LS_DOCU_I.
+        IF SY-SUBRC = 0.
+        UPDATE ZTC702_BIMANAGE SET DELFLAG = 'X' CHNAM = SY-UNAME CHDAT = SY-DATUM CHTIM = SY-UZEIT
+                             WHERE IVNUM = LS_BIM-IVNUM AND GDCODE = LS_BIM-GDCODE.
+        IF SY-SUBRC = 0.
+          GV_SWITCH2 = '1'.
+          COMMIT WORK.
+          ELSE.
+            MESSAGE '인보이스를 전송하는데 실패했습니다. SY-SUBRC : ' && SY-SUBRC TYPE 'I'.
+            ROLLBACK WORK.
+            RETURN.
+        ENDIF.
+          ELSE.
+            MESSAGE '전표 아이템 문서를 생성하는데 실패했습니다. SY-SUBRC : ' && SY-SUBRC TYPE 'I'.
+            ROLLBACK WORK.
+            RETURN.
+        ENDIF.
+
+
+      WHEN 'A'.
+* 입고, 162, 자산, 부자재.
+        CLEAR LS_DOCU_I.
+        MOVE-CORRESPONDING GS_TABLE TO LS_DOCU_I.
+        LS_DOCU_I-COMPANY = 'DD'.
+        LS_DOCU_I-ACCYEAR = SY-DATUM(4).
+        LS_DOCU_I-DOCUTYPE = 'A1'.
+
+        CLEAR LV_RECNUM.
+        CONCATENATE 'A1' LV_TEMNUM INTO LV_RECNUM.
+
+        LS_DOCU_I-DOCUNUM  = LV_RECNUM.
+        LS_DOCU_I-ACCCODE = '162'.
+        LS_DOCU_I-GDCODE = LS_BIM-GDCODE.
+        LS_DOCU_I-GDNAME = LS_BIM-GDNAME.
+        LS_DOCU_I-DRCRSORT = SPACE.
+        LS_DOCU_I-ACCNAME = '부자재'.
+*        LS_DOCU_I-PRICE = SPACE.
+*        LS_DOCU_I-AMOUNT = SPACE.
+*        LS_DOCU_I-CURRENCY = SPACE.
+        LS_DOCU_I-CUSNUM = GS_TABLE-CUSCODE.
+
+        SELECT TAXCODE BANKNAME ACNO ACHOLDER
+          FROM ZTC702_CUSMASTER
+          INTO CORRESPONDING FIELDS OF LS_DOCU_I
+         WHERE CUSCODE = GS_TABLE-CUSCODE.
+        ENDSELECT.
+
+        LS_DOCU_I-CRNAM = SY-UNAME.
+        LS_DOCU_I-ERDAT = SY-DATUM.
+        LS_DOCU_I-ERTIM = SY-UZEIT.
+        LS_DOCU_I-CHNAM = SY-UNAME.
+        LS_DOCU_I-CHDAT = SY-DATUM.
+        LS_DOCU_I-CHTIM = SY-UZEIT.
+
+        INSERT ZTC702_DOCU_I FROM LS_DOCU_I.
+        IF SY-SUBRC = 0.
+          ELSE.
+            MESSAGE '전표 아이템 문서를 생성하는데 실패했습니다. SY-SUBRC : ' && SY-SUBRC TYPE 'I'.
+            ROLLBACK WORK.
+            RETURN.
+        ENDIF.
+
+* 매입, 162, 자산, 부자재, 차변.
+
+        CLEAR LS_DOCU_I.
+        MOVE-CORRESPONDING GS_TABLE TO LS_DOCU_I.
+        LS_DOCU_I-COMPANY = 'DD'.
+        LS_DOCU_I-ACCYEAR = SY-DATUM(4).
+        LS_DOCU_I-DOCUTYPE = 'B1'.
+
+        CLEAR LV_RECNUM.
+        CONCATENATE 'B1' LV_TEMNUM INTO LV_RECNUM.
+
+        LS_DOCU_I-DOCUNUM  = LV_RECNUM.
+        LS_DOCU_I-ACCCODE = '162'.
+        LS_DOCU_I-GDCODE = LS_BIM-GDCODE.
+        LS_DOCU_I-GDNAME = LS_BIM-GDNAME.
+        LS_DOCU_I-DRCRSORT = 'DR'.
+        LS_DOCU_I-ACCNAME = '부자재'.
+        LS_DOCU_I-CUSNUM = GS_TABLE-CUSCODE.
+
+        SELECT TAXCODE BANKNAME ACNO ACHOLDER
+          FROM ZTC702_CUSMASTER
+          INTO CORRESPONDING FIELDS OF LS_DOCU_I
+         WHERE CUSCODE = GS_TABLE-CUSCODE.
+        ENDSELECT.
+
+        LS_DOCU_I-CRNAM = SY-UNAME.
+        LS_DOCU_I-ERDAT = SY-DATUM.
+        LS_DOCU_I-ERTIM = SY-UZEIT.
+        LS_DOCU_I-CHNAM = SY-UNAME.
+        LS_DOCU_I-CHDAT = SY-DATUM.
+        LS_DOCU_I-CHTIM = SY-UZEIT.
+
+        INSERT ZTC702_DOCU_I FROM LS_DOCU_I.
+        IF SY-SUBRC = 0.
+          ELSE.
+            MESSAGE '전표 아이템 문서를 생성하는데 실패했습니다. SY-SUBRC : ' && SY-SUBRC TYPE 'I'.
+            ROLLBACK WORK.
+            RETURN.
+        ENDIF.
+
+* 매입, 251, 부채, 외상매입금, 대변.
+
+        CLEAR LS_DOCU_I.
+        MOVE-CORRESPONDING GS_TABLE TO LS_DOCU_I.
+        LS_DOCU_I-COMPANY = 'DD'.
+        LS_DOCU_I-ACCYEAR = SY-DATUM(4).
+        LS_DOCU_I-DOCUTYPE = 'B1'.
+
+        CLEAR LV_RECNUM.
+        CONCATENATE 'B1' LV_TEMNUM INTO LV_RECNUM.
+
+        LS_DOCU_I-DOCUNUM  = LV_RECNUM.
+        LS_DOCU_I-ACCCODE = '251'.
+        LS_DOCU_I-GDCODE = LS_BIM-GDCODE.
+        LS_DOCU_I-GDNAME = LS_BIM-GDNAME.
+        LS_DOCU_I-DRCRSORT = 'CR'.
+        LS_DOCU_I-ACCNAME = '외상매입금'.
+        LS_DOCU_I-CUSNUM = GS_TABLE-CUSCODE.
+
+        SELECT TAXCODE BANKNAME ACNO ACHOLDER
+         FROM ZTC702_CUSMASTER
+         INTO CORRESPONDING FIELDS OF LS_DOCU_I
+        WHERE CUSCODE = GS_TABLE-CUSCODE.
+        ENDSELECT.
+
+        LS_DOCU_I-CRNAM = SY-UNAME.
+        LS_DOCU_I-ERDAT = SY-DATUM.
+        LS_DOCU_I-ERTIM = SY-UZEIT.
+        LS_DOCU_I-CHNAM = SY-UNAME.
+        LS_DOCU_I-CHDAT = SY-DATUM.
+        LS_DOCU_I-CHTIM = SY-UZEIT.
+
+        INSERT ZTC702_DOCU_I FROM LS_DOCU_I.
+        IF SY-SUBRC = 0.
+          ELSE.
+            MESSAGE '전표 아이템 문서를 생성하는데 실패했습니다. SY-SUBRC : ' && SY-SUBRC TYPE 'I'.
+            ROLLBACK WORK.
+            RETURN.
+        ENDIF.
+
+        IF SY-SUBRC = 0.
+        UPDATE ZTC702_BIMANAGE SET DELFLAG = 'X' CHNAM = SY-UNAME CHDAT = SY-DATUM CHTIM = SY-UZEIT
+                             WHERE IVNUM = LS_BIM-IVNUM AND GDCODE = LS_BIM-GDCODE.
+        IF SY-SUBRC = 0.
+          GV_SWITCH2 = '1'.
+          COMMIT WORK.
+          ELSE.
+            MESSAGE '인보이스를 전송하는데 실패했습니다. SY-SUBRC : ' && SY-SUBRC TYPE 'I'.
+            ROLLBACK WORK.
+            RETURN.
+        ENDIF.
+          ELSE.
+            MESSAGE '전표 아이템 문서를 생성하는데 실패했습니다. SY-SUBRC : ' && SY-SUBRC TYPE 'I'.
+            ROLLBACK WORK.
+            RETURN.
+        ENDIF.
+    ENDCASE.
+ENDLOOP.
+
+  ENDIF.
+
+  IF GV_SWITCH2 = '1'.
+     MESSAGE '인보이스 전송 완료 (인보이스 번호 : ' && LS_DOCU_H-DOCUNUM && ' )' TYPE 'I'.
+     GV_SWITCH2 = '0'.
+     PERFORM SEARCH.
+    ELSE.
+     GV_SWITCH2 = '0'.
+     PERFORM SEARCH.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form RESET_NR
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM RESET_NR .
+  DATA: LS_DATE TYPE ZTC702_DOCU_I.  " 현재 날짜 확인을 위한 데이터 선언
+
+  IF LS_DATE IS INITIAL.          " 값이 없을 때 한번만 돌리기 위해 조건문 설정
+    SELECT DOCUNUM                " 문서번호만 확인하기 위해 필드 하나만 설정
+      FROM ZTC702_DOCU_I
+      INTO CORRESPONDING FIELDS OF LS_DATE
+      UP TO 1 ROWS                " 맨 위 한줄만
+      ORDER BY DOCUNUM DESCENDING. " 가장 마지막 데이터를 내림차순으로 정렬
+    ENDSELECT.
+  ENDIF.
+
+  IF LS_DATE-DOCUNUM+3(8) <> SY-DATUM.      " 문서번호의 연월일과 현재 날짜 연월일 6자리만 비교
+    CALL FUNCTION 'NUMBER_RANGE_INTERVAL_INIT'  " 채번 초기화 함수
+      EXPORTING
+        OBJECT            = 'ZNRC702MM5'        " 초기화 할 snro 오브젝트
+      EXCEPTIONS
+        NO_INTERVAL_FOUND = 1
+        OBJECT_NOT_FOUND  = 2.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form EXCLUDE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM EXCLUDE .
+
+  APPEND CL_GUI_ALV_GRID=>MC_FC_DETAIL TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_FC_SORT_ASC TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_FC_SORT_DSC TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_FC_FIND TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_FC_FILTER TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_MB_SUM TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_FC_PRINT_BACK TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_MB_VIEW TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_MB_EXPORT TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_MB_VARIANT TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_FC_INFO TO GT_EXCLUDE.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CLEAR
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM CLEAR .
+ CLEAR: GV_LOW, GV_HIG, ZTC702_BIMANAGE-GDCODE.
+ENDFORM.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

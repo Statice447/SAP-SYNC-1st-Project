@@ -1,0 +1,83 @@
+*&---------------------------------------------------------------------*
+*& Include MZC702_PP_04TOP                          - Module Pool      SAPMZC702_PP_04
+*&---------------------------------------------------------------------*
+PROGRAM sapmzc702_pp_04 MESSAGE-ID zc702_message.
+
+TABLES: ztc702_prdord_h, ztc702_prdord_i, zsc702_prdord.
+
+TYPES: BEGIN OF gty_prdord_h .
+    INCLUDE TYPE ztc702_prdord_h .
+TYPES: color TYPE c LENGTH 4,
+       light TYPE c LENGTH 1,
+       END OF gty_prdord_h .
+
+DATA: gt_prdord_h     TYPE TABLE OF gty_prdord_h,
+      gs_prdord_h     TYPE gty_prdord_h,
+      gs_prdord_hf    TYPE gty_prdord_h,
+      gs_prdord_200_h TYPE gty_prdord_h.
+
+DATA: gt_prdord_i     TYPE TABLE OF ztc702_prdord_i,
+      gs_prdord_if    TYPE ztc702_prdord_i,
+      gs_prdord_i     TYPE ztc702_prdord_i,
+      gt_prdord_i_300 TYPE TABLE OF ztc702_prdord_i.
+
+DATA: go_container TYPE REF TO cl_gui_custom_container,
+      go_alv_grid  TYPE REF TO cl_gui_alv_grid,
+      gv_refresh   TYPE c LENGTH 1.
+
+DATA: go_container_200 TYPE REF TO cl_gui_custom_container,
+      go_alv_grid_200  TYPE REF TO cl_gui_alv_grid,
+      gv_refresh_200   TYPE c LENGTH 1.
+
+DATA: go_container_300 TYPE REF TO cl_gui_custom_container,
+      go_alv_grid_300  TYPE REF TO cl_gui_alv_grid,
+      gv_refresh_300   TYPE c LENGTH 1.
+
+DATA: gv_rad_all     TYPE c  LENGTH 1,
+      gv_rad_wait    TYPE c  LENGTH 1,
+      gv_rad_reject  TYPE c  LENGTH 1,
+      gv_rad_confirm TYPE c  LENGTH 1.
+
+DATA: ok_code    TYPE sy-ucomm,
+      gs_layout  TYPE lvc_s_layo,
+      gs_layout2 TYPE lvc_s_layo.
+
+DATA: gt_fcat     TYPE lvc_t_fcat,
+      gt_fcat_200 TYPE lvc_t_fcat,
+      gt_fcat_300 TYPE lvc_t_fcat,
+      gs_fcat     TYPE lvc_s_fcat.
+
+DATA : gt_index TYPE lvc_t_row, "ALV 선택라인 저장 인터널테이블
+       gs_index LIKE LINE OF gt_index, "ALV 선택라인 저장 스트럭쳐
+       gv_lines TYPE i. "선택한 라인수를 저장할 변수
+
+DATA: gv_check TYPE c LENGTH 1.
+
+
+CLASS lcl_handler DEFINITION.
+  PUBLIC SECTION.
+*    CLASS-DATA : gv_rowid TYPE i.
+    CLASS-METHODS: on_double_click
+                  FOR EVENT double_click OF cl_gui_alv_grid
+      IMPORTING es_row_no.
+ENDCLASS.
+CLASS lcl_handler IMPLEMENTATION.
+  METHOD on_double_click.
+
+    READ TABLE gt_prdord_h  INTO gs_prdord_hf INDEX es_row_no-row_id.
+
+*    CALL METHOD cl_gui_cfw=>set_new_ok_code
+*      EXPORTING
+*        new_code = 'ENTER'.
+*    CALL SCREEN 200.
+
+    PERFORM display_ord_i.        " 생산 오더 상세 조회 서브루틴
+
+    CLEAR ztc702_prdord_h.
+    LEAVE SCREEN.
+
+  ENDMETHOD.
+ENDCLASS.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

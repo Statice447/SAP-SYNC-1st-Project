@@ -1,0 +1,552 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_MM_07_O01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'S0100'.
+  SET TITLEBAR 'T0100'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0200 OUTPUT.
+  SET PF-STATUS 'S0200'.
+  SET TITLEBAR 'T0200'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0300 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0300 OUTPUT.
+  SET PF-STATUS 'S0300'.
+  SET TITLEBAR 'T0300' WITH  ysztc702_mpo_v2-mpono.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0210 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0210 OUTPUT.
+  SET PF-STATUS 'S0210'.
+  SET TITLEBAR 'T0210'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CLEAR_OK_CODE OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE clear_ok_code OUTPUT.
+  CLEAR ok_code.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init OUTPUT.
+  ysztc702_mpo-wrdate_b = sy-datum.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_200 OUTPUT.
+  CLEAR gs_ztc702_mpo_h-mprno.
+  GET PARAMETER ID 'MPRNO' FIELD gs_ztc702_mpo_h-mprno.
+*
+  IF gv_switch_200 = 'X'.
+    SET PARAMETER ID 'MPRNO' FIELD space.
+    GET PARAMETER ID 'MPRNO' FIELD gs_ztc702_mpo_h-mprno.
+  ENDIF.
+
+*  SET PARAMETER ID 'MPRNO' FIELD space.
+  gs_ztc702_mpo_h-wrdate = sy-datum.
+
+  LOOP AT SCREEN.
+    CASE screen-group1.
+      WHEN 'BTN'.
+        IF gv_switch = 'X'. "gs_ztc702_mpo_h-mprno에 값이 없으면
+          screen-invisible = 0. "+, - 버튼을 보여주기
+          MODIFY SCREEN.
+        ENDIF.
+    ENDCASE.
+  ENDLOOP.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_300 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_300 OUTPUT.
+  IF gv_switch_300 = 'X'.
+    LOOP AT SCREEN.
+      CASE screen-name.
+        WHEN 'YSZTC702_MPO_V2-DEDATE' OR 'YSZTC702_MPO_V2-DEPLACE' OR 'YSZTC702_MPO_V2-DELTERM' OR
+             'YSZTC702_MPO_V2-PAYTERM' OR 'YSZTC702_MPO_V2-REMARK'.
+          screen-input = 0.
+          MODIFY SCREEN.
+          CLEAR gv_switch_300.
+      ENDCASE.
+    ENDLOOP.
+  ENDIF.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module GET_DATA_210 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+*MODULE get_data_210 OUTPUT.
+*  SELECT oi~mpono cm~cusname
+*    FROM ztc702_mpo_i AS oi INNER JOIN ztc702_cusmaster AS cm ON oi~cuscode = cm~cuscode
+*    INTO CORRESPONDING FIELDS OF TABLE gt_ztc702_mpo_210
+*   WHERE oi~postatus = ' '.
+*
+*  SORT gt_ztc702_mpo_210 ASCENDING BY mpono.
+*  DELETE ADJACENT DUPLICATES FROM gt_ztc702_mpo_210 COMPARING mpono.
+*ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module GET_DATA_300 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE get_data_300 OUTPUT.
+  SELECT c~cusname c~cusmana c~cuscell e~pname e~rank e~pcont
+    FROM ztc702_mpo_i AS o_i INNER JOIN ztc702_cusmaster AS c ON o_i~cuscode = c~cuscode
+                             INNER JOIN ztc702_mpo_h AS o_h ON o_i~mpono = o_h~mpono
+                             INNER JOIN ztc702_employee AS e ON o_h~pernr = e~pernr
+    INTO CORRESPONDING FIELDS OF ysztc702_mpo_v2
+    WHERE o_i~mpono = ysztc702_mpo_v2-mpono.
+  ENDSELECT.
+
+  SELECT m~gdname o_i~quantity o_i~unit o_i~price o_i~amount o_i~currency
+    FROM ztc702_mpo_i AS o_i INNER JOIN ztc702_mtmaster AS m ON o_i~gdcode = m~gdcode
+    INTO CORRESPONDING FIELDS OF TABLE gt_ztc702_mpo
+    WHERE o_i~mpono = ysztc702_mpo_v2-mpono.
+
+  LOOP AT gt_ztc702_mpo INTO gs_ztc702_mpo.
+    gs_ztc702_mpo-no = sy-tabix.
+    MODIFY gt_ztc702_mpo FROM gs_ztc702_mpo TRANSPORTING no.
+  ENDLOOP.
+
+  SELECT SUM( amount )
+    FROM ztc702_mpo_i
+    INTO gv_total_amount
+    WHERE mpono = ysztc702_mpo_v2-mpono.
+
+  ysztc702_mpo_v2-total_amount = gv_total_amount * 100.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SET_ALV OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE set_alv OUTPUT.
+  IF go_container IS INITIAL.
+
+    CREATE OBJECT go_container
+      EXPORTING
+        container_name = 'MY_CONTROL_AREA'.
+
+    CREATE OBJECT go_alv_grid
+      EXPORTING
+        i_parent = go_container.
+
+    SET HANDLER lcl_handler=>on_double_click_100 FOR go_alv_grid.
+
+    APPEND cl_gui_alv_grid=>mc_fc_detail TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_fc_sort_asc TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_fc_sort_dsc TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_fc_find TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_fc_filter TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_mb_sum TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_fc_print_back TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_mb_view TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_mb_export TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_mb_variant TO gt_exclude_100.
+    APPEND cl_gui_alv_grid=>mc_fc_info TO gt_exclude_100.
+
+    CLEAR gs_fcat.
+    gs_fcat-fieldname = 'POSTATUS'.
+    gs_fcat-coltext = '진행상태'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 7.
+    APPEND gs_fcat TO gt_fcat.
+
+    CLEAR gs_fcat.
+    gs_fcat-fieldname = 'WRDATE'.
+    gs_fcat-coltext = '작성일'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 10.
+    APPEND gs_fcat TO gt_fcat.
+
+    CLEAR gs_fcat.
+    gs_fcat-fieldname = 'PNAME'.
+    gs_fcat-coltext = '작성자'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 7.
+    APPEND gs_fcat TO gt_fcat.
+
+    CLEAR gs_fcat.
+    gs_fcat-fieldname = 'MPONO'.
+    gs_fcat-coltext = '구매오더번호'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 13.
+    APPEND gs_fcat TO gt_fcat.
+
+    CLEAR gs_fcat.
+    gs_fcat-fieldname = 'MPRNO'.
+    gs_fcat-coltext = '구매요청번호'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 13.
+    APPEND gs_fcat TO gt_fcat.
+
+    CLEAR gs_fcat.
+    gs_fcat-fieldname = 'CUSNAME'.
+    gs_fcat-coltext = '공급업체'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 20.
+    APPEND gs_fcat TO gt_fcat.
+
+    CLEAR gs_fcat.
+    gs_fcat-fieldname = 'PODATE'.
+    gs_fcat-coltext = '발주일'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 10.
+    APPEND gs_fcat TO gt_fcat.
+
+    CLEAR gs_fcat.
+    gs_fcat-fieldname = 'DEDATE'.
+    gs_fcat-coltext = '납기일'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 10.
+    APPEND gs_fcat TO gt_fcat.
+
+    CALL METHOD go_alv_grid->set_table_for_first_display
+      EXPORTING
+*       i_buffer_active      =
+*       i_bypassing_buffer   =
+*       i_consistency_check  =
+*       i_structure_name     =
+*       is_variant           =
+*       i_save               =
+*       i_default            = 'X'
+*       is_layout            =
+*       is_print             =
+*       it_special_groups    =
+        it_toolbar_excluding = gt_exclude_100
+*       it_hyperlink         =
+*       it_alv_graphics      =
+*       it_except_qinfo      =
+*       ir_salv_adapter      =
+      CHANGING
+        it_outtab            = gt_ztc702_mpo_h
+        it_fieldcatalog      = gt_fcat
+*       it_sort              =
+*       it_filter            =
+      EXCEPTIONS
+        OTHERS               = 1.
+    IF sy-subrc <> 0.
+      WRITE: '에러가 발생했습니다.'.
+    ENDIF.
+
+  ELSE.
+    go_alv_grid->refresh_table_display( ).
+
+  ENDIF.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SET_ALV_200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE set_alv_200 OUTPUT.
+*참고 사이트: https://seollal.tistory.com/685
+  DATA: gt_f4 TYPE lvc_t_f4,
+        gs_f4 TYPE lvc_s_f4.
+
+  IF go_container_200 IS INITIAL.
+    CREATE OBJECT go_container_200
+      EXPORTING
+        container_name = 'MY_CONTROL_AREA_200'.
+
+    CREATE OBJECT go_alv_grid_200
+      EXPORTING
+        i_parent = go_container_200.
+  ENDIF.
+
+  SET HANDLER
+  lcl_handler=>handle_on_f4 FOR go_alv_grid_200.
+
+*  ls_exc=>cl_gui_alv_grid_200=>mc_fc_excl_all.
+
+  IF gs_ztc702_mpo_h-mprno IS INITIAL.
+    PERFORM fcat_mprno_x.
+  ELSE.
+    PERFORM fcat_mprno_o.
+  ENDIF.
+
+  CLEAR gt_f4.
+  gs_f4-fieldname = 'GDCODE'.
+  gs_f4-register = 'X'.
+  APPEND gs_f4 TO gt_f4.
+
+  CLEAR gs_f4.
+  gs_f4-fieldname = 'PRICE'.
+  gs_f4-register = 'X'.
+  APPEND gs_f4 TO gt_f4.
+
+  CALL METHOD go_alv_grid_200->register_edit_event
+    EXPORTING
+      i_event_id = cl_gui_alv_grid=>mc_evt_modified.
+
+  CALL METHOD go_alv_grid_200->register_f4_for_fields
+    EXPORTING
+      it_f4 = gt_f4.
+
+  CALL METHOD go_alv_grid_200->set_table_for_first_display
+*    EXPORTING
+*     i_buffer_active      =
+*     i_bypassing_buffer   =
+*     i_consistency_check  =
+*     i_structure_name     =
+*     is_variant           =
+*     i_save               =
+*     i_default            = 'X'
+*     is_layout            =
+*     is_print             =
+*     it_special_groups    =
+*      it_toolbar_excluding =
+*     it_hyperlink         =
+*     it_alv_graphics      =
+*     it_except_qinfo      =
+*     ir_salv_adapter      =
+    CHANGING
+      it_outtab            = gt_ztc702_mpo_i
+      it_fieldcatalog      = gt_fcat_200
+*     it_sort              =
+*     it_filter            =
+    EXCEPTIONS
+      OTHERS               = 1.
+*
+  IF sy-subrc <> 0.
+    WRITE: '에러가 발생했습니다.'.
+  ENDIF.
+
+*ELSE.
+*  go_alv_grid_200->refresh_table_display( ).
+*ENDIF.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SET_ALV_300 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE set_alv_300 OUTPUT.
+  IF go_container_300 IS INITIAL.
+
+    CREATE OBJECT go_container_300
+      EXPORTING
+        container_name = 'MY_CONTROL_AREA_300'.
+
+    CREATE OBJECT go_alv_grid_300
+      EXPORTING
+        i_parent = go_container_300.
+
+    APPEND cl_gui_alv_grid=>mc_fc_detail TO gt_exclude_300.
+    APPEND cl_gui_alv_grid=>mc_fc_sort_asc TO gt_exclude_300.
+    APPEND cl_gui_alv_grid=>mc_fc_sort_dsc TO gt_exclude_300.
+    APPEND cl_gui_alv_grid=>mc_fc_find TO gt_exclude_300.
+    APPEND cl_gui_alv_grid=>mc_fc_filter TO gt_exclude_300.
+    APPEND cl_gui_alv_grid=>mc_mb_sum TO gt_exclude_300.
+    APPEND cl_gui_alv_grid=>mc_fc_print_back TO gt_exclude_300.
+    APPEND cl_gui_alv_grid=>mc_mb_view TO gt_exclude_300.
+    APPEND cl_gui_alv_grid=>mc_mb_export TO gt_exclude_300.
+    APPEND cl_gui_alv_grid=>mc_mb_variant TO gt_exclude_300.
+    APPEND cl_gui_alv_grid=>mc_fc_info TO gt_exclude_300.
+
+    CLEAR gs_fcat_300.
+    gs_fcat_300-fieldname = 'NO'.
+    gs_fcat_300-coltext = 'No.'.
+    gs_fcat_300-just = 'C'.
+    gs_fcat_300-outputlen = 4.
+    APPEND gs_fcat_300 TO gt_fcat_300.
+
+    CLEAR gs_fcat_300.
+    gs_fcat_300-fieldname = 'GDNAME'.
+    gs_fcat_300-coltext = '품목명'.
+    gs_fcat_300-just = 'C'.
+    gs_fcat_300-outputlen = 55.
+    APPEND gs_fcat_300 TO gt_fcat_300.
+
+    CLEAR gs_fcat_300.
+    gs_fcat_300-fieldname = 'QUANTITY'.
+    gs_fcat_300-coltext = '수량'.
+    gs_fcat_300-just = 'C'.
+    gs_fcat_300-outputlen = 10.
+    gs_fcat_300-qfieldname = 'UNIT'.
+    APPEND gs_fcat_300 TO gt_fcat_300.
+
+    CLEAR gs_fcat_300.
+    gs_fcat_300-fieldname = 'UNIT'.
+    gs_fcat_300-coltext = '단위'.
+    gs_fcat_300-just = 'C'.
+    gs_fcat_300-outputlen = 10.
+    gs_fcat_300-quantity = 'EA'.
+    APPEND gs_fcat_300 TO gt_fcat_300.
+
+    CLEAR gs_fcat_300.
+    gs_fcat_300-fieldname = 'PRICE'.
+    gs_fcat_300-coltext = '단가'.
+    gs_fcat_300-just = 'C'.
+    gs_fcat_300-outputlen = 19.
+    gs_fcat_300-cfieldname = 'CURRENCY'.
+    APPEND gs_fcat_300 TO gt_fcat_300.
+
+    CLEAR gs_fcat_300.
+    gs_fcat_300-fieldname = 'AMOUNT'.
+    gs_fcat_300-coltext = '금액'.
+    gs_fcat_300-just = 'C'.
+    gs_fcat_300-outputlen = 19.
+    gs_fcat_300-cfieldname = 'CURRENCY'.
+    APPEND gs_fcat_300 TO gt_fcat_300.
+
+    CLEAR gs_fcat_300.
+    gs_fcat_300-fieldname = 'TOTAL_AMOUNT'.
+    gs_fcat_300-coltext = '합계'.
+    gs_fcat_300-just = 'C'.
+    gs_fcat_300-no_out = 'X'.
+    gs_fcat_300-cfieldname = 'CURRENCY'.
+    APPEND gs_fcat_300 TO gt_fcat_300.
+
+    CLEAR gs_fcat_300.
+    gs_fcat_300-fieldname = 'CURRENCY'.
+    gs_fcat_300-coltext = '통화'.
+    gs_fcat_300-just = 'C'.
+    gs_fcat_300-no_out = 'X'.
+    gs_fcat_300-currency = 'KRW'.
+    APPEND gs_fcat_300 TO gt_fcat_300.
+
+    CALL METHOD go_alv_grid_300->set_table_for_first_display
+      EXPORTING
+*       i_buffer_active      =
+*       i_bypassing_buffer   =
+*       i_consistency_check  =
+*       i_structure_name     =
+*       is_variant           =
+*       i_save               =
+*       i_default            = 'X'
+*       is_layout            =
+*       is_print             =
+*       it_special_groups    =
+        it_toolbar_excluding = gt_exclude_300
+*       it_hyperlink         =
+*       it_alv_graphics      =
+*       it_except_qinfo      =
+*       ir_salv_adapter      =
+      CHANGING
+        it_outtab            = gt_ztc702_mpo
+        it_fieldcatalog      = gt_fcat_300
+*       it_sort              =
+*       it_filter            =
+      EXCEPTIONS
+        OTHERS               = 1.
+
+    IF sy-subrc <> 0.
+      WRITE: '에러가 발생했습니다.'.
+    ENDIF.
+
+  ELSE.
+    go_alv_grid_300->refresh_table_display( ).
+
+  ENDIF.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SET_ALV_210 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE set_alv_210 OUTPUT.
+  IF go_container_210 IS INITIAL.
+
+    CREATE OBJECT go_container_210
+      EXPORTING
+        container_name = 'MY_CONTROL_AREA_210'.
+
+    CREATE OBJECT go_alv_grid_210
+      EXPORTING
+        i_parent = go_container_210.
+
+    SET HANDLER lcl_handler=>on_double_click FOR go_alv_grid_210.
+
+    APPEND cl_gui_alv_grid=>mc_fc_detail TO gt_exclude_210.
+    APPEND cl_gui_alv_grid=>mc_fc_sort_asc TO gt_exclude_210.
+    APPEND cl_gui_alv_grid=>mc_fc_sort_dsc TO gt_exclude_210.
+    APPEND cl_gui_alv_grid=>mc_fc_find TO gt_exclude_210.
+    APPEND cl_gui_alv_grid=>mc_fc_filter TO gt_exclude_210.
+    APPEND cl_gui_alv_grid=>mc_mb_sum TO gt_exclude_210.
+    APPEND cl_gui_alv_grid=>mc_fc_print_back TO gt_exclude_210.
+    APPEND cl_gui_alv_grid=>mc_mb_view TO gt_exclude_210.
+    APPEND cl_gui_alv_grid=>mc_mb_export TO gt_exclude_210.
+    APPEND cl_gui_alv_grid=>mc_mb_variant TO gt_exclude_210.
+    APPEND cl_gui_alv_grid=>mc_fc_info TO gt_exclude_210.
+
+    CLEAR gs_fcat_210.
+    gs_fcat_210-fieldname = 'MPONO'.
+    gs_fcat_210-coltext = '구매오더번호'.
+    gs_fcat_210-just = 'C'.
+    gs_fcat_210-outputlen = 13.
+    APPEND gs_fcat_210 TO gt_fcat_210.
+
+    CLEAR gs_fcat_210.
+    gs_fcat_210-fieldname = 'CUSNAME'.
+    gs_fcat_210-coltext = '업체명'.
+    gs_fcat_210-just = 'C'.
+    gs_fcat_210-outputlen = 20.
+    APPEND gs_fcat_210 TO gt_fcat_210.
+
+    CALL METHOD go_alv_grid_210->set_table_for_first_display
+      EXPORTING
+*       i_buffer_active      =
+*       i_bypassing_buffer   =
+*       i_consistency_check  =
+*       i_structure_name     =
+*       is_variant           =
+*       i_save               =
+*       i_default            = 'X'
+*       is_layout            =
+*       is_print             =
+*       it_special_groups    =
+        it_toolbar_excluding = gt_exclude_210
+*       it_hyperlink         =
+*       it_alv_graphics      =
+*       it_except_qinfo      =
+*       ir_salv_adapter      =
+      CHANGING
+        it_outtab            = gt_ztc702_mpo_210
+        it_fieldcatalog      = gt_fcat_210
+*       it_sort              =
+*       it_filter            =
+      EXCEPTIONS
+        OTHERS               = 1.
+
+    IF sy-subrc <> 0.
+      WRITE: '에러가 발생했습니다.'.
+    ENDIF.
+
+  ELSE.
+    go_alv_grid_210->refresh_table_display( ).
+
+  ENDIF.
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

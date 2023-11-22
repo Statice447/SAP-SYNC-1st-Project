@@ -1,0 +1,87 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_SD_03I01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  EXIT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE exit INPUT.
+  CASE ok_code.
+    WHEN 'EXIT'.
+      LEAVE PROGRAM.
+    WHEN 'CANC'.
+      LEAVE PROGRAM.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN 'SEARCH'.
+      PERFORM get_data.
+    WHEN 'REQUEST'.
+      PERFORM out_req.
+    WHEN 'DELIVERY'.
+      PERFORM delivery.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0200  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0200 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      GV_DEV = 0.
+      CLEAR gt_reor.
+      LEAVE TO SCREEN 0.
+    WHEN 'DEV'.
+      IF gv_dev <> 1.
+        IF ztc702_dev_h-devaddr IS INITIAL
+          OR ztc702_dev_h-pernr IS INITIAL.
+          MESSAGE '배송 정보를 입력하세요.' TYPE 'I'.
+        ELSE.
+          PERFORM to_dev.
+        ENDIF.
+      ELSE.
+        MESSAGE '이미 처리되었습니다.' TYPE 'I'.
+      ENDIF.
+    WHEN 'BTN1'.
+      SELECT SINGLE cusaddr "고객 주소값을 가져오기위해 join 후 select
+        INTO ztc702_dev_h-devaddr
+        FROM ztc702_cusmaster AS b
+        INNER JOIN ztc702_ord_h AS a
+        ON b~cuscode = a~cuscode
+        WHERE ornum = gs_reor2-ornum.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  INPUT_WARNING  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE input_warning INPUT.
+*  IF ztc702_dev_h-devaddr IS INITIAL OR ztc702_dev_h-pernr IS INITIAL.
+*    MESSAGE '입력이 필요합니다.' TYPE 'E'.
+*  ENDIF.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  INPUT_WARNING1  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE input_warning1 INPUT.
+  IF zsc702_reor_con-ordate_a IS INITIAL OR zsc702_reor_con-ordate_b IS INITIAL.
+    MESSAGE '값을 입력해주세요.' TYPE 'E'.
+  ENDIF.
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

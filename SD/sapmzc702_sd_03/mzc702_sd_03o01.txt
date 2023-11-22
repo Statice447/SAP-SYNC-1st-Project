@@ -1,0 +1,232 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_SD_03O01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS '0100'.
+  SET TITLEBAR '0100'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CLEAR_OK OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE clear_ok OUTPUT.
+  CLEAR ok_code.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CREATE_ALV OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE create_alv OUTPUT.
+  IF go_con IS INITIAL.
+    CREATE OBJECT go_con
+      EXPORTING
+        container_name = 'CON'.
+
+    CREATE OBJECT go_alv
+      EXPORTING
+        i_parent = go_con.
+
+    PERFORM alv_setting.
+    set HANDLER lcl_class=>on_double for go_alv.
+
+    go_alv->set_table_for_first_display(
+    EXPORTING
+      is_layout = gs_lay
+
+        CHANGING
+      it_outtab = gt_reor
+      it_sort = gt_sort
+      it_fieldcatalog = gt_cat
+       ).
+  ENDIF.
+  go_alv->refresh_table_display( ).
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0200 OUTPUT.
+  SET PF-STATUS '0200'.
+  SET TITLEBAR '0200'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CREATE_ALV2 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE create_alv2 OUTPUT.
+  IF go_con2 IS INITIAL.
+    CREATE OBJECT go_con2
+      EXPORTING
+        container_name = 'CON2'.
+
+    CREATE OBJECT go_alv2
+      EXPORTING
+        i_parent = go_con2.
+PERFORM ALV_SETTING2.
+    go_alv2->set_table_for_first_display(
+    EXPORTING
+      is_layout = gs_lay
+
+        CHANGING
+      it_outtab = gt_reor2
+      it_sort = gt_sort
+      it_fieldcatalog = gt_cat2
+       ).
+  ENDIF.
+  go_alv2->refresh_table_display( ).
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CHANGE_FLAG OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE change_flag OUTPUT.
+  LOOP AT gt_reor INTO gs_reor.
+    "신호등 설정
+    IF gs_reor-flag = ''.
+      gs_reor-led = '1'. "출하 요청 보냈을때
+    ELSEIF gs_reor-flag = 'A'.
+      gs_reor-led = '2'. "출하 됐을때
+    ELSEIF gs_reor-flag = 'B'.
+      gs_reor-led = '3'. "배송 보냈을때
+    ENDIF.
+    SELECT SINGLE B~cuscode B~cusname
+      FROM ztc702_ord_h AS a
+      INNER JOIN ztc702_cusmaster AS b
+       ON a~cuscode = b~cuscode
+      INTO (gs_reor-cuScode, gs_reor-cusname)
+      WHERE a~ornum = gs_reor-ornum.
+    MODIFY gt_reor FROM gs_reor TRANSPORTING led CUSCODE CUSNAME.
+  ENDLOOP.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CHANGE_FLAG2 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE change_flag2 OUTPUT.
+  LOOP AT gt_reor2 INTO gs_reor2.
+    "신호등
+    IF gs_reor2-flag = 'B'.
+      gs_reor2-led = '3'. "배송 보냈을때
+    ENDIF.
+    MODIFY gt_reor2 FROM gs_reor2 TRANSPORTING led.
+  ENDLOOP.
+ENDMODULE.
+
+*&---------------------------------------------------------------------*
+*& Module SCR_INPUT OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE scr_input OUTPUT.
+  IF gs_reor2-flag  = 'B'.
+    LOOP AT SCREEN INTO screen.
+      screen-input = 0.
+      MODIFY screen FROM screen.
+    ENDLOOP.
+    "배송 이후로는 input필드 잠기게 설정
+  ENDIF.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_LIST OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_list OUTPUT.
+  SELECT *
+    FROM ztc702_cusmaster
+    INTO CORRESPONDING FIELDS OF TABLE gt_list
+    WHERE custype = 'D'
+    .
+  TYPE-POOLS vrm.
+
+  CLEAR: list.
+
+  LOOP AT gt_list INTO gs_list.
+    value-key = gs_list-cuscode.
+    value-text = gs_list-cusname.
+    APPEND value TO list.
+    CLEAR: gs_list, value.
+  ENDLOOP.
+
+  CALL FUNCTION 'VRM_SET_VALUES'
+    EXPORTING
+      id     = 'ZTC702_DEV_H-CUSCODE'
+      values = list.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Form ALV_SETTING2
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM alv_setting2 .
+  gs_cat-fieldname = 'LED'.
+  gs_cat-coltext = '진행상태'.
+  gs_cat-just = 'C'.
+  APPEND gs_cat TO gt_cat2.
+  CLEAR gs_cat.
+  gs_cat-col_pos = '1'.
+  gs_cat-fieldname = 'REORNUM'.
+  gs_cat-coltext = '출하오더 번호'.
+  gs_cat-outputlen = '11'.
+  gs_cat-just = 'C'.
+  APPEND gs_cat TO gt_cat2.
+  CLEAR gs_cat.
+  gs_cat-col_pos = '2'.
+  gs_cat-fieldname = 'ORNUM'.
+  gs_cat-coltext = '제품주문번호'.
+  gs_cat-outputlen = '11'.
+  gs_cat-just = 'C'.
+  APPEND gs_cat TO gt_cat2.
+  CLEAR gs_cat.
+  gs_cat-col_pos = '3'.
+  gs_cat-fieldname = 'GDNAME'.
+  gs_cat-coltext = '상품명'.
+  gs_cat-outputlen = '24'.
+  APPEND gs_cat TO gt_cat2.
+  CLEAR gs_cat.
+  gs_cat-col_pos = '4'.
+  gs_cat-fieldname = 'QUANTITY'.
+  gs_cat-coltext = '수량'.
+  gs_cat-outputlen = '8'.
+  gs_cat-qfieldname = 'UNIT'.
+  APPEND gs_cat TO gt_cat2.
+  CLEAR gs_cat.
+  gs_cat-col_pos = '5'.
+  gs_cat-fieldname = 'UNIT'.
+  gs_cat-coltext = '단위'.
+  gs_cat-currency = 'EA'.
+  gs_cat-outputlen = '4'.
+  APPEND gs_cat TO gt_cat2.
+  CLEAR gs_cat.
+*  gs_cat-col_pos = '6'.
+*  gs_cat-fieldname = 'CUSCODE'.
+*  gs_cat-coltext = '고객번호'.
+*  gs_cat-outputlen = '12'.
+*  gs_cat-just = 'C'.
+*  APPEND gs_cat TO gt_cat2.
+*  CLEAR gs_cat.
+*  gs_cat-col_pos = '7'.
+*  gs_cat-fieldname = 'CUSNAME'.
+*  gs_cat-coltext = '고객명'.
+*  gs_cat-outputlen = '10'.
+*  gs_cat-just = 'C'.
+*  APPEND gs_cat TO gt_cat2.
+*  CLEAR gs_cat.
+ENDFORM.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

@@ -1,0 +1,62 @@
+*&---------------------------------------------------------------------*
+*& Include          ZC702R_FI_01I01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  EXIT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE exit INPUT.
+  CASE ok_code.
+    WHEN 'EXIT'.
+      LEAVE PROGRAM.
+    WHEN 'CANC'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN 'SEARCH'.
+      PERFORM init_condition. " 조회 버튼 클릭시, 조회 기간 1월~현재월로 자동 설정.
+      IF zsc702_period-docudate_a > zsc702_period-docudate_b.
+       MESSAGE '시작일자와 종료일자가 잘못 입력되었습니다.' TYPE 'I'.
+       RETURN.
+      ENDIF.
+    WHEN 'SEARCH_FIN'.
+      CALL SCREEN 200.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  GET_DATA  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE get_data INPUT.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0200  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0200 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN 'SEARCH'.
+      PERFORM get_data_income.
+      PERFORM get_data_position.
+    WHEN 'BEFORE'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

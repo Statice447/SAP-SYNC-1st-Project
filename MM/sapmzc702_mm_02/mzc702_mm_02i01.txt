@@ -1,0 +1,103 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_MM_02I01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  EXIT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE EXIT INPUT.
+  CASE OK_CODE.
+    WHEN 'EXIT'.
+      LEAVE PROGRAM.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE USER_COMMAND_0100 INPUT.
+  CASE OK_CODE.
+    WHEN 'ENTER'.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN 'SEARCH'.
+      PERFORM SEARCH.
+    WHEN 'CREATE'.
+      CALL SCREEN 101 STARTING AT 10 10.
+    WHEN 'EDIT'.
+      PERFORM SELECT.
+    WHEN 'CLEAR'.
+      PERFORM CLEAR.
+    WHEN 'STATUS'.
+      PERFORM DELFLAG.
+    WHEN 'CANC'.
+      PERFORM CLEAR.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0101  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE USER_COMMAND_0101 INPUT.
+  CASE OK_CODE.
+    WHEN 'SAVE'.
+      PERFORM CREATE.
+    WHEN 'CLOSE'.
+      DATA LV_ANSWER TYPE C LENGTH 1.
+
+      CALL FUNCTION 'POPUP_TO_CONFIRM'
+        EXPORTING
+          TITLEBAR              = '자재 등록 취소'
+          TEXT_QUESTION         = '신규자재 등록을 취소하시겠습니까?'
+          TEXT_BUTTON_1         = '예'
+          TEXT_BUTTON_2         = '아니오'
+          DISPLAY_CANCEL_BUTTON = ''
+        IMPORTING
+          ANSWER                = LV_ANSWER.
+
+      IF LV_ANSWER = 1.
+        PERFORM CLEAR.
+        SET SCREEN 0.
+        LEAVE SCREEN.
+      ELSE.
+        SET SCREEN 101.
+        LEAVE SCREEN.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0102  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE USER_COMMAND_0102 INPUT.
+  CASE OK_CODE.
+    WHEN 'SAVE'.
+      PERFORM EDIT.
+    WHEN 'CLOSE'.
+      CALL FUNCTION 'POPUP_TO_CONFIRM'
+        EXPORTING
+          TITLEBAR              = '자재 수정 취소'
+          TEXT_QUESTION         = '자재 정보 수정을 취소하시겠습니까?'
+          TEXT_BUTTON_1         = '예'
+          TEXT_BUTTON_2         = '아니오'
+          DISPLAY_CANCEL_BUTTON = ''
+        IMPORTING
+          ANSWER                = LV_ANSWER.
+
+      IF LV_ANSWER = 1.
+        PERFORM CLEAR.
+        SET SCREEN 0.
+        LEAVE SCREEN.
+      ELSE.
+        SET SCREEN 102.
+        LEAVE SCREEN.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

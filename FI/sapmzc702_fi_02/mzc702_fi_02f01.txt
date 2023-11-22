@@ -1,0 +1,418 @@
+*&---------------------------------------------------------------------*
+*& Form FIELD_CATALOG
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM field_catalog2.
+  gs_fcat2-fieldname       = 'DRCRSORT'.
+  gs_fcat2-coltext         = '차/대'.
+  APPEND gs_fcat2 TO gt_fcat2.
+
+  CLEAR gs_fcat2.
+  gs_fcat2-fieldname       = 'ACCCODE'.
+  gs_fcat2-coltext         = '계정과목 코드'.
+  APPEND gs_fcat2 TO gt_fcat2.
+
+  CLEAR gs_fcat2.
+  gs_fcat2-fieldname       = 'ACCNAME'.
+  gs_fcat2-coltext         = '계정과목명'.
+  APPEND gs_fcat2 TO gt_fcat2.
+
+  CLEAR gs_fcat2.
+  gs_fcat2-fieldname       = 'AMOUNT'.
+  gs_fcat2-coltext         = '금액'.
+  gs_fcat2-cfieldname      = 'CURRENCY'.
+  APPEND gs_fcat2 TO gt_fcat2.
+
+  CLEAR gs_fcat2.
+  gs_fcat2-fieldname = 'CURRENCY'.
+  gs_fcat2-coltext   = '통화'.
+  gs_fcat2-just      = 'C'.
+  gs_fcat2-currency  = 'KRW'.
+  APPEND gs_fcat2 TO gt_fcat2.
+
+  CLEAR gs_fcat2.
+  gs_fcat2-fieldname       = 'CUSNAME'.
+  gs_fcat2-coltext         = '거래처명'.
+  APPEND gs_fcat2 TO gt_fcat2.
+
+  CLEAR gs_fcat2.
+  gs_fcat2-fieldname       = 'BANKNAME'.
+  gs_fcat2-coltext         = '은행명'.
+  APPEND gs_fcat2 TO gt_fcat2.
+
+  CLEAR gs_fcat2.
+  gs_fcat2-fieldname       = 'ACHOLDER'.
+  gs_fcat2-coltext         = '예금주'.
+  APPEND gs_fcat2 TO gt_fcat2.
+
+  CLEAR gs_fcat2.
+  gs_fcat2-fieldname       = 'ACNO'.
+  gs_fcat2-coltext         = '계좌번호'.
+  APPEND gs_fcat2 TO gt_fcat2.
+
+  CLEAR gs_fcat2.
+  gs_fcat2-fieldname       = 'RETNUM'.
+  gs_fcat2-coltext         = '반제 전표 번호'.
+  APPEND gs_fcat2 TO gt_fcat2.
+
+  CLEAR gs_fcat2.
+  gs_fcat2-fieldname       = 'REVNUM'.
+  gs_fcat2-coltext         = '역분개 전표 번호'.
+  gs_fcat2-no_out          = 'X'.
+  APPEND gs_fcat2 TO gt_fcat2.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_DOCU_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*      -->P_GT_TAB  text
+*&---------------------------------------------------------------------*
+FORM get_docu_data  CHANGING VALUE(g_tab) LIKE gt_tab.
+  CASE 'X'.
+    WHEN rd1.
+      CLEAR g_tab.
+      SELECT *
+        FROM zdvc702_docu
+        INTO CORRESPONDING FIELDS OF TABLE g_tab
+       WHERE docudate BETWEEN zsc702_docu_h-docudate_a AND zsc702_docu_h-docudate_b
+       ORDER BY docunum ASCENDING.
+    WHEN rd2.
+      CLEAR g_tab.
+      SELECT *
+        FROM zdvc702_docu
+        INTO CORRESPONDING FIELDS OF TABLE g_tab
+       WHERE docudate BETWEEN zsc702_docu_h-docudate_a AND zsc702_docu_h-docudate_b
+         AND docutype = 'A1'
+       ORDER BY docunum ASCENDING.
+   WHEN rd3.
+      CLEAR g_tab.
+      SELECT *
+        FROM zdvc702_docu
+        INTO CORRESPONDING FIELDS OF TABLE g_tab
+       WHERE docudate BETWEEN zsc702_docu_h-docudate_a AND zsc702_docu_h-docudate_b
+         AND docutype = 'A2'
+       ORDER BY docunum ASCENDING.
+   WHEN rd4.
+      CLEAR g_tab.
+      SELECT *
+        FROM zdvc702_docu
+        INTO CORRESPONDING FIELDS OF TABLE g_tab
+       WHERE docudate BETWEEN zsc702_docu_h-docudate_a AND zsc702_docu_h-docudate_b
+         AND docutype = 'B1'
+       ORDER BY docunum ASCENDING.
+  WHEN rd5.
+      CLEAR g_tab.
+      SELECT *
+        FROM zdvc702_docu
+        INTO CORRESPONDING FIELDS OF TABLE g_tab
+       WHERE docudate BETWEEN zsc702_docu_h-docudate_a AND zsc702_docu_h-docudate_b
+         AND docutype = 'B2'
+       ORDER BY docunum ASCENDING.
+   WHEN rd6.
+      CLEAR g_tab.
+      SELECT *
+        FROM zdvc702_docu
+        INTO CORRESPONDING FIELDS OF TABLE g_tab
+       WHERE docudate BETWEEN zsc702_docu_h-docudate_a AND zsc702_docu_h-docudate_b
+         AND docutype = 'C1'
+       ORDER BY docunum ASCENDING.
+   WHEN rd7.
+      CLEAR g_tab.
+      SELECT *
+        FROM zdvc702_docu
+        INTO CORRESPONDING FIELDS OF TABLE g_tab
+       WHERE docudate BETWEEN zsc702_docu_h-docudate_a AND zsc702_docu_h-docudate_b
+         AND docutype = 'C2'
+       ORDER BY docunum ASCENDING.
+  ENDCASE.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form FIELD_CATALOG
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM field_catalog .
+  gs_fcat-fieldname = 'DOCUNUM'.
+  gs_fcat-coltext   = '전표 번호'.
+  gs_fcat-just      = 'Center'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDCODE'.
+  gs_fcat-coltext   = '품목 코드'.
+  gs_fcat-just      = 'Center'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDNAME'.
+  gs_fcat-coltext   = '품목명'.
+  gs_fcat-just      = 'Center'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'QUANTITY'.
+  gs_fcat-coltext   = '수량'.
+*  gs_fcat-just      = 'Center'.
+  gs_fcat-qfieldname = 'UNIT'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'UNIT'.
+  gs_fcat-coltext   = '단위'.
+  gs_fcat-just      = 'Center'.
+  gs_fcat-quantity  = 'EA'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'PRICE'.
+  gs_fcat-coltext   = '단가'.
+*  gs_fcat-just      = 'Center'.
+  gs_fcat-cfieldname = 'CURRENCY'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'AMOUNT'.
+  gs_fcat-coltext   = '금액'.
+*  gs_fcat-just      = 'Center'.
+  gs_fcat-cfieldname = 'CURRENCY'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'CURRENCY'.
+  gs_fcat-coltext   = '통화'.
+  gs_fcat-just      = 'C'.
+  gs_fcat-currency  = 'KRW'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'CUSNUM'.
+  gs_fcat-coltext   = '거래처번호'.
+  gs_fcat-just      = 'Center'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'CUSNAME'.
+  gs_fcat-coltext   = '거래처명'.
+  gs_fcat-just      = 'Center'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'TAXCODE'.
+  gs_fcat-coltext   = '사업자등록번호'.
+  gs_fcat-just      = 'Center'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'PAYMENT'.
+  gs_fcat-coltext   = '결제 여부'.
+  gs_fcat-just      = 'Center'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'TAXBILL'.
+  gs_fcat-coltext   = '세금계산서 발급 유무'.
+  gs_fcat-just      = 'Center'.
+  gs_fcat-no_out    = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'REVERSAL'.
+  gs_fcat-coltext   = '역분개 여부'.
+  gs_fcat-just      = 'Center'.
+  gs_fcat-no_out    = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_DOCU_I_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*      -->P_GT_TAB2  text
+*&---------------------------------------------------------------------*
+FORM get_docu_i_data  CHANGING VALUE(g_tab) LIKE gt_tab2.
+  CLEAR g_tab.
+  SELECT *
+    FROM ztc702_docu_i
+    INTO CORRESPONDING FIELDS OF TABLE g_tab
+   WHERE docunum = gs_tab-docunum
+   ORDER BY docunum ASCENDING.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_DOCUTYPE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*      <--P_GT_TAB  text
+*&---------------------------------------------------------------------*
+FORM get_docutype CHANGING VALUE(g_tab) LIKE gt_tab.
+  CASE 'X'.
+    WHEN rd1.
+      CLEAR g_tab.
+      SELECT *
+        FROM ( ztc702_docu_h AS h LEFT OUTER JOIN ztc702_docu_i AS i
+                                    ON h~docunum = i~docunum )
+        INTO CORRESPONDING FIELDS OF TABLE g_tab
+       WHERE h~docutype BETWEEN zsc702_docu_h-docudate_a AND zsc702_docu_h-docudate_b
+       ORDER BY h~docunum ASCENDING.
+    WHEN rd2.
+      CLEAR g_tab.
+      SELECT *
+        FROM ( ztc702_docu_h AS h LEFT OUTER JOIN ztc702_docu_i AS i
+                                    ON h~docunum = i~docunum )
+        INTO CORRESPONDING FIELDS OF TABLE g_tab
+       WHERE h~docutype BETWEEN zsc702_docu_h-docudate_a AND zsc702_docu_h-docudate_b
+         AND h~docutype = 'A1'
+       ORDER BY h~docunum ASCENDING.
+    WHEN rd3.
+      CLEAR g_tab.
+      SELECT *
+        FROM ( ztc702_docu_h AS h LEFT OUTER JOIN ztc702_docu_i AS i
+                                    ON h~docunum = i~docunum )
+        INTO CORRESPONDING FIELDS OF TABLE g_tab
+       WHERE h~docutype BETWEEN zsc702_docu_h-docudate_a AND zsc702_docu_h-docudate_b
+         AND h~docutype = 'A2'
+       ORDER BY h~docunum ASCENDING.
+    WHEN rd4.
+      CLEAR g_tab.
+      SELECT *
+        FROM ( ztc702_docu_h AS h LEFT OUTER JOIN ztc702_docu_i AS i
+                                    ON h~docunum = i~docunum )
+        INTO CORRESPONDING FIELDS OF TABLE g_tab
+       WHERE h~docutype BETWEEN zsc702_docu_h-docudate_a AND zsc702_docu_h-docudate_b
+         AND h~docutype = 'B1'
+       ORDER BY h~docunum ASCENDING.
+    WHEN rd5.
+      CLEAR g_tab.
+      SELECT *
+        FROM ( ztc702_docu_h AS h LEFT OUTER JOIN ztc702_docu_i AS i
+                                    ON h~docunum = i~docunum )
+        INTO CORRESPONDING FIELDS OF TABLE g_tab
+       WHERE h~docutype BETWEEN zsc702_docu_h-docudate_a AND zsc702_docu_h-docudate_b
+         AND h~docutype = 'B2'
+       ORDER BY h~docunum ASCENDING.
+    WHEN rd6.
+      CLEAR g_tab.
+      SELECT *
+        FROM ( ztc702_docu_h AS h LEFT OUTER JOIN ztc702_docu_i AS i
+                                    ON h~docunum = i~docunum )
+        INTO CORRESPONDING FIELDS OF TABLE g_tab
+       WHERE h~docutype BETWEEN zsc702_docu_h-docudate_a AND zsc702_docu_h-docudate_b
+         AND h~docutype = 'C1'
+       ORDER BY h~docunum ASCENDING.
+    WHEN rd7.
+      CLEAR g_tab.
+      SELECT *
+        FROM ( ztc702_docu_h AS h LEFT OUTER JOIN ztc702_docu_i AS i
+                                    ON h~docunum = i~docunum )
+        INTO CORRESPONDING FIELDS OF TABLE g_tab
+       WHERE h~docutype BETWEEN zsc702_docu_h-docudate_a AND zsc702_docu_h-docudate_b
+         AND h~docutype = 'C2'
+       ORDER BY h~docunum ASCENDING.
+  ENDCASE.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_CUSNUM
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*      <--P_GT_TAB  text
+*&---------------------------------------------------------------------*
+FORM get_cusnum  CHANGING VALUE(g_tab) LIKE gt_tab.
+  DATA: ls_tab LIKE gs_tab.
+  CASE 'X'.
+    WHEN rd1.
+      CLEAR g_tab.
+      SELECT *
+        FROM zdvc702_docu
+        INTO CORRESPONDING FIELDS OF TABLE g_tab
+       WHERE docudate BETWEEN zsc702_docu_h-docudate_a AND zsc702_docu_h-docudate_b
+         AND cusnum = zsc702_docu_h-cusnum_a
+       ORDER BY docunum ASCENDING.
+    WHEN rd2.
+      CLEAR g_tab.
+      SELECT *
+        FROM zdvc702_docu
+        INTO CORRESPONDING FIELDS OF TABLE g_tab
+       WHERE docudate BETWEEN zsc702_docu_h-docudate_a AND zsc702_docu_h-docudate_b
+         AND cusnum = zsc702_docu_h-cusnum_a
+         AND docutype = 'A1'
+       ORDER BY docunum ASCENDING.
+   WHEN rd3.
+      CLEAR g_tab.
+      SELECT *
+        FROM zdvc702_docu
+        INTO CORRESPONDING FIELDS OF TABLE g_tab
+       WHERE docudate BETWEEN zsc702_docu_h-docudate_a AND zsc702_docu_h-docudate_b
+         AND cusnum = zsc702_docu_h-cusnum_a
+         AND docutype = 'A2'
+       ORDER BY docunum ASCENDING.
+   WHEN rd4.
+      CLEAR g_tab.
+      SELECT *
+        FROM zdvc702_docu
+        INTO CORRESPONDING FIELDS OF TABLE g_tab
+       WHERE docudate BETWEEN zsc702_docu_h-docudate_a AND zsc702_docu_h-docudate_b
+         AND cusnum = zsc702_docu_h-cusnum_a
+         AND docutype = 'B1'
+       ORDER BY docunum ASCENDING.
+  WHEN rd5.
+      CLEAR g_tab.
+      SELECT *
+        FROM zdvc702_docu
+        INTO CORRESPONDING FIELDS OF TABLE g_tab
+       WHERE docudate BETWEEN zsc702_docu_h-docudate_a AND zsc702_docu_h-docudate_b
+         AND cusnum = zsc702_docu_h-cusnum_a
+         AND docutype = 'B2'
+       ORDER BY docunum ASCENDING.
+   WHEN rd6.
+      CLEAR g_tab.
+      SELECT *
+        FROM zdvc702_docu
+        INTO CORRESPONDING FIELDS OF TABLE g_tab
+       WHERE docudate BETWEEN zsc702_docu_h-docudate_a AND zsc702_docu_h-docudate_b
+         AND cusnum = zsc702_docu_h-cusnum_a
+         AND docutype = 'C1'
+       ORDER BY docunum ASCENDING.
+   WHEN rd7.
+      CLEAR g_tab.
+      SELECT *
+        FROM zdvc702_docu
+        INTO CORRESPONDING FIELDS OF TABLE g_tab
+       WHERE docudate BETWEEN zsc702_docu_h-docudate_a AND zsc702_docu_h-docudate_b
+         AND cusnum = zsc702_docu_h-cusnum_a
+         AND docutype = 'C2'
+       ORDER BY docunum ASCENDING.
+  ENDCASE.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form INIT_DOCUDATE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM init_docudate .
+  DATA: lv_date TYPE s_date.
+
+  CALL FUNCTION 'SG_PS_ADD_MONTH_TO_DATE'
+    EXPORTING
+      months        = -1
+      olddate       = sy-datum
+   IMPORTING
+     newdate        = lv_date.
+
+  zsc702_docu_h-docudate_a = lv_date.
+  zsc702_docu_h-docudate_b = sy-datum.
+ENDFORM.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

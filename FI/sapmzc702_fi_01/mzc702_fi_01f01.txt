@@ -1,0 +1,335 @@
+*&---------------------------------------------------------------------*
+*& Form DISPLAY_ACCOUNT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM display_account.
+  IF zsc702_account-accclass IS NOT INITIAL.
+    PERFORM get_class_data CHANGING gt_tab.
+    PERFORM init_condition_cha.
+  ELSEIF zsc702_account-company IS NOT INITIAL.
+    PERFORM get_acc_data CHANGING gt_tab.
+    PERFORM init_condition_cha.
+  ELSE.
+    MESSAGE '필드 값을 입력하세요.' TYPE 'I'.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_ACC_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM get_acc_data CHANGING VALUE(g_tab) LIKE gt_tab.
+  " ALV에 보여줄 데이터 가져옴.
+  CASE 'X'.
+    WHEN ra1.
+      CLEAR gt_tab.
+      SELECT company accclass acccode accname delflag
+        FROM ztc702_account
+        INTO CORRESPONDING FIELDS OF TABLE g_tab
+       WHERE delflag <> 'X'
+       ORDER BY acccode ASCENDING.
+    WHEN ra2.
+      CLEAR gt_tab.
+      SELECT company accclass acccode accname delflag
+        FROM ztc702_account
+        INTO CORRESPONDING FIELDS OF TABLE g_tab
+       ORDER BY acccode ASCENDING.
+   ENDCASE.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CREATE_ACCOUNT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM create_account.
+" 모든 필드가 입력되고, 계정과목코드가 중복 아닐때, 해당 데이터를 테이블로 저장.
+    IF zsc702_acc_upd-accclass IS INITIAL.
+      MESSAGE '계정분류를 입력하세요.' TYPE 'I'.
+    ELSEIF zsc702_acc_upd-acccode IS INITIAL.
+      MESSAGE '계정과목코드를 입력하세요.' TYPE 'I'.
+    ELSEIF zsc702_acc_upd-accname IS INITIAL.
+      MESSAGE '계정과목명을 입력하세요.' TYPE 'I'.
+    ELSEIF zsc702_acc_upd-acccode IS NOT INITIAL.      " 계정과목코드가 빈칸이 아닐때.
+      LOOP AT gt_tab INTO gs_tab.                      " 중복 데이터가 아닌지 확인.
+        IF zsc702_acc_upd-acccode <> gs_tab-acccode.   " 중복 아닐 경우.
+          MOVE-CORRESPONDING zsc702_acc_upd TO gs_tab. " 해당 데이터를 스트럭처에 넣음.
+          gs_tab-crnam = sy-uname.
+          gs_tab-erdat = sy-datum.
+          gs_tab-ertim = sy-uzeit.
+        ELSE.
+        ENDIF.
+      ENDLOOP.
+      INSERT ztc702_account FROM gs_tab.               " 계정과목코드가 key필드로, 중복될 경우 테이블에 입력 안됨.
+        IF sy-subrc = 0.                               " 테이블에 입력이 되었을 경우, 해당 계정과목 생성 메시지 출력 및 100번 스크린 이동.
+          MESSAGE zsc702_acc_upd-accname && ' 계정과목을 생성하였습니다.' TYPE 'I'.
+          CLEAR: zsc702_acc_upd.
+          LEAVE TO SCREEN 0.
+        ELSE.                                          " 중복 데이터일 경우, 테이블에 입력이 안되서 에러 메시지 뜸.
+          MESSAGE '중복된 계정과목코드 입니다. 다른 계정과목코드를 입력하세요.' TYPE 'I'.
+          CLEAR zsc702_acc_upd-acccode.
+        ENDIF.
+    ELSE.
+      MESSAGE '메세지' TYPE 'I'.
+    ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form UPD_ACC_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*      -->P_GT_TAB  text
+*&---------------------------------------------------------------------*
+FORM upd_acc_data.
+" 필드가 하나라도 미입력 되어 있다면(초기값이면), 에러 메시지가 뜸.
+" 계정과목코드가 테이블에 이미 있다면(중복이면), 에러 메시지가 뜸.
+" 에러메시지가 안 뜨는 경우, 입력한 정보가 저장됨.
+*  CLEAR gs_tab.
+  IF zsc702_acc_upd-accclass IS INITIAL.
+    MESSAGE '계정분류를 입력하세요.' TYPE 'I'.
+  ELSEIF zsc702_acc_upd-acccode IS INITIAL.
+    MESSAGE '계정과목코드를 입력하세요.' TYPE 'I'.
+  ELSEIF zsc702_acc_upd-accname IS INITIAL.
+    MESSAGE '계정과목명을 입력하세요.' TYPE 'I'.
+  ELSE.
+    MOVE-CORRESPONDING zsc702_acc_upd TO gs_tab. " 200번 스크린에서 입력하는 자료.
+    INSERT ztc702_account FROM gs_tab.           " 200번 스크린에서 입력한 자료를 테이블에 저장.
+    CLEAR: zsc702_account, zsc702_acc_upd.
+    LEAVE TO SCREEN 0.
+  ENDIF.
+
+  " 일단 필드가 다 채워져야함. -> 다 채워지면, 테이블에 데이터 넣어짐.
+
+*  IF sy-subrc = 0.
+*    MESSAGE i002 WITH gs_tab-accname.
+*    COMMIT WORK.
+*  ELSEIF sy-subrc = 4.
+*    MESSAGE i007 WITH gs_tab-acccode.
+*    ROLLBACK WORK.
+*  ELSE.
+*    MESSAGE i003 WITH gs_tab-accname.
+*    ROLLBACK WORK.
+*  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CHANGE_ACCOUNT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM change_account.
+  PERFORM cha_acc_data. " 100번 스크린에서 더블클릭으로 yc702_account에 들어온 데이터가 넘어와서 수정.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CHA_ACC_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM cha_acc_data.
+" 계정과목명과 미사용여부가 변경됬는지 확인.
+" 변경됬다면, 변경내용 반영 & 수정 성공 메시지 출력.
+" 변경사항 없으면, 변경내용 없음 메시지 출력.
+
+  IF zsc702_account-accname = zsc702_acc_cha-accname AND zsc702_account-delflag = zsc702_acc_cha-delflag.
+    MESSAGE '변경 사항이 없습니다' TYPE 'I'.
+  ELSE.
+    MOVE-CORRESPONDING zsc702_acc_cha TO gs_tab.
+    gs_tab-chnam = sy-uname.
+    gs_tab-chdat = sy-datum.
+    gs_tab-chtim = sy-uzeit.
+    MODIFY ztc702_account FROM gs_tab.
+    IF sy-subrc = 0.
+      MESSAGE i004 WITH gs_tab-accname.
+    ELSE.
+      MESSAGE i005 WITH gs_tab-accname.
+    ENDIF.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM get_data .
+  IF sy-subrc = 0.
+    MOVE-CORRESPONDING gs_tab TO zsc702_account.
+    CLEAR gs_tab.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form INIT_CONDITION
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM init_condition .
+  IF zsc702_account-accclass = 'AS'.
+    zsc702_account-accclass_t = '자산'.
+  ELSEIF zsc702_account-accclass = 'LI'.
+    zsc702_account-accclass_t = '부채'.
+  ELSEIF zsc702_account-accclass = 'EQ'.
+    zsc702_account-accclass_t = '자본'.
+  ELSEIF zsc702_account-accclass = 'RE'.
+    zsc702_account-accclass_t = '수익'.
+  ELSEIF zsc702_account-accclass = 'CO'.
+    zsc702_account-accclass_t = '비용'.
+  ENDIF.
+
+  IF zsc702_account-company = 'DD'.
+    zsc702_account-company_t = '(주)술독'.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form INIT_CONDITION_CHA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM init_condition_cha .
+  DATA: lt_dd07v TYPE STANDARD TABLE OF dd07v,
+      ls_dd07v TYPE dd07v,
+      lt_list LIKE gt_tab,
+      ls_list LIKE gs_tab.
+
+" domain function 사용해서 계정분류명 값 불러오기.
+  CALL FUNCTION 'GET_DOMAIN_VALUES'
+    EXPORTING
+      domname = 'ZDC702_ACCCLASS'  " domain 값 넣기.
+      text = 'X'
+    TABLES
+      values_tab = lt_dd07v
+    EXCEPTIONS
+      value_not_found = 1
+      OTHERS = 2.
+
+" 삭제플래그가 설정되어있다면, 빨간색 줄 표시.
+  LOOP AT gt_tab INTO gs_tab.
+    IF gs_tab-delflag = 'X'.
+      gs_tab-color = 'C' && col_negative && '10'.
+    ENDIF.
+    MODIFY gt_tab FROM gs_tab TRANSPORTING color.
+  ENDLOOP.
+
+" 불러온 domain 값을 accclass_t에 넣기.
+  LOOP AT gt_tab INTO gs_tab.
+    READ TABLE lt_dd07v INTO ls_dd07v
+      WITH KEY domvalue_l = gs_tab-accclass.
+    gs_tab-accclass_t = ls_dd07v-ddtext.
+    MODIFY gt_tab FROM gs_tab.
+  ENDLOOP.
+
+  CLEAR: lt_dd07v.
+
+" domain function 사용해서 회사코드명 값 불러오기.
+  CALL FUNCTION 'GET_DOMAIN_VALUES'
+    EXPORTING
+      domname = 'ZDC702_COMPANY'  " domain 값 넣기.
+      text = 'X'
+    TABLES
+      values_tab = lt_dd07v
+    EXCEPTIONS
+      value_not_found = 1
+      OTHERS = 2.
+
+" 불러온 domain 값을 company_t에 넣기.
+    LOOP AT gt_tab INTO gs_tab.
+    READ TABLE lt_dd07v INTO ls_dd07v
+      WITH KEY domvalue_l = gs_tab-company.
+    gs_tab-company_t = ls_dd07v-ddtext.
+    MODIFY gt_tab FROM gs_tab.
+  ENDLOOP.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_CLASS_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*      -->P_GT_TAB  text
+*&---------------------------------------------------------------------*
+FORM get_class_data CHANGING VALUE(g_tab) LIKE gt_tab.
+  " ALV에 보여줄 데이터 가져옴.
+  CASE 'X'.
+    WHEN ra1.
+     CLEAR gt_tab.
+     SELECT *"company accclass acccode accname delflag
+       FROM ztc702_account
+       INTO CORRESPONDING FIELDS OF TABLE g_tab
+      WHERE "accclass = zsc702_account-accclass
+         delflag <> 'X'
+      ORDER BY acccode ASCENDING.
+    WHEN ra2.
+     CLEAR gt_tab.
+     SELECT *"company accclass acccode accname delflag
+       FROM ztc702_account
+       INTO CORRESPONDING FIELDS OF TABLE g_tab
+*      WHERE accclass = zsc702_account-accclass
+      ORDER BY acccode ASCENDING.
+  ENDCASE.
+
+  " 삭제플래그가 설정되어있다면, 빨간색 줄 표시.
+*  LOOP AT g_tab INTO gs_tab.
+*    IF gs_tab-delflag = 'X'.
+*      gs_tab-color = 'C' && col_negative && '10'.
+*    ENDIF.
+*    MODIFY g_tab FROM gs_tab TRANSPORTING color.
+*  ENDLOOP.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form INIT_COMPANY
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM init_company_200 .
+  zsc702_acc_upd-company = 'DD'.  " 200번 스크린, 회사코드((주)술독)으로 설정.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form INIT_ACC_UPD
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM init_acc_upd .
+  zsc702_acc_upd-accclass = 'AS'.
+  zsc702_acc_upd-acccode = '000'.
+  zsc702_acc_upd-accname = '사용자지정과목'.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form INIT_COMPANY
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM init_company .
+  zsc702_account-company = 'DD'.  " 200번 스크린, 회사코드((주)술독)으로 설정.
+ENDFORM.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

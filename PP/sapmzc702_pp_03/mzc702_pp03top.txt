@@ -1,0 +1,79 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_PP03TOP
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Include MZC702_PP02TOP                           - Module Pool      SAPMZC702_PP_02
+*&---------------------------------------------------------------------*
+PROGRAM sapmzc702_pp_03 MESSAGE-ID zc702_message.
+
+TABLES: ztc702_prdplan_h, zsc702_prdplan_ref.
+
+TYPES: BEGIN OF gty_prdplan_h .
+    INCLUDE TYPE ztc702_prdplan_h .
+TYPES: color TYPE c LENGTH 4,
+       light TYPE c LENGTH 1,
+       END OF gty_prdplan_h .
+*
+SELECTION-SCREEN BEGIN OF SCREEN 110 AS SUBSCREEN.
+
+SELECT-OPTIONS: so_plnum FOR ztc702_prdplan_h-pplnum,
+                so_rfnum FOR ztc702_prdplan_h-refnum,
+                so_date FOR ztc702_prdplan_h-erdat.
+SELECTION-SCREEN END OF SCREEN 110.
+
+
+
+DATA: gt_prdplan_h     TYPE TABLE OF gty_prdplan_h,       " 생산 계획 헤더 부분 데이터 선언
+      gs_prdplan_hf    TYPE gty_prdplan_h,
+      gs_prdplan_h     TYPE gty_prdplan_h,
+      gs_prdplan_200_h TYPE gty_prdplan_h,                " 스크린 200번에서 사용
+      gt_prdplan_300   TYPE TABLE OF ztc702_prdplan_h,
+      gs_prdplan_300_h TYPE ztc702_prdplan_h.
+
+DATA: go_container TYPE REF TO cl_gui_custom_container,
+      go_alv_grid  TYPE REF TO cl_gui_custom_alv_grid,
+      gv_refresh   TYPE c LENGTH 1.
+
+DATA: go_container2 TYPE REF TO cl_gui_custom_container,
+      go_alv_grid2  TYPE REF TO cl_gui_custom_alv_grid,
+      gv_refresh2   TYPE c LENGTH 1.
+
+DATA: go_container3 TYPE REF TO cl_gui_custom_container,
+      go_alv_grid3  TYPE REF TO cl_gui_custom_alv_grid,
+      gv_refresh3   TYPE c LENGTH 1.
+
+DATA: ok_code    TYPE sy-ucomm,
+      gs_layout  TYPE lvc_s_layo,
+      gs_layout2 TYPE lvc_s_layo.
+
+DATA: gt_fcat TYPE lvc_t_fcat,
+      gs_fcat TYPE lvc_s_fcat.
+
+DATA: gt_fcat_200 TYPE lvc_t_fcat,
+      gt_fcat_300 TYPE lvc_t_fcat,
+      gs_fcat_200 TYPE lvc_s_fcat.
+
+DATA : gt_index TYPE lvc_t_row, "ALV 선택라인 저장 인터널테이블
+       gs_index LIKE LINE OF gt_index, "ALV 선택라인 저장 스트럭쳐
+       gv_lines TYPE i. "선택한 라인수를 저장할 변수
+
+DATA: gv_check    TYPE c LENGTH 1,
+      gv_chk_text TYPE string.
+
+***** 날짜 별 검색 데이터 선언
+*DATA: gv_pre_date  TYPE sy-datum,
+*      gv_post_date TYPE sy-datum,
+*      gv_date      TYPE d.
+
+***** 라디오, 체크 버튼 데이터 선언
+DATA: gv_chk_delflag TYPE c LENGTH 1,
+      gv_rad_all     TYPE c LENGTH 1,
+      gv_rad_wait    TYPE c LENGTH 1,
+      gv_rad_confirm TYPE c LENGTH 1,
+      gv_rad_reject  TYPE c LENGTH 1.
+
+***** 체크용 필드
+DATA: gv_mtcode TYPE ztc702_prdmanage-mtcode. " 품목구분- 완제품 고정용.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

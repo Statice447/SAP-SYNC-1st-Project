@@ -1,0 +1,786 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_MM_06F01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form SEARCH
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM SEARCH.
+  DATA: LT_GDCODE TYPE RANGE OF GTY_TABLE-GDCODE,
+        LS_GDCODE LIKE LINE OF LT_GDCODE.
+
+  DATA: LT_STATUS TYPE RANGE OF GTY_TABLE-STATUS,
+        LS_STATUS LIKE LINE OF LT_STATUS.
+
+  CLEAR GT_TABLE.
+
+  IF ZTC702_MTIV-GDCODE IS NOT INITIAL.
+    LS_GDCODE-SIGN = 'I'.
+    LS_GDCODE-OPTION = 'EQ'.
+    LS_GDCODE-LOW = ZTC702_MTIV-GDCODE.
+    APPEND LS_GDCODE TO LT_GDCODE.
+  ENDIF.
+
+  IF ZTC702_MTIV-STATUS IS NOT INITIAL.
+    LS_STATUS-SIGN = 'I'.
+    LS_STATUS-OPTION = 'EQ'.
+    LS_STATUS-LOW = ZTC702_MTIV-STATUS.
+    APPEND LS_STATUS TO LT_STATUS.
+  ENDIF.
+
+  IF ZTC702_PLANT-PLCODE = SPACE.
+    MESSAGE '공장을 선택하십시오' TYPE 'I'.
+  ELSE.
+    CASE GV_CB.
+      WHEN SPACE.
+        SELECT *
+          FROM ZDVC702_MTIV
+          INTO CORRESPONDING FIELDS OF TABLE GT_TABLE
+         WHERE PLCODE = ZTC702_PLANT-PLCODE
+           AND GDCODE IN LT_GDCODE
+           AND STATUS IN LT_STATUS
+           AND DELFLAG = SPACE
+          ORDER BY STATUS GDCODE.
+
+      WHEN 'X'.
+        SELECT *
+         FROM ZDVC702_MTIV
+         INTO CORRESPONDING FIELDS OF TABLE GT_TABLE
+        WHERE PLCODE = ZTC702_PLANT-PLCODE
+          AND GDCODE IN LT_GDCODE
+          AND STATUS IN LT_STATUS
+          AND DELFLAG = 'X'
+         ORDER BY STATUS GDCODE.
+    ENDCASE.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DELFLAG
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM DELFLAG .
+
+* 로컬 오브젝트 선언.
+  DATA: LS_TABLE  TYPE GTY_TABLE,
+        LS_MTIV   TYPE ZTC702_MTIV,
+        LT_ROW    TYPE LVC_T_ROW,
+        LS_ROW    TYPE LVC_S_ROW,
+        LV_ANSWER TYPE C LENGTH 1.
+
+* ALV GRID 줄 선택.
+  CALL METHOD GO_ALV_GRID->GET_SELECTED_ROWS
+    IMPORTING
+      ET_INDEX_ROWS = LT_ROW.
+
+  IF LT_ROW IS INITIAL.
+    MESSAGE '자재를 선택하십시오.' TYPE 'I'.
+  ELSE.
+    LOOP AT LT_ROW INTO LS_ROW.
+      READ TABLE GT_TABLE INTO LS_TABLE INDEX LS_ROW-INDEX.
+    ENDLOOP.
+
+* 삭제 플래그 설정.
+    IF LS_TABLE-DELFLAG = ''.
+      CALL FUNCTION 'POPUP_TO_CONFIRM'
+        EXPORTING
+          TITLEBAR              = '자재 사용 정지'
+          TEXT_QUESTION         = '자재 사용을 멈추시겠습니까?'
+          TEXT_BUTTON_1         = '예'
+          TEXT_BUTTON_2         = '아니오'
+          DISPLAY_CANCEL_BUTTON = ''
+        IMPORTING
+          ANSWER                = LV_ANSWER.
+
+      IF LV_ANSWER = 1.
+        LS_TABLE-DELFLAG = 'X'.
+        LS_TABLE-CHNAM = SY-UNAME.
+        LS_TABLE-CHDAT = SY-DATUM.
+        LS_TABLE-CHTIM = SY-UZEIT.
+
+        MOVE-CORRESPONDING LS_TABLE TO LS_MTIV.
+
+        UPDATE ZTC702_MTIV FROM LS_MTIV.
+        MESSAGE '자재 사용을 정지합니다. (품목 코드 : ' && LS_TABLE-GDCODE && ' )' TYPE 'I'.
+
+        COMMIT WORK.
+      ELSE.
+        MESSAGE '알 수 없는 에러가 발생했습니다.' TYPE 'I'.
+        ROLLBACK WORK.
+      ENDIF.
+
+* 삭제 플래그 해제.
+    ELSEIF LS_TABLE-DELFLAG = 'X'.
+      CALL FUNCTION 'POPUP_TO_CONFIRM'
+        EXPORTING
+          TITLEBAR              = '자재 사용 시작'
+          TEXT_QUESTION         = '자재 사용을 시작하시겠습니까?'
+          TEXT_BUTTON_1         = '예'
+          TEXT_BUTTON_2         = '아니오'
+          DISPLAY_CANCEL_BUTTON = ''
+        IMPORTING
+          ANSWER                = LV_ANSWER.
+
+      IF LV_ANSWER = 1.
+        LS_TABLE-DELFLAG = ''.
+        LS_TABLE-CHNAM = SY-UNAME.
+        LS_TABLE-CHDAT = SY-DATUM.
+        LS_TABLE-CHTIM = SY-UZEIT.
+
+        UPDATE ZTC702_MTIV FROM LS_MTIV.
+        MESSAGE '자재 사용을 시작합니다. (품목 코드 : ' && LS_TABLE-GDCODE && ' )' TYPE 'I'.
+        COMMIT WORK.
+
+      ELSE.
+        MESSAGE '알 수 없는 에러가 발생했습니다.' TYPE 'I'.
+        ROLLBACK WORK.
+      ENDIF.
+    ENDIF.
+
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form LAYOUT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM LAYOUT .
+  GS_LAYOUT-ZEBRA      = 'X'. " 지브라 패턴 설정.
+*  GS_LAYOUT-CWIDTH_OPT = 'A'. " 컬럼 가로 너비 최적화.
+  GS_LAYOUT-INFO_FNAME = 'COLOR'.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form LAYOUT2
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM LAYOUT2 .
+  GS_LAYOUT-ZEBRA      = 'X'. " 지브라 패턴 설정.
+*  GS_LAYOUT-CWIDTH_OPT = 'A'. " 컬럼 가로 너비 최적화.
+  GS_LAYOUT-INFO_FNAME = 'COLOR'.
+  GS_LAYOUT-EXCP_FNAME = 'LIGHT'.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form FIELD_CATALOG
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM FIELD_CATALOG .
+* 필드 카탈로그 변경 내역.
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'STATUS'.
+  GS_FIELD_CAT-COLTEXT   = '상품 상태'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 6.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'GDCODE'.
+  GS_FIELD_CAT-COLTEXT   = '품목 코드'.
+  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'GDNAME'.
+  GS_FIELD_CAT-COLTEXT   = '품목명'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-OUTPUTLEN = 32.
+  GS_FIELD_CAT-JUST      = 'L'.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  GS_FIELD_CAT-FIELDNAME = 'PLCODE'.
+  GS_FIELD_CAT-COLTEXT   = '공장 코드'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 6.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'WHCODE'.
+  GS_FIELD_CAT-COLTEXT   = '창고 코드'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 6.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'EXPTYPE'.
+  GS_FIELD_CAT-COLTEXT   = '유통기한 유무'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 8.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'RINVEN'.
+  GS_FIELD_CAT-COLTEXT   = '실재고량'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-QFIELDNAME = 'UNIT'.
+  GS_FIELD_CAT-JUST      = 'R'.
+  GS_FIELD_CAT-OUTPUTLEN = 8.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'UNIT'.
+  GS_FIELD_CAT-COLTEXT   = '단위'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-QUANTITY  = 'EA'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 5.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'CRNAM'.
+  GS_FIELD_CAT-COLTEXT   = '생성자'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-OUTPUTLEN = 8.
+  GS_FIELD_CAT-JUST      = 'C'.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'ERDAT'.
+  GS_FIELD_CAT-COLTEXT   = '생성 일자'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 10.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'ERTIM'.
+  GS_FIELD_CAT-COLTEXT   = '생성 시간'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 10.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'CHNAM'.
+  GS_FIELD_CAT-COLTEXT   = '변경자'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-OUTPUTLEN = 8.
+  GS_FIELD_CAT-JUST      = 'C'.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'CHDAT'.
+  GS_FIELD_CAT-COLTEXT   = '변경 일자'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 10.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'CHTIM'.
+  GS_FIELD_CAT-COLTEXT   = '변경 시간'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 10.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CLEAR
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM CLEAR .
+* 스크린 인풋 필드 초기화.
+  CLEAR: ZTC702_EXP, ZTC702_MTIV.
+  GV_CB = SPACE.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SAVE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM SAVE .
+  DATA LV_ANSWER TYPE C LENGTH 1.
+
+* 변경자 정보 입력.
+  GS_MTIV-CHNAM = SY-UNAME.
+  GS_MTIV-CHDAT = SY-DATUM.
+  GS_MTIV-CHTIM = SY-UZEIT.
+
+* 재고수량 수정 여부 팝업창 호출.
+  CALL FUNCTION 'POPUP_TO_CONFIRM'
+    EXPORTING
+      TITLEBAR              = '재고수량 수정'
+      TEXT_QUESTION         = '재고수량을 수정하시겠습니까?'
+      TEXT_BUTTON_1         = '예'
+      TEXT_BUTTON_2         = '아니오'
+      DISPLAY_CANCEL_BUTTON = ''
+    IMPORTING
+      ANSWER                = LV_ANSWER.
+
+* 예 버튼을 선택했을 때.
+  IF LV_ANSWER = 1.
+
+* 입출고 관리 테이블 DB 업데이트.
+    MODIFY ZTC702_MTIV FROM GS_MTIV.
+
+* DB 업데이트 확정.
+    IF SY-SUBRC = 0.
+      MESSAGE '재고수량을 수정하였습니다.' TYPE 'I'.
+      COMMIT WORK.
+
+    ELSE.
+      MESSAGE '알 수 없는 에러가 발생했습니다.' TYPE 'E'.
+      ROLLBACK WORK.
+    ENDIF.
+  ELSE.
+
+* 필드 초기화.
+    PERFORM CLEAR.
+  ENDIF.
+
+* 스크린 101 종료.
+  LEAVE TO SCREEN 0.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DELFLAG2
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM DELFLAG2 .
+
+* 로컬 오브젝트 선언.
+  DATA: LS_EXP    TYPE ZTC702_EXP,
+        LT_ROW    TYPE LVC_T_ROW,
+        LS_ROW    TYPE LVC_S_ROW,
+        LV_ANSWER TYPE C LENGTH 1.
+
+* ALV GRID 줄 선택.
+  CALL METHOD GO_ALV_GRID2->GET_SELECTED_ROWS
+    IMPORTING
+      ET_INDEX_ROWS = LT_ROW.
+
+  IF LT_ROW IS INITIAL.
+    MESSAGE '자재를 선택하십시오.' TYPE 'I'.
+  ELSE.
+    LOOP AT LT_ROW INTO LS_ROW.
+      READ TABLE GT_EXP INTO LS_EXP INDEX LS_ROW-INDEX.
+    ENDLOOP.
+
+* 삭제 플래그 설정.
+    IF LS_EXP-DELFLAG = ''.
+      CALL FUNCTION 'POPUP_TO_CONFIRM'
+        EXPORTING
+          TITLEBAR              = '자재 사용 정지'
+          TEXT_QUESTION         = '자재 사용을 멈추시겠습니까?'
+          TEXT_BUTTON_1         = '예'
+          TEXT_BUTTON_2         = '아니오'
+          DISPLAY_CANCEL_BUTTON = ''
+        IMPORTING
+          ANSWER                = LV_ANSWER.
+
+      IF LV_ANSWER = 1.
+        LS_EXP-DELFLAG = 'X'.
+        LS_EXP-CHNAM = SY-UNAME.
+        LS_EXP-CHDAT = SY-DATUM.
+        LS_EXP-CHTIM = SY-UZEIT.
+
+        UPDATE ZTC702_EXP FROM LS_EXP.
+        MESSAGE '자재 사용을 정지합니다.' TYPE 'I'.
+
+        COMMIT WORK.
+      ENDIF.
+
+* 삭제 플래그 해제.
+    ELSEIF LS_EXP-DELFLAG = 'X'.
+      CALL FUNCTION 'POPUP_TO_CONFIRM'
+        EXPORTING
+          TITLEBAR              = '자재 사용 시작'
+          TEXT_QUESTION         = '자재 사용을 시작하시겠습니까?'
+          TEXT_BUTTON_1         = '예'
+          TEXT_BUTTON_2         = '아니오'
+          DISPLAY_CANCEL_BUTTON = ''
+        IMPORTING
+          ANSWER                = LV_ANSWER.
+
+      IF LV_ANSWER = 1.
+        LS_EXP-DELFLAG = ''.
+        LS_EXP-CHNAM = SY-UNAME.
+        LS_EXP-CHDAT = SY-DATUM.
+        LS_EXP-CHTIM = SY-UZEIT.
+
+        UPDATE ZTC702_EXP FROM LS_EXP.
+        MESSAGE '자재 사용을 시작합니다' TYPE 'I'.
+        COMMIT WORK.
+
+      ELSE.
+        MESSAGE '알 수 없는 에러가 발생했습니다.' TYPE 'E'.
+        ROLLBACK WORK.
+      ENDIF.
+    ENDIF.
+
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SEARCH2
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM SEARCH2 .
+  DATA: LT_GDCODE TYPE RANGE OF GTY_EXP-GDCODE,
+        LS_GDCODE LIKE LINE OF LT_GDCODE.
+
+  CLEAR: GT_EXP.
+
+  IF ZTC702_EXP-GDCODE IS NOT INITIAL.
+    LS_GDCODE-SIGN = 'I'.
+    LS_GDCODE-OPTION = 'EQ'.
+    LS_GDCODE-LOW = ZTC702_EXP-GDCODE.
+    APPEND LS_GDCODE TO LT_GDCODE.
+  ENDIF.
+
+  IF ZTC702_PLANT-PLCODE = SPACE.
+    MESSAGE '공장 코드를 입력하십시오' TYPE 'I'.
+  ELSE.
+
+    IF GV_CB = SPACE.
+      SELECT *
+        FROM ZTC702_EXP
+        INTO CORRESPONDING FIELDS OF TABLE GT_EXP
+       WHERE PLCODE = ZTC702_PLANT-PLCODE
+         AND GDCODE IN LT_GDCODE
+         AND DELFLAG = SPACE
+        ORDER BY LOTNUM.
+
+    ELSE.
+      SELECT *
+    FROM ZTC702_EXP
+    INTO CORRESPONDING FIELDS OF TABLE GT_EXP
+   WHERE PLCODE = ZTC702_PLANT-PLCODE
+     AND GDCODE IN LT_GDCODE
+    ORDER BY LOTNUM.
+    ENDIF.
+
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SAVE2
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM SAVE2 .
+  DATA LV_ANSWER TYPE C LENGTH 1.
+
+* 변경자 정보 입력.
+  GS_EXP-CHNAM = SY-UNAME.
+  GS_EXP-CHDAT = SY-DATUM.
+  GS_EXP-CHTIM = SY-UZEIT.
+
+* 재고수량 수정 여부 팝업창 호출.
+  CALL FUNCTION 'POPUP_TO_CONFIRM'
+    EXPORTING
+      TITLEBAR              = '재고수량 수정'
+      TEXT_QUESTION         = '재고수량을 수정하시겠습니까?'
+      TEXT_BUTTON_1         = '예'
+      TEXT_BUTTON_2         = '아니오'
+      DISPLAY_CANCEL_BUTTON = ''
+    IMPORTING
+      ANSWER                = LV_ANSWER.
+
+* 예 버튼을 선택했을 때.
+  IF LV_ANSWER = 1.
+
+* 입출고 관리 테이블 DB 업데이트.
+    MODIFY ZTC702_EXP FROM GS_EXP.
+
+* DB 업데이트 확정.
+    IF SY-SUBRC = 0.
+      MESSAGE '재고수량을 수정하였습니다.' TYPE 'I'.
+      COMMIT WORK.
+
+    ELSE.
+      MESSAGE '알 수 없는 에러가 발생했습니다.' TYPE 'E'.
+      ROLLBACK WORK.
+    ENDIF.
+  ELSE.
+
+* 필드 초기화.
+    PERFORM CLEAR.
+  ENDIF.
+
+* 스크린 201 종료.
+  LEAVE TO SCREEN 0.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form FIELD_CATALOG2
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM FIELD_CATALOG2 .
+* 필드 카탈로그 변경 내역.
+  CLEAR GS_FIELD_CAT2.
+  GS_FIELD_CAT2-FIELDNAME = 'LIGHT'.
+  GS_FIELD_CAT2-COLTEXT = '유통기한'.
+  GS_FIELD_CAT2-JUST      = 'C'.
+  APPEND GS_FIELD_CAT2 TO GT_FIELD_CAT2.
+
+  CLEAR GS_FIELD_CAT2.
+  GS_FIELD_CAT2-FIELDNAME = 'LOTNUM'.
+  GS_FIELD_CAT2-COLTEXT   = '로트 넘버'.
+*  GS_FIELD_CAT2-COL_OPT   = 'X'.
+  GS_FIELD_CAT2-JUST      = 'C'.
+  GS_FIELD_CAT2-OUTPUTLEN = 12.
+  APPEND GS_FIELD_CAT2 TO GT_FIELD_CAT2.
+
+  CLEAR GS_FIELD_CAT2.
+  GS_FIELD_CAT2-FIELDNAME = 'GDCODE'.
+  GS_FIELD_CAT2-COLTEXT   = '품목 코드'.
+*  GS_FIELD_CAT2-COL_OPT   = 'X'.
+  GS_FIELD_CAT2-JUST      = 'C'.
+  GS_FIELD_CAT2-OUTPUTLEN = 6.
+  APPEND GS_FIELD_CAT2 TO GT_FIELD_CAT2.
+
+  CLEAR GS_FIELD_CAT2.
+  GS_FIELD_CAT2-FIELDNAME = 'GDNAME'.
+  GS_FIELD_CAT2-COLTEXT   = '품목명'.
+*  GS_FIELD_CAT2-COL_OPT   = 'X'.
+  GS_FIELD_CAT2-JUST      = 'L'.
+  GS_FIELD_CAT2-OUTPUTLEN = 32.
+  APPEND GS_FIELD_CAT2 TO GT_FIELD_CAT2.
+
+  GS_FIELD_CAT2-FIELDNAME = 'PLCODE'.
+  GS_FIELD_CAT2-COLTEXT   = '공장 코드'.
+  GS_FIELD_CAT2-COL_OPT   = 'X'.
+  GS_FIELD_CAT2-JUST      = 'C'.
+  APPEND GS_FIELD_CAT2 TO GT_FIELD_CAT2.
+
+  CLEAR GS_FIELD_CAT2.
+  GS_FIELD_CAT2-FIELDNAME = 'WHCODE'.
+  GS_FIELD_CAT2-COLTEXT   = '창고 코드'.
+*  GS_FIELD_CAT2-COL_OPT   = 'X'.
+  GS_FIELD_CAT2-JUST      = 'C'.
+  GS_FIELD_CAT2-OUTPUTLEN = 6.
+  APPEND GS_FIELD_CAT2 TO GT_FIELD_CAT2.
+
+  CLEAR GS_FIELD_CAT2.
+  GS_FIELD_CAT2-FIELDNAME = 'QUAN'.
+  GS_FIELD_CAT2-COLTEXT   = '재고량'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT2-JUST      = 'R'.
+  GS_FIELD_CAT2-QFIELDNAME = 'UNIT'.
+  GS_FIELD_CAT2-OUTPUTLEN = 8.
+  APPEND GS_FIELD_CAT2 TO GT_FIELD_CAT2.
+
+  CLEAR GS_FIELD_CAT2.
+  GS_FIELD_CAT2-FIELDNAME = 'UNIT'.
+  GS_FIELD_CAT2-COLTEXT   = '단위'.
+*  GS_FIELD_CAT2-COL_OPT   = 'X'.
+  GS_FIELD_CAT2-QUANTITY  = 'EA'.
+  GS_FIELD_CAT2-JUST      = 'C'.
+  GS_FIELD_CAT2-OUTPUTLEN = 5.
+  APPEND GS_FIELD_CAT2 TO GT_FIELD_CAT2.
+
+  CLEAR GS_FIELD_CAT2.
+  GS_FIELD_CAT2-FIELDNAME = 'SRDATE'.
+  GS_FIELD_CAT2-COLTEXT   = '제조일자'.
+*  GS_FIELD_CAT2-COL_OPT   = 'X'.
+  GS_FIELD_CAT2-JUST      = 'C'.
+  APPEND GS_FIELD_CAT2 TO GT_FIELD_CAT2.
+
+  CLEAR GS_FIELD_CAT2.
+  GS_FIELD_CAT2-FIELDNAME = 'EXPFIN'.
+  GS_FIELD_CAT2-COLTEXT   = '유통기한'.
+*  GS_FIELD_CAT2-COL_OPT   = 'X'.
+  GS_FIELD_CAT2-JUST      = 'C'.
+  APPEND GS_FIELD_CAT2 TO GT_FIELD_CAT2.
+
+  CLEAR GS_FIELD_CAT2.
+  GS_FIELD_CAT2-FIELDNAME = 'CRNAM'.
+  GS_FIELD_CAT2-COLTEXT   = '생성자'.
+*  GS_FIELD_CAT2-COL_OPT   = 'X'.
+  GS_FIELD_CAT2-OUTPUTLEN = 8.
+  GS_FIELD_CAT2-JUST      = 'C'.
+  APPEND GS_FIELD_CAT2 TO GT_FIELD_CAT2.
+
+  CLEAR GS_FIELD_CAT2.
+  GS_FIELD_CAT2-FIELDNAME = 'ERDAT'.
+  GS_FIELD_CAT2-COLTEXT   = '생성 일자'.
+*  GS_FIELD_CAT2-COL_OPT   = 'X'.
+  GS_FIELD_CAT2-JUST      = 'C'.
+  GS_FIELD_CAT2-OUTPUTLEN = 10.
+  APPEND GS_FIELD_CAT2 TO GT_FIELD_CAT2.
+
+  CLEAR GS_FIELD_CAT2.
+  GS_FIELD_CAT2-FIELDNAME = 'ERTIM'.
+  GS_FIELD_CAT2-COLTEXT   = '생성 시간'.
+*  GS_FIELD_CAT2-COL_OPT   = 'X'.
+  GS_FIELD_CAT2-JUST      = 'C'.
+  GS_FIELD_CAT2-OUTPUTLEN = 10.
+  APPEND GS_FIELD_CAT2 TO GT_FIELD_CAT2.
+
+  CLEAR GS_FIELD_CAT2.
+  GS_FIELD_CAT2-FIELDNAME = 'CHNAM'.
+  GS_FIELD_CAT2-COLTEXT   = '변경자'.
+*  GS_FIELD_CAT2-COL_OPT   = 'X'.
+  GS_FIELD_CAT2-OUTPUTLEN = 8.
+  GS_FIELD_CAT2-JUST      = 'C'.
+  APPEND GS_FIELD_CAT2 TO GT_FIELD_CAT2.
+
+  CLEAR GS_FIELD_CAT2.
+  GS_FIELD_CAT2-FIELDNAME = 'CHDAT'.
+  GS_FIELD_CAT2-COLTEXT   = '변경 일자'.
+*  GS_FIELD_CAT2-COL_OPT   = 'X'.
+  GS_FIELD_CAT2-JUST      = 'C'.
+  GS_FIELD_CAT2-OUTPUTLEN = 10.
+  APPEND GS_FIELD_CAT2 TO GT_FIELD_CAT2.
+
+  CLEAR GS_FIELD_CAT2.
+  GS_FIELD_CAT2-FIELDNAME = 'CHTIM'.
+  GS_FIELD_CAT2-COLTEXT   = '변경 시간'.
+*  GS_FIELD_CAT2-COL_OPT   = 'X'.
+  GS_FIELD_CAT2-JUST      = 'C'.
+  GS_FIELD_CAT2-OUTPUTLEN = 10.
+  APPEND GS_FIELD_CAT2 TO GT_FIELD_CAT2.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DISCARD
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM DISCARD .
+
+* 로컬 오브젝트 선언.
+  DATA: LS_EXP    TYPE ZTC702_EXP,
+        LS_MTIV   TYPE ZTC702_MTIV,
+        LS_DISC   TYPE ZTC702_MTIV,
+        LT_ROW    TYPE LVC_T_ROW,
+        LS_ROW    TYPE LVC_S_ROW,
+        LV_ANSWER TYPE C LENGTH 1.
+
+* ALV GRID 줄 선택.
+  CALL METHOD GO_ALV_GRID2->GET_SELECTED_ROWS
+    IMPORTING
+      ET_INDEX_ROWS = LT_ROW.
+
+  IF LT_ROW IS INITIAL.
+    MESSAGE '자재를 선택하십시오.' TYPE 'I'.
+  ELSE.
+    LOOP AT LT_ROW INTO LS_ROW.
+      READ TABLE GT_EXP INTO LS_EXP INDEX LS_ROW-INDEX.
+    ENDLOOP.
+
+* 폐기 처리.
+    IF LS_EXP-DELFLAG = ''.
+      CALL FUNCTION 'POPUP_TO_CONFIRM'
+        EXPORTING
+          TITLEBAR              = '폐기 처리'
+          TEXT_QUESTION         = '해당 자재를 폐기처리 하시겠습니까?'
+          TEXT_BUTTON_1         = '예'
+          TEXT_BUTTON_2         = '아니오'
+          DISPLAY_CANCEL_BUTTON = ''
+        IMPORTING
+          ANSWER                = LV_ANSWER.
+
+      IF LV_ANSWER = 1.
+        LS_EXP-DELFLAG = 'X'.
+        LS_EXP-CHNAM = SY-UNAME.
+        LS_EXP-CHDAT = SY-DATUM.
+        LS_EXP-CHTIM = SY-UZEIT.
+
+        UPDATE ZTC702_EXP FROM LS_EXP.
+
+        IF SY-SUBRC = 0.
+          SELECT *
+            FROM ZTC702_MTIV
+            INTO LS_MTIV
+           WHERE GDCODE = LS_EXP-GDCODE.
+          ENDSELECT.
+
+          MOVE LS_MTIV TO LS_DISC.
+          LS_DISC-RINVEN = 0.
+          LS_DISC-WHCODE = 'DI01'.
+
+          LS_MTIV-RINVEN = LS_MTIV-RINVEN - GS_EXP-QUAN.
+          LS_DISC-RINVEN = LS_DISC-RINVEN + GS_EXP-QUAN.
+
+          UPDATE ZTC702_MTIV FROM LS_MTIV.
+          UPDATE ZTC702_MTIV FROM LS_DISC.
+
+          IF SY-SUBRC = 0.
+            MESSAGE '폐기 처리가 완료되었습니다.' TYPE 'I'.
+            COMMIT WORK.
+          ELSE.
+            MESSAGE E021(ZC702_MESAGE).
+            ROLLBACK WORK.
+          ENDIF.
+
+        ELSE.
+          MESSAGE E021(ZC702_MESAGE).
+          ROLLBACK WORK.
+        ENDIF.
+      ENDIF.
+    ENDIF.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form EXCLUDE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM EXCLUDE .
+
+*  APPEND CL_GUI_ALV_GRID=>MC_FC_DETAIL TO GT_EXCLUDE.
+*  APPEND CL_GUI_ALV_GRID=>MC_FC_SORT_ASC TO GT_EXCLUDE.
+*  APPEND CL_GUI_ALV_GRID=>MC_FC_SORT_DSC TO GT_EXCLUDE.
+*  APPEND CL_GUI_ALV_GRID=>MC_FC_FIND TO GT_EXCLUDE.
+*  APPEND CL_GUI_ALV_GRID=>MC_FC_FILTER TO GT_EXCLUDE.
+*  APPEND CL_GUI_ALV_GRID=>MC_MB_SUM TO GT_EXCLUDE.
+*  APPEND CL_GUI_ALV_GRID=>MC_FC_PRINT_BACK TO GT_EXCLUDE.
+*  APPEND CL_GUI_ALV_GRID=>MC_MB_VIEW TO GT_EXCLUDE.
+*  APPEND CL_GUI_ALV_GRID=>MC_MB_EXPORT TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_MB_VARIANT TO GT_EXCLUDE.
+*  APPEND CL_GUI_ALV_GRID=>MC_FC_INFO TO GT_EXCLUDE.
+
+ENDFORM.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

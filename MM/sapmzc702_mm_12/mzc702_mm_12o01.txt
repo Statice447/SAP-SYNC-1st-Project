@@ -1,0 +1,260 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_MM_12O01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module CLEAR_OK_CODE OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE clear_ok_code OUTPUT.
+  CLEAR ok_code.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'S0100'.
+  SET TITLEBAR 'T0100'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SET_ALV OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE set_alv OUTPUT.
+***** 최초 컨테이너 생성 시
+  IF go_container IS INITIAL.
+    CREATE OBJECT go_container
+      EXPORTING
+        container_name = 'MPO_ALV'.
+    gv_refresh     = abap_true.             " 리프레시 체크
+  ENDIF.
+
+***** 최초 ALV 생성 시
+  IF gv_refresh = abap_true.
+    CREATE OBJECT go_alv_grid
+      EXPORTING
+        i_parent = go_container.
+
+    SET HANDLER lcl_handler=>on_double_click FOR go_alv_grid.
+
+****** ALV 레이아웃 및 필드카탈로그 설정
+    PERFORM set_layout.
+    PERFORM set_fcat.
+
+    CALL METHOD go_alv_grid->set_table_for_first_display
+      EXPORTING
+        i_structure_name = 'ZTC702_MPO_H'
+*       is_variant       = gs_variant
+*       i_save           = gv_save
+        i_default        = 'X'
+        is_layout        = gs_layout
+      CHANGING
+        it_outtab        = gt_mpo_h
+        it_fieldcatalog  = gt_fcat
+*       it_sort          =
+*       it_filter        =
+      EXCEPTIONS
+        OTHERS           = 4.
+    IF sy-subrc <> 0.
+*       Implement suitable error handling here
+    ENDIF.
+
+    gv_refresh = abap_false.                  " 리프레시 해제
+
+  ELSE.                                       " 기존 ALV가 있을경우 리프레시
+    go_alv_grid->refresh_table_display( ).
+  ENDIF.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0200 OUTPUT.
+  SET PF-STATUS 'S0200'.
+ SET TITLEBAR 'T0200'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_100 OUTPUT.
+**** ALV 리스트 번호 순으로 정렬
+  SORT gt_mpo_h ASCENDING BY mpono.
+
+**** ALV LOOP문
+  LOOP AT gt_mpo_h INTO gs_mpo_h.
+
+
+**** 상태플래그에 따른 신호등 색 설정 ( 1: 반려/빨강, 2: 대기/노랑, 3: 승인/초록)
+    IF gs_mpo_h-status = '2'.
+      gs_mpo_h-light = '2'.
+    ELSEIF gs_mpo_h-status = '1'.
+      gs_mpo_h-light = '1'.
+    ELSEIF gs_mpo_h-status = '3'.
+      gs_mpo_h-light = '3'.
+    ENDIF.
+
+    MODIFY gt_mpo_h FROM gs_mpo_h TRANSPORTING light.
+  ENDLOOP.
+
+* 구매오더 생성날짜 필드 초기값.
+  IF gv_switch = '1'. " 프로그램을 처음 실행했을 때.
+    IF gv_high IS INITIAL.
+      gv_high = sy-datum. " 현재 시스템 날짜.
+    ENDIF.
+
+    IF gv_low IS INITIAL.
+      PERFORM calc_gv_low. " 현재 날짜로부터 1달 감소한 날짜 계산.
+    ENDIF.
+
+    gv_switch = '0'. " 시스템 날짜 초기화 정지.
+
+  ELSEIF gv_switch = '0'.
+
+  ENDIF.
+
+* 일별 채번 펑션 초기화.
+*  PERFORM RESET_NR.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_200 OUTPUT.
+  SELECT *
+    FROM zdvc702_inv INTO CORRESPONDING FIELDS OF TABLE gt_inv
+    WHERE mpono = gs_mpo_hf-mpono.
+
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SET_ALV_200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE set_alv_200 OUTPUT.
+***** 최초 컨테이너 생성 시
+  IF go_container2 IS INITIAL.
+    CREATE OBJECT go_container2
+      EXPORTING
+        container_name = 'MPO_I_ALV'.
+    gv_refresh2     = abap_true.             " 리프레시 체크
+  ENDIF.
+
+***** 최초 ALV 생성 시
+  IF gv_refresh2 = abap_true.
+    CREATE OBJECT go_alv_grid2
+      EXPORTING
+        i_parent = go_container2.
+
+
+****** ALV 레이아웃 및 필드카탈로그 설정
+    PERFORM set_layout_200.
+    PERFORM set_fcat_200.
+    PERFORM SET_EXCLUDE.
+
+    CALL METHOD go_alv_grid2->set_table_for_first_display
+      EXPORTING
+        i_default       = 'X'
+*        is_layout       = gs_layout_200
+        IT_TOOLBAR_EXCLUDING = GT_EXCLUDE      " 버튼 숨기기 적용.
+      CHANGING
+        it_outtab       = gt_inv
+        it_fieldcatalog = gt_fcat_200
+      EXCEPTIONS
+        OTHERS          = 4.
+    IF sy-subrc <> 0.
+*       Implement suitable error handling here
+    ENDIF.
+
+    gv_refresh2 = abap_false.                  " 리프레시 해제
+
+  ELSE.                                       " 기존 ALV가 있을경우 리프레시
+    go_alv_grid2->refresh_table_display( ).
+  ENDIF.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0300 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0300 OUTPUT.
+  SET PF-STATUS 'S0300'.
+* SET TITLEBAR 'xxx'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SET_ALV_300 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE set_alv_300 OUTPUT.
+***** 최초 컨테이너 생성 시
+  IF go_container3 IS INITIAL.
+    CREATE OBJECT go_container3
+      EXPORTING
+        container_name = 'INV_ALV'.
+    gv_refresh3     = abap_true.             " 리프레시 체크
+  ENDIF.
+
+***** 최초 ALV 생성 시
+  IF gv_refresh3 = abap_true.
+    CREATE OBJECT go_alv_grid3
+      EXPORTING
+        i_parent = go_container3.
+
+***** alv 이벤트 설정
+    SET HANDLER lcl_handler=>on_double_click3 FOR go_alv_grid3.
+
+
+    PERFORM set_fcat_110.
+
+    CALL METHOD go_alv_grid3->set_table_for_first_display
+      EXPORTING
+        i_structure_name = 'ZDVC702_INV'
+*       is_variant       = gs_variant
+*       i_save           = gv_save
+        i_default        = 'X'
+*       is_layout        = gs_layout
+      CHANGING
+        it_outtab        = gt_inv
+        it_fieldcatalog  = gt_fcat_110
+*       it_sort          =
+*       it_filter        =
+      EXCEPTIONS
+        OTHERS           = 4.
+    IF sy-subrc <> 0.
+*       Implement suitable error handling here
+    ENDIF.
+
+    gv_refresh = abap_false.                  " 리프레시 해제
+
+  ELSE.                                       " 기존 ALV가 있을경우 리프레시
+    go_alv_grid3->refresh_table_display( ).
+  ENDIF.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_300 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_300 OUTPUT.
+  SELECT *
+    FROM ztc702_mpo_i INTO CORRESPONDING FIELDS OF TABLE gt_mpo_i_110
+    WHERE mpono = gs_mpo_h_110-mpono.
+
+  SELECT *
+    FROM zdvc702_inv INTO CORRESPONDING FIELDS OF TABLE gt_inv
+    WHERE mpono = gs_mpo_h_110-mpono.
+
+  zdvc702_inv-mpono = gs_mpo_h_110-mpono.
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

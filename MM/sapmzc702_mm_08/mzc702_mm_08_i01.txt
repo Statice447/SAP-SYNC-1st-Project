@@ -1,0 +1,281 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_MM_08_I01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  EXIT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE exit INPUT.
+  CASE ok_code.
+    WHEN 'EXIT'.
+      LEAVE PROGRAM.
+    WHEN 'CANCEL'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  CHECK_PERNR  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE check_pernr INPUT.
+  CASE ok_code.
+    WHEN 'ENTER' OR 'DISPLAY'.
+      IF ztc702_mpa_h-pernr IS INITIAL.
+        MESSAGE: '사원번호를 입력해 주세요.' TYPE 'E'.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+*    WHEN 'HELP'.
+*      CALL SCREEN 110 STARTING AT 10 3.
+    WHEN 'ENTER' OR 'DISPLAY'.
+      CLEAR gt_ztc702_mpa.
+      CASE 'X'.
+        WHEN ra1.
+          SELECT a_i~apstatus a_i~mpano a_h~mpadate e~pname a_i~mpono o~remark
+            FROM ztc702_mpa_i AS a_i INNER JOIN ztc702_mpa_h    AS a_h ON a_i~mpano = a_h~mpano
+                                     INNER JOIN ztc702_employee AS e   ON a_i~pernr = e~pernr
+                                     INNER JOIN ztc702_mpo_i    AS o   ON a_i~mpono = o~mpono
+            INTO CORRESPONDING FIELDS OF TABLE gt_ztc702_mpa
+           WHERE a_i~pernr = ztc702_mpa_h-pernr.
+
+          SORT gt_ztc702_mpa ASCENDING BY mpano.
+          DELETE ADJACENT DUPLICATES FROM gt_ztc702_mpa COMPARING mpano.
+
+        WHEN ra2.
+          SELECT a_i~apstatus a_i~mpano a_h~mpadate e~pname a_i~mpono o~remark
+            FROM ztc702_mpa_i AS a_i INNER JOIN ztc702_mpa_h    AS a_h ON a_i~mpano = a_h~mpano
+                                     INNER JOIN ztc702_employee AS e   ON a_i~pernr = e~pernr
+                                     INNER JOIN ztc702_mpo_i    AS o   ON a_i~mpono = o~mpono
+            INTO CORRESPONDING FIELDS OF TABLE gt_ztc702_mpa
+           WHERE a_i~pernr = ztc702_mpa_h-pernr
+             AND a_i~apstatus = '대기'.
+
+          SORT gt_ztc702_mpa ASCENDING BY mpano.
+          DELETE ADJACENT DUPLICATES FROM gt_ztc702_mpa COMPARING mpano.
+
+        WHEN ra3.
+          SELECT a_i~apstatus a_i~mpano a_h~mpadate e~pname a_i~mpono o~remark
+            FROM ztc702_mpa_i AS a_i INNER JOIN ztc702_mpa_h    AS a_h ON a_i~mpano = a_h~mpano
+                                     INNER JOIN ztc702_employee AS e   ON a_i~pernr = e~pernr
+                                     INNER JOIN ztc702_mpo_i    AS o   ON a_i~mpono = o~mpono
+            INTO CORRESPONDING FIELDS OF TABLE gt_ztc702_mpa
+           WHERE a_i~pernr = ztc702_mpa_h-pernr
+             AND a_i~apstatus = '승인'.
+
+          SORT gt_ztc702_mpa ASCENDING BY mpano.
+          DELETE ADJACENT DUPLICATES FROM gt_ztc702_mpa COMPARING mpano.
+
+        WHEN ra4.
+          SELECT a_i~apstatus a_i~mpano a_h~mpadate e~pname a_i~mpono o~remark
+            FROM ztc702_mpa_i AS a_i INNER JOIN ztc702_mpa_h    AS a_h ON a_i~mpano = a_h~mpano
+                                     INNER JOIN ztc702_employee AS e   ON a_i~pernr = e~pernr
+                                     INNER JOIN ztc702_mpo_i    AS o   ON a_i~mpono = o~mpono
+            INTO CORRESPONDING FIELDS OF TABLE gt_ztc702_mpa
+           WHERE a_i~pernr = ztc702_mpa_h-pernr
+             AND a_i~apstatus = '반려'.
+
+          SORT gt_ztc702_mpa ASCENDING BY mpano.
+          DELETE ADJACENT DUPLICATES FROM gt_ztc702_mpa COMPARING mpano.
+
+      ENDCASE.
+    WHEN 'APPROVAL'.
+      DATA: ls_ztc702_mpa TYPE ztc702_mpa_i,
+            ls_ztc702_mpo TYPE ztc702_mpo_h,
+            lt_row        TYPE lvc_t_row,
+            ls_row        TYPE lvc_s_row.
+
+      DATA: lv_answer TYPE c LENGTH 1.
+
+      CALL METHOD go_alv_grid->get_selected_rows
+        IMPORTING
+          et_index_rows = lt_row.
+
+      LOOP AT lt_row INTO ls_row.
+        READ TABLE gt_ztc702_mpa INTO ls_ztc702_mpa INDEX ls_row-index.
+
+        IF ls_ztc702_mpa-apstatus = '대기'.
+          CALL FUNCTION 'POPUP_TO_CONFIRM'
+            EXPORTING
+              titlebar              = '결재 승인'
+              text_question         = '결재를 승인하시겠습니까?'
+              text_button_1         = '예'
+              text_button_2         = '아니오'
+              display_cancel_button = space
+            IMPORTING
+              answer                = lv_answer
+            EXCEPTIONS
+              OTHERS                = 1.
+
+          IF sy-subrc <> 0.
+            WRITE: '에러가 발생했습니다.'.
+          ENDIF.
+
+          IF lv_answer = 1.
+            ls_ztc702_mpa-apstatus = '승인'.
+            ls_ztc702_mpa-apdate = sy-datum.
+*            ls_ztc702_mpa-crnam  = sy-uname.
+*            ls_ztc702_mpa-erdat  = sy-datum.
+*            ls_ztc702_mpa-ertim  = sy-uzeit.
+            ls_ztc702_mpa-chnam  = sy-uname.
+            ls_ztc702_mpa-chdat  = sy-datum.
+            ls_ztc702_mpa-chtim  = sy-uzeit.
+
+            UPDATE ztc702_mpo_i SET postatus = ls_ztc702_mpa-apstatus
+                                    chnam    = ls_ztc702_mpa-chnam
+                                    chdat    = ls_ztc702_mpa-chdat
+                                    chtim    = ls_ztc702_mpa-chtim
+                              WHERE mpono    = ls_ztc702_mpa-mpono.
+
+            UPDATE ztc702_mpa_i SET apstatus = ls_ztc702_mpa-apstatus
+                                    apdate   = ls_ztc702_mpa-apdate
+*                                    crnam    = ls_ztc702_mpa-crnam
+*                                    erdat    = ls_ztc702_mpa-erdat
+*                                    ertim    = ls_ztc702_mpa-ertim
+                                    chnam    = ls_ztc702_mpa-chnam
+                                    chdat    = ls_ztc702_mpa-chdat
+                                    chtim    = ls_ztc702_mpa-chtim
+                              WHERE mpano    = ls_ztc702_mpa-mpano.
+
+*            ls_ztc702_mpo-status = '2'.
+*            UPDATE ztc702_mpo_h SET status = ls_ztc702_mpo-status
+*                              WHERE mpono    = ls_ztc702_mpa-mpono.
+*            CLEAR ls_ztc702_mpo.
+
+            MESSAGE s031(zc702_message) WITH ls_ztc702_mpa-mpano.
+
+            SELECT a_i~apstatus a_i~mpano a_h~mpadate e~pname a_i~mpono o~remark
+              FROM ztc702_mpa_i AS a_i INNER JOIN ztc702_mpa_h    AS a_h ON a_i~mpano = a_h~mpano
+                                       INNER JOIN ztc702_employee AS e   ON a_i~pernr = e~pernr
+                                       INNER JOIN ztc702_mpo_i    AS o   ON a_i~mpono = o~mpono
+              INTO CORRESPONDING FIELDS OF TABLE gt_ztc702_mpa
+             WHERE a_i~pernr = ztc702_mpa_h-pernr.
+            SORT gt_ztc702_mpa ASCENDING BY mpano.
+            DELETE ADJACENT DUPLICATES FROM gt_ztc702_mpa COMPARING mpano.
+
+          ENDIF.
+        ELSE.
+          MESSAGE: '이미 결재된 건입니다.' TYPE 'E'.
+        ENDIF.
+      ENDLOOP.
+    WHEN 'REJECT'.
+      DATA: ls_ztc702_mpa2 TYPE ztc702_mpa_i,
+            ls_ztc702_mpo2 TYPE ztc702_mpo_h,
+            lt_row2        TYPE lvc_t_row,
+            ls_row2        TYPE lvc_s_row.
+
+      DATA: lv_answer2 TYPE c LENGTH 1.
+
+      CALL METHOD go_alv_grid->get_selected_rows
+        IMPORTING
+          et_index_rows = lt_row2.
+
+      LOOP AT lt_row2 INTO ls_row2.
+        READ TABLE gt_ztc702_mpa INTO ls_ztc702_mpa2 INDEX ls_row2-index.
+
+        IF ls_ztc702_mpa2-apstatus = '대기'.
+          CALL FUNCTION 'POPUP_TO_CONFIRM'
+            EXPORTING
+              titlebar              = '결재 반려'
+              text_question         = '결재를 반려하시겠습니까?'
+              text_button_1         = '예'
+              text_button_2         = '아니오'
+              display_cancel_button = space
+            IMPORTING
+              answer                = lv_answer2
+            EXCEPTIONS
+              OTHERS                = 1.
+
+          IF sy-subrc <> 0.
+            WRITE: '에러가 발생했습니다.'.
+          ENDIF.
+
+          IF lv_answer2 = 1.
+            CALL SCREEN 0120 STARTING AT 10 3.
+          ENDIF.
+        ELSE.
+          MESSAGE: '이미 결재된 건입니다.' TYPE 'E'.
+        ENDIF.
+      ENDLOOP.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0110  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*MODULE user_command_0110 INPUT.
+*  CASE ok_code.
+*    WHEN 'CONTINUE'.
+*      LEAVE TO SCREEN 0.
+*  ENDCASE.
+*ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0120  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0120 INPUT.
+  CASE ok_code.
+    WHEN 'CONTINUE'.
+      ls_ztc702_mpa2-apstatus = '반려'.
+      ls_ztc702_mpa2-apdate = sy-datum.
+      ls_ztc702_mpa2-ycfm = gs_ztc702_mpa-ycfm.
+
+*      ls_ztc702_mpa2-crnam  = sy-uname.
+*      ls_ztc702_mpa2-erdat  = sy-datum.
+*      ls_ztc702_mpa2-ertim  = sy-uzeit.
+      ls_ztc702_mpa2-chnam  = sy-uname.
+      ls_ztc702_mpa2-chdat  = sy-datum.
+      ls_ztc702_mpa2-chtim  = sy-uzeit.
+
+      UPDATE ztc702_mpo_i SET postatus = ls_ztc702_mpa2-apstatus
+                              chnam    = ls_ztc702_mpa2-chnam
+                              chdat    = ls_ztc702_mpa2-chdat
+                              chtim    = ls_ztc702_mpa2-chtim
+                        WHERE mpono    = ls_ztc702_mpa2-mpono.
+
+      UPDATE ztc702_mpa_i SET apstatus = ls_ztc702_mpa2-apstatus
+                              apdate   = ls_ztc702_mpa2-apdate
+                              ycfm     = ls_ztc702_mpa2-ycfm
+*                              crnam    = ls_ztc702_mpa2-crnam "생성자
+*                              erdat    = ls_ztc702_mpa2-erdat
+*                              ertim    = ls_ztc702_mpa2-ertim
+                              chnam    = ls_ztc702_mpa2-chnam "변경자
+                              chdat    = ls_ztc702_mpa2-chdat
+                              chtim    = ls_ztc702_mpa2-chtim
+                        WHERE mpano    = ls_ztc702_mpa2-mpano.
+
+*      ls_ztc702_mpo-status = '1'.
+*      UPDATE ztc702_mpo_h SET status = ls_ztc702_mpo2-status
+*                        WHERE mpono  = ls_ztc702_mpa2-mpono.
+*      CLEAR ls_ztc702_mpo2.
+
+      MESSAGE s030(zc702_message) WITH ls_ztc702_mpa2-mpano.
+
+      SELECT a_i~apstatus a_i~mpano a_h~mpadate e~pname a_i~mpono o~remark
+             FROM ztc702_mpa_i AS a_i INNER JOIN ztc702_mpa_h    AS a_h ON a_i~mpano = a_h~mpano
+                                      INNER JOIN ztc702_employee AS e   ON a_i~pernr = e~pernr
+                                      INNER JOIN ztc702_mpo_i    AS o   ON a_i~mpono = o~mpono
+             INTO CORRESPONDING FIELDS OF TABLE gt_ztc702_mpa
+            WHERE a_i~pernr = ztc702_mpa_h-pernr.
+      SORT gt_ztc702_mpa ASCENDING BY mpano.
+
+      LEAVE TO SCREEN 0.
+    WHEN 'CANCEL2'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

@@ -1,0 +1,508 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_FI_03F01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form MODIFY_TCIN
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM modify_tcin .
+  DATA: ls_tab LIKE LINE OF gt_tab.
+*  "임의 데이터.
+*   zsc702_in-amount = gs_in_re-amount.
+*   zsc702_in-currency = 'KRW'.
+*   zsc702_in-cusname = zsc702_inout-cusname.
+*   zsc702_in-bankname = '기업은행'.
+*   zsc702_in-acno = '3870-6655-5615-42'.
+*   zsc702_in-acholder = zsc702_inout-cusname.
+  MOVE-CORRESPONDING zsc702_in TO ls_tab.
+
+  MODIFY gt_tab FROM ls_tab INDEX my_table_in-current_line.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form MODIFY_TCOUT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM modify_tcout .
+  DATA: ls_tab2 LIKE LINE OF gt_tab2.
+  MOVE-CORRESPONDING zsc702_out TO ls_tab2.
+
+  MODIFY gt_tab2 FROM ls_tab2 INDEX my_table_out-current_line.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_INOUT_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*      -->P_GT_TAB  text
+*&---------------------------------------------------------------------*
+FORM get_inout_data CHANGING VALUE(g_tab) VALUE(g_tab2).
+  DATA: lt_tab  LIKE gt_tab,
+        lt_tab2 LIKE gt_tab2,
+        ls_tab LIKE gs_tab,
+        ls_tab2 LIKE gs_tab2.
+
+  " 혹시 모르는 찌꺼기 삭제.
+  CLEAR: g_tab, g_tab2.
+
+  " 일단 임의로 데이터 넣고, 추후 MM에서 받아올 예정 (현재는 입금 출금 동일한 데이터).
+  SELECT h~docudate AS indate, i~cusname, i~amount, i~bankname, i~acno, i~acholder
+    FROM ( ztc702_docu_h AS h LEFT OUTER JOIN ztc702_docu_i AS i
+                                           ON h~docunum = i~docunum )
+    INTO CORRESPONDING FIELDS OF TABLE @lt_tab
+   WHERE i~cusnum = @zsc702_inout-cuscode
+     AND h~docudate BETWEEN @zsc702_inout-indate_a AND @zsc702_inout-indate_b
+     AND i~docutype = 'B2'
+     AND i~acccode = '108'
+     AND i~payment <> 'X'.
+
+  SELECT h~docudate AS indate, i~cusname, i~amount, i~bankname, i~acno, i~acholder
+    FROM ( ztc702_docu_h AS h LEFT OUTER JOIN ztc702_docu_i AS i
+                                           ON h~docunum = i~docunum )
+    INTO CORRESPONDING FIELDS OF TABLE @lt_tab2
+   WHERE i~cusnum = @zsc702_inout-cuscode
+     AND h~docudate BETWEEN @zsc702_inout-indate_a AND @zsc702_inout-indate_b
+     AND i~docutype = 'B1'
+     AND i~acccode = '251'
+     AND i~payment <> 'X'.
+
+  IF zsc702_inout-indate_a IS NOT INITIAL AND zsc702_inout-cuscode IS NOT INITIAL.
+    " 넘어오는 데이터 아니고, 임의로 넣어서 추가 코딩 작성함.
+*    ls_tab-amount = gs_in_re-amount.
+*    ls_tab-currency = 'KRW'.
+*    ls_tab-cusname = zsc702_inout-cusname.
+*    ls_tab-bankname = '기업은행'.
+*    ls_tab-acno = '3870-6655-5615-42'.
+*    ls_tab-acholder = zsc702_inout-cusname.
+*    APPEND ls_tab TO lt_tab.
+    g_tab = lt_tab.
+    g_tab2 = lt_tab2.
+    " 날짜나 거래처 둘 중 입력 값이 없으면, 입력하라고 안내문 뜸.
+  ELSEIF zsc702_inout-indate_a IS NOT INITIAL AND zsc702_inout-cuscode IS INITIAL.
+    MESSAGE '거래처를 입력하세요.' TYPE 'I'.
+  ELSE.
+    MESSAGE '날짜를 입력하세요.' TYPE 'I'.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form INIT_CONDITION
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM init_condition .
+  DATA: lv_date TYPE s_date.
+
+  CALL FUNCTION 'SG_PS_ADD_MONTH_TO_DATE'
+    EXPORTING
+      months        = -1
+      olddate       = sy-datum
+   IMPORTING
+     newdate        = lv_date.
+
+  zsc702_inout-indate_a = lv_date.
+  zsc702_inout-indate_b = sy-datum.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form MODIFY_TCSAL
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM modify_tcsal .
+  DATA: ls_tab LIKE LINE OF gt_tab3.
+  MOVE-CORRESPONDING zsc702_sale TO ls_tab.
+
+  MODIFY gt_tab3 FROM ls_tab INDEX my_table_sale-current_line TRANSPORTING cmark.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_DATA_200
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_data_200.
+  DATA: ls_tab LIKE gs_tab.
+
+" 입금내역에서 cmark 클릭된 데이터를 200번 스크린 입금내역에 넣어주기.
+  READ TABLE gt_tab INTO gs_in_re WITH KEY cmark = 'X'.
+  gs_in_re-amount = gs_in_re-amount.
+  gs_in_re-currency = 'KRW'.
+*  gs_in_re-cusname = zsc702_inout-cusname.
+*  gs_in_re-bankname = '기업은행'.
+*  gs_in_re-acno = '3870-6655-5615-42'.
+*  gs_in_re-acholder = zsc702_inout-cusname.
+  CLEAR gt_tab.
+  APPEND gs_in_re TO gt_tab.
+
+" 매출전표 테이블 컨트롤에 넣어주는 데이터.
+    SELECT *
+    FROM zdvc702_docu
+    INTO CORRESPONDING FIELDS OF TABLE @gt_tab3
+   WHERE docutype = 'B2'
+     AND acccode = '108'
+     AND cusnum = @zsc702_inout-cuscode
+     AND amount = @gs_in_re-amount
+     AND payment <> 'X'.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form MODIFY_TCBUY
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM modify_tcbuy .
+*  DATA: ls_tab LIKE LINE OF gt_tab4.
+*  MOVE-CORRESPONDING zsc702_buy TO ls_tab.
+*
+*  MODIFY gt_tab4 FROM ls_tab INDEX my_table_buy-current_line TRANSPORTING cmark.
+
+  DATA: ls_tab4 TYPE zsc702_buy.
+  MOVE-CORRESPONDING zsc702_buy TO ls_tab4.
+
+  APPEND ls_tab4 TO gt_buy.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_DATA_300
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_data_300 .
+  " 출금내역에 넣어줄 데이터.
+  READ TABLE gt_tab2 INTO gs_ou_re WITH KEY cmark = 'X'.
+  gs_ou_re-amount = gs_ou_re-amount.
+  gs_ou_re-currency = 'KRW'.
+  CLEAR gt_tab2.
+  APPEND gs_ou_re TO gt_tab2.
+
+  " 매입전표에 넣어줄 데이터.
+  SELECT *
+    FROM zdvc702_docu
+    INTO CORRESPONDING FIELDS OF TABLE @gt_tab4
+   WHERE docutype = 'B1'
+     AND acccode = '251'
+     AND cusnum = @zsc702_inout-cuscode
+     AND amount = @gs_ou_re-amount
+     AND payment <> 'X'.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DOCU_SALE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM docu_sale .
+  " _in-cmark랑 _sale-cmark랑 클릭되면, 해당하는 데이터가 한곳에 모이고, 그 데이터가 DV에 저장됨.
+  DATA: lv_num     TYPE n LENGTH 6,
+        lv_text    TYPE string,
+        lv_docunum TYPE c LENGTH 12.
+
+  DATA: ls_sale TYPE ztc702_docu_i.
+
+  " 입출금전표 전표번호 채번.
+  CALL FUNCTION 'NUMBER_GET_NEXT'
+    EXPORTING
+      nr_range_nr = 'C1'
+      object      = 'ZNRC702FI1'
+    IMPORTING
+      number      = lv_num.
+  lv_text = lv_num.
+  CONCATENATE 'C1' sy-datum(4) lv_text INTO lv_docunum.
+
+  " 1. 전표 헤더 테이블에 정보 넣기.
+  CLEAR gs_sal_h.
+  gs_sal_h-company = 'DD'.
+  gs_sal_h-accyear = '2023'.
+  gs_sal_h-docutype = 'C1'.
+  gs_sal_h-docunum = lv_docunum.
+  gs_sal_h-docudate = sy-datum.
+  gs_sal_h-docupernr = 'DD000006'.
+  gs_sal_h-docupname = '이초은'.
+  gs_sal_h-crnam = sy-uname.
+  gs_sal_h-erdat = sy-datum.
+  gs_sal_h-ertim = sy-uzeit.
+  APPEND gs_sal_h TO gt_sal_h.
+  MODIFY ztc702_docu_h FROM gs_sal_h.
+
+  " 2. 전표 아이템 테이블에 정보 넣기.
+  " 2-1. 차변 현금 전표.
+
+*  LOOP AT gt_sale INTO gs_sale WHERE cmark = 'X'.
+*    MOVE-CORRESPONDING gs_sale TO gs_sal_i.
+
+  CLEAR gs_sal_i.
+  gs_sal_i-company = 'DD'.
+  gs_sal_i-accyear = '2023'.
+  gs_sal_i-docutype = 'C1'.
+  gs_sal_i-docunum = lv_docunum.
+  gs_sal_i-acccode = '101'.
+  gs_sal_i-drcrsort = 'DR'.
+  gs_sal_i-accname = '현금'.
+  gs_sal_i-gdcode = zsc702_sale-gdcode.
+  gs_sal_i-gdname = zsc702_sale-gdname.
+  gs_sal_i-quantity = zsc702_sale-quantity.
+  gs_sal_i-unit = 'EA'.
+  gs_sal_i-price = zsc702_sale-price.
+  gs_sal_i-amount = zsc702_sale-amount.
+  gs_sal_i-currency = 'KRW'.
+  gs_sal_i-retnum = gs_tab3-docunum.
+  gs_sal_i-cusnum = zsc702_sale-cusnum.
+  gs_sal_i-cusname = zsc702_sale-cusname.
+  gs_sal_i-taxcode = zsc702_sale-taxcode.
+  gs_sal_i-bankname = zsc702_in-bankname.
+  gs_sal_i-acno = zsc702_in-acno.
+  gs_sal_i-acholder = zsc702_in-acholder.
+  gs_sal_i-payment = 'X'.
+  gs_sal_i-crnam = sy-uname.
+  gs_sal_i-erdat = sy-datum.
+  gs_sal_i-ertim = sy-uzeit.
+  APPEND gs_sal_i TO gt_sal_i.
+  MODIFY ztc702_docu_i FROM gs_sal_i.
+
+  " 2-2. 대변 외상매출금 전표.
+  CLEAR gs_sal_i.
+  gs_sal_i-company = 'DD'.
+  gs_sal_i-accyear = '2023'.
+  gs_sal_i-docutype = 'C1'.
+  gs_sal_i-docunum = lv_docunum.
+  gs_sal_i-acccode = '108'.
+  gs_sal_i-drcrsort = 'CR'.
+  gs_sal_i-accname = '외상매출금'.
+  gs_sal_i-gdcode = zsc702_sale-gdcode.
+  gs_sal_i-gdname = zsc702_sale-gdname.
+  gs_sal_i-quantity = zsc702_sale-quantity.
+  gs_sal_i-unit = 'EA'.
+  gs_sal_i-price = zsc702_sale-price.
+  gs_sal_i-amount = zsc702_sale-amount.
+  gs_sal_i-currency = 'KRW'.
+  gs_sal_i-retnum = gs_tab3-docunum.
+  gs_sal_i-cusnum = zsc702_sale-cusnum.
+  gs_sal_i-cusname = zsc702_sale-cusname.
+  gs_sal_i-taxcode = zsc702_sale-taxcode.
+  gs_sal_i-bankname = zsc702_in-bankname.
+  gs_sal_i-acno = zsc702_in-acno.
+  gs_sal_i-acholder = zsc702_in-acholder.
+  gs_sal_i-payment = 'X'.
+  gs_sal_i-crnam = sy-uname.
+  gs_sal_i-erdat = sy-datum.
+  gs_sal_i-ertim = sy-uzeit.
+  APPEND gs_sal_i TO gt_sal_i.
+  MODIFY ztc702_docu_i FROM gs_sal_i.
+
+*  ENDLOOP.
+
+
+
+  LOOP AT gt_sal_i INTO gs_sal_i.
+    LOOP AT gt_tab3 INTO gs_tab3 WHERE docunum = gs_sal_i-retnum.
+      MOVE-CORRESPONDING gs_tab3 TO ls_sale.
+      ls_sale-payment = 'X'.
+      UPDATE ztc702_docu_i SET payment = ls_sale-payment WHERE docunum = gs_sal_i-retnum.
+    ENDLOOP.
+  ENDLOOP.
+
+  IF sy-subrc = 0.
+    MESSAGE '입금 전표가 생성되었습니다' TYPE 'I'.
+    REFRESH CONTROL 'MY_TABLE_IN' FROM SCREEN 100.
+    REFRESH CONTROL 'MY_TABLE_OUT' FROM SCREEN 100.
+    CLEAR: gt_tab, gt_tab2, zsc702_inout.
+
+    LEAVE TO SCREEN 0.
+  ELSE.
+    MESSAGE '입금 전표 생성 중 오류가 발생하였습니다' TYPE 'I'.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DOCU_BUY
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM docu_buy .
+  DATA: lv_num     TYPE n LENGTH 6,
+        lv_text    TYPE string,
+        lv_docunum TYPE c LENGTH 12.
+
+  DATA: ls_buy TYPE ztc702_docu_i.
+
+  " 입출금전표 전표번호 채번.
+  CALL FUNCTION 'NUMBER_GET_NEXT'
+    EXPORTING
+      nr_range_nr = 'C1'
+      object      = 'ZNRC702FI1'
+    IMPORTING
+      number      = lv_num.
+  lv_text = lv_num.
+  CONCATENATE 'C2' sy-datum(4) lv_text INTO lv_docunum.
+
+  " 1. 전표 헤더 테이블에 정보 넣기.
+  CLEAR gs_buy_h.
+  gs_buy_h-company = 'DD'.
+  gs_buy_h-accyear = '2023'.
+  gs_buy_h-docutype = 'C2'.
+  gs_buy_h-docunum = lv_docunum.
+  gs_buy_h-docudate = sy-datum.
+  gs_buy_h-docupernr = 'DD000006'.
+  gs_buy_h-docupname = '이초은'.
+  gs_buy_h-crnam = sy-uname.
+  gs_buy_h-erdat = sy-datum.
+  gs_buy_h-ertim = sy-uzeit.
+  APPEND gs_buy_h TO gt_buy_h.
+  MODIFY ztc702_docu_h FROM gs_buy_h.
+
+  " 2. 전표 아이템 테이블에 정보 넣기.
+  " 2-1. 대변 현금 전표.
+  CLEAR gs_buy_i.
+  gs_buy_i-company = 'DD'.
+  gs_buy_i-accyear = '2023'.
+  gs_buy_i-docutype = 'C2'.
+  gs_buy_i-docunum = lv_docunum.
+  gs_buy_i-acccode = '101'.
+  gs_buy_i-drcrsort = 'CR'.
+  gs_buy_i-accname = '현금'.
+  gs_buy_i-gdcode = zsc702_buy-gdcode.
+  gs_buy_i-gdname = zsc702_buy-gdname.
+  gs_buy_i-quantity = zsc702_buy-quantity.
+  gs_buy_i-unit = 'EA'.
+  gs_buy_i-price = zsc702_buy-price.
+  gs_buy_i-amount = zsc702_buy-amount.
+  gs_buy_i-currency = zsc702_buy-currency.
+  gs_buy_i-retnum = zsc702_buy-docunum.
+  gs_buy_i-cusnum = zsc702_buy-cusnum.
+  gs_buy_i-cusname = zsc702_buy-cusname.
+  gs_buy_i-taxcode = zsc702_buy-taxcode.
+  gs_buy_i-bankname = zsc702_out-bankname.
+  gs_buy_i-acno = zsc702_out-acno.
+  gs_buy_i-acholder = zsc702_out-acholder.
+  gs_buy_i-payment = 'X'.
+  gs_buy_i-crnam = sy-uname.
+  gs_buy_i-erdat = sy-datum.
+  gs_buy_i-ertim = sy-uzeit.
+  APPEND gs_buy_i TO gt_buy_i.
+  MODIFY ztc702_docu_i FROM gs_buy_i.
+
+  " 2-2. 차변 외상매입금 전표.
+  CLEAR gs_buy_i.
+  gs_buy_i-company = 'DD'.
+  gs_buy_i-accyear = '2023'.
+  gs_buy_i-docutype = 'C2'.
+  gs_buy_i-docunum = lv_docunum.
+  gs_buy_i-acccode = '251'.
+  gs_buy_i-drcrsort = 'DR'.
+  gs_buy_i-accname = '외상매입금'.
+  gs_buy_i-gdcode = zsc702_buy-gdcode.
+  gs_buy_i-gdname = zsc702_buy-gdname.
+  gs_buy_i-quantity = zsc702_buy-quantity.
+  gs_buy_i-unit = 'EA'.
+  gs_buy_i-price = zsc702_buy-price.
+  gs_buy_i-amount = zsc702_buy-amount.
+  gs_buy_i-currency = zsc702_buy-currency.
+  gs_buy_i-retnum = zsc702_buy-docunum.
+  gs_buy_i-cusnum = zsc702_buy-cusnum.
+  gs_buy_i-cusname = zsc702_buy-cusname.
+  gs_buy_i-taxcode = zsc702_buy-taxcode.
+  gs_buy_i-bankname = zsc702_out-bankname.
+  gs_buy_i-acno = zsc702_out-acno.
+  gs_buy_i-acholder = zsc702_out-acholder.
+  gs_buy_i-payment = 'X'.
+  gs_buy_i-crnam = sy-uname.
+  gs_buy_i-erdat = sy-datum.
+  gs_buy_i-ertim = sy-uzeit.
+  APPEND gs_buy_i TO gt_buy_i.
+  MODIFY ztc702_docu_i FROM gs_buy_i.
+
+  LOOP AT gt_buy_i INTO gs_buy_i.
+    LOOP AT gt_tab4 INTO gs_tab4 WHERE docunum = gs_buy_i-retnum.
+      MOVE-CORRESPONDING gs_tab4 TO ls_buy.
+      ls_buy-payment = 'X'.
+      UPDATE ztc702_docu_i SET payment = ls_buy-payment WHERE docunum = gs_buy_i-retnum.
+    ENDLOOP.
+  ENDLOOP.
+
+  IF sy-subrc = 0.
+    MESSAGE '출금 전표가 생성되었습니다' TYPE 'I'.
+    REFRESH CONTROL 'MY_TABLE_IN' FROM SCREEN 100.
+    REFRESH CONTROL 'MY_TABLE_OUT' FROM SCREEN 100.
+    CLEAR: gt_tab, gt_tab2, zsc702_inout.
+
+    LEAVE TO SCREEN 0.
+  ELSE.
+    MESSAGE '출금 전표 생성 중 오류가 발생하였습니다' TYPE 'I'.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Module REFRESH_TC OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE refresh_tc OUTPUT.
+  REFRESH CONTROL 'MY_TABLE_IN' FROM SCREEN 100.
+  REFRESH CONTROL 'MY_TABLE_OUT' FROM SCREEN 100.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Form MODIFY_TCINSAL
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM modify_tcinsal .
+  DATA: ls_tab LIKE LINE OF gt_tab.
+  MOVE-CORRESPONDING zsc702_in TO ls_tab.
+
+  MODIFY gt_tab FROM ls_tab INDEX my_table_insal-current_line.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form MODIFY_TCSALE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM modify_tcsale .
+  DATA: ls_tab3 TYPE zsc702_sale.
+  MOVE-CORRESPONDING zsc702_sale TO ls_tab3.
+
+  APPEND ls_tab3 TO gt_sale.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form MODIFY_TCOUTBUY
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM modify_tcoutbuy .
+  DATA: ls_tab2 LIKE LINE OF gt_tab2.
+  MOVE-CORRESPONDING zsc702_out TO ls_tab2.
+
+  MODIFY gt_tab2 FROM ls_tab2 INDEX my_table_outbu-current_line.
+ENDFORM.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

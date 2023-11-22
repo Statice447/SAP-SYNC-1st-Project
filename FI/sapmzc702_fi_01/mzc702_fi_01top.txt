@@ -1,0 +1,67 @@
+*&---------------------------------------------------------------------*
+*& Include MZC702_FI_01TOP                          - Module Pool      SAPMZC702_FI_01
+*&---------------------------------------------------------------------*
+PROGRAM sapmzc702_fi_01 MESSAGE-ID zc702_message.
+
+TABLES: zsc702_account, zsc702_acc_upd, zsc702_acc_cha, zmvc702_account, ztc702_account.
+
+TYPES: BEGIN OF gty_tab.
+        INCLUDE TYPE ztc702_account.
+TYPES: accclass_t(10),
+       company_t(10),
+*       light TYPE c LENGTH 1,  " 신호등 하려고 했으나, 팀 내 통일을 위해 변경함.
+       color TYPE c LENGTH 4,
+       END OF gty_tab.
+
+DATA: ok_code LIKE sy-ucomm,
+      gv_subrc TYPE sy-subrc,
+      gv_mesg TYPE string.
+
+DATA: go_container TYPE REF TO cl_gui_custom_container,
+      go_alv_grid TYPE REF TO cl_gui_alv_grid.
+
+DATA: gt_tab TYPE TABLE OF gty_tab,
+      gs_tab TYPE gty_tab.
+
+DATA: gt_fcat TYPE lvc_t_fcat,  " ALV 관련 데이터 선언.
+      gs_fcat TYPE lvc_s_fcat,
+      gs_layout TYPE lvc_s_layo,
+      gs_variant TYPE disvariant,
+      gs_save TYPE c LENGTH 1,
+      gt_sort TYPE lvc_t_sort,
+      gs_sort TYPE lvc_s_sort.
+
+DATA: gs_domain TYPE smt_s_domain_text, " GET DOMAIN 설정용 데이터 선언.
+      gt_domain LIKE TABLE OF gs_domain.
+
+DATA: ra1 TYPE c LENGTH 1 VALUE 'X', " 삭제플래그 보여주는 라디오 설정용 데이터 선언.
+      ra2 TYPE c LENGTH 1.
+
+DATA: gv_switch TYPE c LENGTH 1.
+
+CLASS lcl_handler DEFINITION.
+  PUBLIC SECTION.
+    CLASS-METHODS: on_double_click FOR EVENT double_click OF cl_gui_alv_grid IMPORTING e_row.
+  PRIVATE SECTION.
+ENDCLASS.
+
+CLASS lcl_handler IMPLEMENTATION.
+  METHOD: on_double_click.
+    READ TABLE gt_tab INTO gs_tab INDEX e_row-index.
+" 더블클릭 성공/실패 메시지는 개발자 입장에서 필요하여, 주석 처리함.
+    IF sy-subrc = 0.
+*      MESSAGE i001 WITH gs_tab-accname. " 메시지 내용: '& 더블 클릭 성공하였습니다.'.
+" ALV 데이터 더블클릭시, 더블클릭한 데이터가 화면 스트럭처에 보이게끔 설정.
+      PERFORM get_data.
+    ELSE.
+*      MESSAGE '더블 클릭 실패.' TYPE 'I'.
+    ENDIF.
+" PAI 강제 리셋하여 ALV 더블클릭시 위 필드에 적용되는 방법.
+  CALL METHOD cl_gui_cfw=>set_new_ok_code
+    EXPORTING
+      new_code = 'ENTER'.
+  ENDMETHOD.
+ENDCLASS.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

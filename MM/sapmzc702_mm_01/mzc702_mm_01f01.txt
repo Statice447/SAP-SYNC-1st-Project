@@ -1,0 +1,518 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_MM_01F01
+*&---------------------------------------------------------------------*
+
+FORM CREATE .
+* 로컬 테이블 오브젝트 선언.
+  DATA: LS_TABLE  TYPE ZTC702_WHMASTER,
+        LV_ANSWER TYPE C LENGTH 1,
+        LS_WHCODE TYPE ZTC702_WHMASTER,
+        LV_NUM    TYPE N LENGTH 2,
+        LV_WHCODE TYPE C LENGTH 4.
+
+* 키필드 미입력 시 메시지 호출.
+  IF ZTC702_PLANT-PLCODE = SPACE
+    OR ZTC702_WHMASTER-PLMANA = SPACE
+    OR ZTC702_WHMASTER-PNAME = SPACE
+    OR ZTC702_PLANT-PLADR = SPACE
+    OR GV_P1 = SPACE OR GV_P2 = SPACE OR GV_P3 = SPACE.
+
+    MESSAGE '공란에 정보를 입력하십시오.' TYPE 'I'.
+  ELSE.
+    SELECT WHCODE
+FROM ZTC702_WHMASTER
+INTO CORRESPONDING FIELDS OF LS_WHCODE
+UP TO 1 ROWS
+WHERE PLCODE = ZTC702_PLANT-PLCODE
+ORDER BY WHCODE DESCENDING.
+    ENDSELECT.
+
+    LV_NUM = LS_WHCODE-WHCODE+2(2) + 1.
+    CONCATENATE 'WH' LV_NUM INTO LV_WHCODE.
+
+* 신규 공장 정보 입력.
+    LS_TABLE-PLCODE = ZTC702_PLANT-PLCODE.
+    LS_TABLE-WHCODE = LV_WHCODE.
+    LS_TABLE-PLMANA = ZTC702_WHMASTER-PLMANA.
+    LS_TABLE-PNAME  = ZTC702_WHMASTER-PNAME.
+    LS_TABLE-PLADDR = ZTC702_PLANT-PLADR.
+
+    PERFORM GET_CELL.
+    CONCATENATE GV_C1 '-' GV_C2 '-' GV_C3 INTO ZTC702_WHMASTER-PLCONT.
+
+    LS_TABLE-PLCONT = ZTC702_WHMASTER-PLCONT.
+
+* 생성정보 입력.
+    LS_TABLE-CRNAM  = SY-UNAME.
+    LS_TABLE-ERDAT  = SY-DATUM.
+    LS_TABLE-ERTIM  = SY-UZEIT.
+    LS_TABLE-CHNAM  = SY-UNAME.
+    LS_TABLE-CHDAT  = SY-DATUM.
+    LS_TABLE-CHTIM  = SY-UZEIT.
+
+* 창고 등록 팝업창 호출.
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        TITLEBAR              = '신규 창고 등록'
+        TEXT_QUESTION         = '신규창고를 등록하시겠습니까?'
+        TEXT_BUTTON_1         = '예'
+        TEXT_BUTTON_2         = '아니오'
+        DISPLAY_CANCEL_BUTTON = ''
+      IMPORTING
+        ANSWER                = LV_ANSWER.
+
+* DB 업데이트.
+    IF LV_ANSWER = 1.
+      INSERT ZTC702_WHMASTER FROM LS_TABLE.
+      IF SY-SUBRC = 0.
+        MESSAGE '신규 창고 등록. (창고 번호 : ' && LV_WHCODE && ' )' TYPE 'I'. " 신규 창고 입력 성공 시 메시지 출력.
+        COMMIT WORK.
+        PERFORM SEARCH.
+        SET SCREEN 0.
+        LEAVE SCREEN.
+      ELSEIF SY-SUBRC = 4.
+        MESSAGE '이미 존재하는 창고입니다.' TYPE 'I'.  " 창고 정보 중복 시 메시지 출력.
+        ROLLBACK WORK. " 업데이트 취소.
+        SET SCREEN 101.
+        LEAVE SCREEN.
+      ELSE.
+        MESSAGE '알 수 없는 에러가 발생했습니다.' TYPE 'I'. " 알 수 없는 오류 발생 시 메시지 출력.
+        ROLLBACK WORK. " 업데이트 취소.
+        SET SCREEN 101.
+        LEAVE SCREEN.
+      ENDIF.
+    ELSE.
+*      PERFORM CLEAR.
+    ENDIF.
+  ENDIF.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form EDIT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM EDIT .
+  DATA: LS_TABLE  TYPE ZTC702_WHMASTER,
+        LT_ROW    TYPE LVC_T_ROW,
+        LS_ROW    TYPE LVC_S_ROW,
+        LV_ANSWER TYPE C LENGTH 1.
+
+  IF ZTC702_WHMASTER-PLMANA = SPACE
+    OR ZTC702_WHMASTER-PNAME = SPACE
+    OR ZTC702_WHMASTER-PLADDR = SPACE
+    OR GV_P1 = SPACE OR GV_P2 = SPACE OR GV_P3 = SPACE.
+
+    MESSAGE '공란에 정보를 입력하십시오.' TYPE 'I'.
+  ELSE.
+    CALL METHOD GO_ALV_GRID->GET_SELECTED_ROWS
+      IMPORTING
+        ET_INDEX_ROWS = LT_ROW.
+
+    LOOP AT LT_ROW INTO LS_ROW.
+      READ TABLE GT_TABLE INTO GS_TABLE INDEX LS_ROW-INDEX.
+    ENDLOOP.
+
+    SELECT *
+      FROM ZTC702_WHMASTER
+      INTO CORRESPONDING FIELDS OF ZTC702_WHMASTER
+     WHERE PLCODE = GS_TABLE-PLCODE.
+    ENDSELECT.
+
+* 창고 정보 변경사항.
+    LS_TABLE-PLCODE = ZTC702_WHMASTER-PLCODE.
+    LS_TABLE-WHCODE = ZTC702_WHMASTER-WHCODE.
+    LS_TABLE-PLMANA = ZTC702_WHMASTER-PLMANA.
+    LS_TABLE-PNAME  = ZTC702_WHMASTER-PNAME.
+    LS_TABLE-PLADDR = ZTC702_WHMASTER-PLADDR.
+
+    PERFORM GET_CELL.
+    CONCATENATE GV_C1 '-' GV_C2 '-' GV_C3 INTO ZTC702_WHMASTER-PLCONT.
+
+    LS_TABLE-PLCONT = ZTC702_WHMASTER-PLCONT.
+    LS_TABLE-DELFLAG = ZTC702_WHMASTER-DELFLAG.
+
+* 창고 정보 변경자 기록.
+    LS_TABLE-CRNAM  = ZTC702_WHMASTER-CRNAM.
+    LS_TABLE-ERDAT  = ZTC702_WHMASTER-ERDAT.
+    LS_TABLE-ERTIM  = ZTC702_WHMASTER-ERTIM.
+    LS_TABLE-CHNAM  = SY-UNAME.
+    LS_TABLE-CHDAT  = SY-DATUM.
+    LS_TABLE-CHTIM  = SY-UZEIT.
+
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        TITLEBAR              = '창고 정보 수정'
+        TEXT_QUESTION         = '창고 정보를 수정하시겠습니까?'
+        TEXT_BUTTON_1         = '예'
+        TEXT_BUTTON_2         = '아니오'
+        DISPLAY_CANCEL_BUTTON = ''
+      IMPORTING
+        ANSWER                = LV_ANSWER.
+
+* DB 업데이트.
+    IF LV_ANSWER = 1.
+      UPDATE ZTC702_WHMASTER FROM LS_TABLE.
+
+      IF SY-SUBRC = 0.
+        MESSAGE '창고 정보 수정. (창고 번호 : ' && LS_TABLE-WHCODE && ' )' TYPE 'I'. " 창고 정보 수정 시 메시지 출력.
+        COMMIT WORK.
+        PERFORM SEARCH.
+        LEAVE TO SCREEN 0.
+      ELSE.
+        MESSAGE '창고 정보를 수정하는데 실패했습니다.' TYPE 'I'. " 정보 수정 실패 시 메시지 출력.
+        ROLLBACK WORK.
+      ENDIF.
+    ENDIF.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SEARCH
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM SEARCH.
+  CLEAR GT_TABLE.
+
+  IF ZTC702_PLANT-PLCODE = SPACE.
+    MESSAGE '공장코드를 입력하십시오.' TYPE 'I'.
+    RETURN.
+  ELSE.
+    IF GV_CB1 = SPACE.
+      SELECT *
+        FROM ZTC702_WHMASTER
+        INTO CORRESPONDING FIELDS OF TABLE GT_TABLE
+       WHERE PLCODE = ZTC702_PLANT-PLCODE
+         AND DELFLAG = SPACE
+      ORDER BY PLCODE WHCODE. " 공장코드, 창고코드 순으로 오름차순 정렬.
+
+    ELSE.
+      GV_CB1 = 'X'.
+      SELECT *
+        FROM ZTC702_WHMASTER
+        INTO CORRESPONDING FIELDS OF TABLE GT_TABLE
+       WHERE PLCODE = ZTC702_PLANT-PLCODE
+       ORDER BY PLCODE WHCODE. " 공장코드, 창고코드 순으로 오름차순 정렬.
+    ENDIF.
+  ENDIF.
+
+  IF GT_TABLE IS INITIAL.
+    MESSAGE '해당 공장코드에 등록된 창고가 없습니다.' TYPE 'I'.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DELFLAG
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM DELFLAG .
+  DATA: LS_TABLE  TYPE ZTC702_WHMASTER,
+        LT_ROW    TYPE LVC_T_ROW,
+        LS_ROW    TYPE LVC_S_ROW,
+        LV_ANSWER TYPE C LENGTH 1,
+        LT_MTIV   TYPE TABLE OF ZTC702_MTIV,
+        LS_MTIV   TYPE ZTC702_MTIV.
+
+  CALL METHOD GO_ALV_GRID->GET_SELECTED_ROWS " 필드 선택 시 현재 줄 선택.
+    IMPORTING
+      ET_INDEX_ROWS = LT_ROW.
+
+  IF LT_ROW IS INITIAL.
+    MESSAGE '창고를 선택하십시오.' TYPE 'I'.
+  ELSE.
+    LOOP AT LT_ROW INTO LS_ROW.
+      READ TABLE GT_TABLE INTO LS_TABLE INDEX LS_ROW-INDEX. " 선택된 줄 데이터 읽어옴.
+    ENDLOOP.
+
+      SELECT RINVEN
+        FROM ZTC702_MTIV
+        INTO CORRESPONDING FIELDS OF TABLE LT_MTIV
+       WHERE PLCODE = LS_TABLE-PLCODE
+         AND WHCODE = LS_TABLE-WHCODE
+         AND DELFLAG = SPACE.
+
+      LOOP AT LT_MTIV INTO LS_MTIV.
+        IF SY-TABIX = 0.
+        ELSE.
+          MESSAGE '해당 창고에 재고가 남아있습니다.' TYPE 'I'.
+          RETURN.
+        ENDIF.
+      ENDLOOP.
+
+    IF LS_TABLE-DELFLAG = ''. " 삭제 플래그가 OFF일 때.
+      CALL FUNCTION 'POPUP_TO_CONFIRM' " 팝업창 호출.
+        EXPORTING
+          TITLEBAR              = '창고 폐쇄'
+          TEXT_QUESTION         = '창고를 폐쇄하겠습니까?'
+          TEXT_BUTTON_1         = '예'
+          TEXT_BUTTON_2         = '아니오'
+          DISPLAY_CANCEL_BUTTON = '' " CANCLE 버튼 사용 안함.
+        IMPORTING
+          ANSWER                = LV_ANSWER.
+
+      IF LV_ANSWER = 1.         " 사용자가 예를 선택 시.
+        LS_TABLE-DELFLAG = 'X'. " 삭제 플래그 ON.
+
+* 삭제 플래그 변경자 기록.
+        LS_TABLE-CHNAM = SY-UNAME.
+        LS_TABLE-CHDAT = SY-DATUM.
+        LS_TABLE-CHTIM = SY-UZEIT.
+
+* DB 업데이트.
+        UPDATE ZTC702_WHMASTER FROM LS_TABLE.
+        MESSAGE '창고 폐쇄 (창고 번호 : ' && LS_TABLE-WHCODE && ')'  TYPE 'I'.
+        COMMIT WORK.
+        PERFORM SEARCH.
+      ENDIF.
+
+    ELSEIF LS_TABLE-DELFLAG = 'X'. " 삭제 플래그가 ON일 때.
+      CALL FUNCTION 'POPUP_TO_CONFIRM' " 팝업창 호출.
+        EXPORTING
+          TITLEBAR              = '창고 개방'
+          TEXT_QUESTION         = '창고를 개방하시겠습니까?'
+          TEXT_BUTTON_1         = '예'
+          TEXT_BUTTON_2         = '아니오'
+          DISPLAY_CANCEL_BUTTON = '' " CANCLE 버튼 사용 안함.
+        IMPORTING
+          ANSWER                = LV_ANSWER.
+
+      IF LV_ANSWER = 1.        " 사용자가 예를 선택 시.
+        LS_TABLE-DELFLAG = ''. " 삭제 플래그 OFF.
+
+* 삭제 플래그 변경자 기록.
+        LS_TABLE-CHNAM = SY-UNAME.
+        LS_TABLE-CHDAT = SY-DATUM.
+        LS_TABLE-CHTIM = SY-UZEIT.
+
+* DB 업데이트.
+        UPDATE ZTC702_WHMASTER FROM LS_TABLE.
+        MESSAGE '창고 개방 (창고 번호 : ' && LS_TABLE-WHCODE && ')'  TYPE 'I'.
+        COMMIT WORK.
+        PERFORM SEARCH.
+      ENDIF.
+    ENDIF.
+
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form LAYOUT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM LAYOUT .
+* 레이아웃 변경사항.
+  GS_LAYOUT-ZEBRA      = 'X'. " 지브라 패턴.
+  GS_LAYOUT-INFO_FNAME = 'COLOR'. " 적색 라인 처리.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form FIELD_CATALOG
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM FIELD_CATALOG .
+
+* 필드 카탈로그 변경사항.
+  GS_FIELD_CAT-FIELDNAME = 'PLCODE'.
+  GS_FIELD_CAT-COLTEXT   = '공장 코드'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 6.
+  GS_FIELD_CAT-KEY       = 'X'.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'WHCODE'.
+  GS_FIELD_CAT-COLTEXT   = '창고 코드'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 6.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'PLMANA'.
+  GS_FIELD_CAT-COLTEXT   = '담당자 사번'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'PNAME'.
+  GS_FIELD_CAT-COLTEXT   = '창고 담당자'.
+  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'PLADDR'.
+  GS_FIELD_CAT-COLTEXT   = '창고 주소'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'L'.
+  GS_FIELD_CAT-OUTPUTLEN = 40.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'PLCONT'.
+  GS_FIELD_CAT-COLTEXT   = '창고 연락처'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 18.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'CRNAM'.
+  GS_FIELD_CAT-COLTEXT   = '생성자'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-OUTPUTLEN = 8.
+  GS_FIELD_CAT-JUST      = 'C'.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'ERDAT'.
+  GS_FIELD_CAT-COLTEXT   = '생성 일자'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 10.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'ERTIM'.
+  GS_FIELD_CAT-COLTEXT   = '생성 시간'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 10.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'CHNAM'.
+  GS_FIELD_CAT-COLTEXT   = '변경자'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-OUTPUTLEN = 8.
+  GS_FIELD_CAT-JUST      = 'C'.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'CHDAT'.
+  GS_FIELD_CAT-COLTEXT   = '변경 날짜'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 10.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+
+  CLEAR GS_FIELD_CAT.
+  GS_FIELD_CAT-FIELDNAME = 'CHTIM'.
+  GS_FIELD_CAT-COLTEXT   = '변경 시간'.
+*  GS_FIELD_CAT-COL_OPT   = 'X'.
+  GS_FIELD_CAT-JUST      = 'C'.
+  GS_FIELD_CAT-OUTPUTLEN = 10.
+  APPEND GS_FIELD_CAT TO GT_FIELD_CAT.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CLEAR
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM CLEAR .
+  CLEAR ZTC702_WHMASTER-PLCODE.
+  GV_CB1 = SPACE.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SELECT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM SELECT .
+  DATA: LT_ROW    TYPE LVC_T_ROW,
+        LS_ROW    TYPE LVC_S_ROW,
+        LV_ANSWER TYPE C LENGTH 1.
+
+  CALL METHOD GO_ALV_GRID->GET_SELECTED_ROWS
+    IMPORTING
+      ET_INDEX_ROWS = LT_ROW.
+
+  IF LT_ROW IS INITIAL.
+    MESSAGE '정보를 수정할 창고를 선택하십시오.' TYPE 'I'.
+  ELSE.
+    LOOP AT LT_ROW INTO LS_ROW.
+      READ TABLE GT_TABLE INTO LS_TABLE INDEX LS_ROW-INDEX.
+    ENDLOOP.
+
+    SPLIT LS_TABLE-PLCONT AT '-' INTO GV_P1 GV_P2 GV_P3.
+
+    MOVE-CORRESPONDING LS_TABLE TO ZTC702_WHMASTER.
+
+    CALL SCREEN 102 STARTING AT 10 10.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_CELL
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM GET_CELL .
+
+  GV_C1 = GV_P1.
+  IF GV_P1 < 10.
+    GV_C1 = GV_C1+1(2).
+  ENDIF.
+
+  GV_C2 = GV_P2.
+  IF GV_C2 < 1000.
+    GV_C2 = GV_C2+1(3).
+  ENDIF.
+
+  GV_C3 = GV_P3.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form EXCLUDE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM EXCLUDE .
+
+  APPEND CL_GUI_ALV_GRID=>MC_FC_DETAIL TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_FC_SORT_ASC TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_FC_SORT_DSC TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_FC_FIND TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_FC_FILTER TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_MB_SUM TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_FC_PRINT_BACK TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_MB_VIEW TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_MB_EXPORT TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_MB_VARIANT TO GT_EXCLUDE.
+  APPEND CL_GUI_ALV_GRID=>MC_FC_INFO TO GT_EXCLUDE.
+
+ENDFORM.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

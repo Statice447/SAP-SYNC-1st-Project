@@ -1,0 +1,151 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_MM_04C01
+*&---------------------------------------------------------------------*
+
+* 핸들러 메소드 정의.
+CLASS LCL_HANDLE DEFINITION.
+  PUBLIC SECTION.
+    CLASS-METHODS: ON_DOUBLE_CLICK_101 FOR EVENT DOUBLE_CLICK OF CL_GUI_ALV_GRID IMPORTING ES_ROW_NO,
+      ON_DOUBLE_CLICK_104 FOR EVENT DOUBLE_CLICK OF CL_GUI_ALV_GRID IMPORTING ES_ROW_NO. " 더블 클릭 시 실행.
+
+ENDCLASS.
+
+* 핸들러 메소드 구현.
+CLASS LCL_HANDLE IMPLEMENTATION.
+  METHOD ON_DOUBLE_CLICK_101.
+    DATA: LV_NUM    TYPE C LENGTH 8,
+          LV_GR     TYPE N LENGTH 8,
+          LV_NUM2   TYPE C LENGTH 10,
+          LV_DNUM   TYPE C LENGTH 12,
+          LV_ANSWER TYPE C LENGTH 1,
+          LV_QUAN   TYPE ZTC702_MTIV-RINVEN,
+          LV_RINVEN TYPE ZTC702_MTIV-RINVEN,
+          LV_RINVEN2 TYPE ZTC702_MTIV-RINVEN.
+
+    CASE GV_SWITCH2.
+
+      WHEN '1'.
+        READ TABLE GT_MTIV INTO GS_MTIV INDEX ES_ROW_NO-ROW_ID. " 선택한 줄 더블 클릭시 데이터 읽어옴.
+        MOVE-CORRESPONDING GS_MTIV TO GS_SCREEN.
+        GS_SCREEN-ERDAT = SY-DATUM.
+        GS_SCREEN-QUANTITY = 0.
+        LEAVE TO SCREEN 102.
+      WHEN '2'.
+        READ TABLE GT_EXP INTO GS_EXP INDEX ES_ROW_NO-ROW_ID. " 선택한 줄 더블 클릭시 데이터 읽어옴.
+        GS_SCREEN-QUANTITY = GS_eXP-QUAN.
+
+* 실재고량 조회.
+        SELECT SINGLE RINVEN
+          FROM ZTC702_MTIV
+          INTO LV_RINVEN
+         WHERE STATUS = 'A'
+           AND GDCODE = GS_SCREEN-GDCODE.
+
+        SELECT SINGLE QUAN
+          FROM ZTC702_EXP
+          INTO LV_QUAN
+         WHERE LOTNUM = GS_SCREEN-LOTNUM.
+
+        SELECT SINGLE RINVEN
+          FROM ZTC702_MTIV
+          INTO LV_RINVEN2
+         WHERE STATUS = 'D'
+           AND GDCODE = GS_SCREEN-GDCODE.
+
+* 폐기 처리 후 실재고량 계산.
+        LV_RINVEN = LV_RINVEN - GS_SCREEN-QUANTITY.
+        LV_RINVEN2 = LV_RINVEN2 + GS_SCREEN-QUANTITY.
+
+* 채번 펑션.
+        CALL FUNCTION 'NUMBER_GET_NEXT'
+          EXPORTING
+            NR_RANGE_NR = '1'
+            OBJECT      = 'ZNRC702MM7'
+          IMPORTING
+            NUMBER      = LV_NUM2.
+
+        LV_NUM2 = LV_NUM2 + 550.
+
+* 수불 대기 문서 채번.
+        CONCATENATE 'SRD' GS_SCREEN-ERDAT(4) LV_NUM2+4(5) INTO LV_DNUM.
+
+* 수불 대기 문서 데이터 입력.
+        GS_TABLE-SRDOCU = LV_DNUM.
+        GS_TABLE-SRTYPE = 'DI'.
+        GS_TABLE-GDCODE = GS_SCREEN-GDCODE.
+        GS_TABLE-QUANTITY = GS_SCREEN-QUANTITY.
+        GS_TABLE-UNIT = 'EA'.
+
+        GS_SCREEN-QUANTITY = GS_EXP-QUAN.
+        GS_SCREEN-LOTNUM = GS_EXP-LOTNUM.
+
+        GS_TABLE-REFERENCE = '유통기한 초과'.
+
+        GS_TABLE-LOTNUM = GS_SCREEN-LOTNUM.
+
+* 생성자 데이터 입력.
+      GS_TABLE-CRNAM  = SY-UNAME.
+      GS_TABLE-ERDAT  = SY-DATUM.
+      GS_TABLE-ERTIM  = SY-UZEIT.
+      GS_TABLE-CHNAM  = SY-UNAME.
+      GS_TABLE-CHDAT  = SY-DATUM.
+      GS_TABLE-CHTIM  = SY-UZEIT.
+
+* 저장 여부를 묻는 팝업창 오픈.
+      CALL FUNCTION 'POPUP_TO_CONFIRM'
+        EXPORTING
+          TITLEBAR              = '유통기한 만료'
+          TEXT_QUESTION         = '유통기한이 만료된 재고를 폐기하시겠습니까?'
+          TEXT_BUTTON_1         = '예'
+          TEXT_BUTTON_2         = '아니오'
+          DISPLAY_CANCEL_BUTTON = ''
+        IMPORTING
+          ANSWER                = LV_ANSWER.
+
+* 예 버튼을 눌럿을 때.
+      IF LV_ANSWER = 1.
+        INSERT ZTC702_SRMANAGE FROM GS_TABLE.
+        UPDATE ZTC702_MTIV SET RINVEN = LV_RINVEN CHNAM = SY-UNAME CHDAT = SY-DATUM CHTIM = SY-UZEIT
+                         WHERE STATUS = 'A' AND GDCODE = GS_SCREEN-GDCODE.
+        UPDATE ZTC702_MTIV SET RINVEN = LV_RINVEN2 CHNAM = SY-UNAME CHDAT = SY-DATUM CHTIM = SY-UZEIT
+                         WHERE STATUS = 'D' AND GDCODE = GS_SCREEN-GDCODE.
+        UPDATE ZTC702_EXP  SET DELFLAG = 'X' CHNAM = SY-UNAME CHDAT = SY-DATUM CHTIM = SY-UZEIT
+                         WHERE LOTNUM = GS_SCREEN-LOTNUM.
+
+        IF SY-SUBRC = 0.
+          MESSAGE '재고 폐기. (문서 번호 : ' && GS_TABLE-SRDOCU && ' )' TYPE 'I'.
+          COMMIT WORK.
+          GV_RA1 = GV_RA2 = GV_RA3 = GV_RA4 = GV_RA6 = SPACE.
+          GV_RA5 = 'X'.
+          PERFORM DISPLAY.
+        ELSEIF SY-SUBRC = 4.
+          MESSAGE '재고를 폐기하는데 실패했습니다.' TYPE 'I'.
+          ROLLBACK WORK.
+        ELSE.
+          MESSAGE '알 수 없는 에러가 발생했습니다.' TYPE 'I'.
+          ROLLBACK WORK.
+        ENDIF.
+      ELSE.
+        ROLLBACK WORK.
+        PERFORM CLEAR.
+      ENDIF.
+
+        LEAVE TO SCREEN 0.
+    ENDCASE.
+
+  ENDMETHOD.
+  METHOD ON_DOUBLE_CLICK_104.
+    DATA: LV_NUM TYPE C LENGTH 8,
+          LV_GR  TYPE N LENGTH 8.
+
+    READ TABLE GT_EXP INTO GS_EXP INDEX ES_ROW_NO-ROW_ID. " 선택한 줄 더블 클릭시 데이터 읽어옴.
+
+    GS_SCREEN-LOTNUM = GS_EXP-LOTNUM.
+
+    LEAVE TO SCREEN 0.
+
+  ENDMETHOD.
+ENDCLASS.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

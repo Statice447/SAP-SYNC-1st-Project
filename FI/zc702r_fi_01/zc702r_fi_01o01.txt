@@ -1,0 +1,230 @@
+*&---------------------------------------------------------------------*
+*& Include          ZC702R_FI_01O01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+ SET PF-STATUS 'P0100'.
+ SET TITLEBAR 'T0100'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_TREE OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_tree OUTPUT.
+  IF g_tree IS INITIAL.
+    " Tree 값들의 관계를 넣어주기 위한 테이블 생성 및 더블클릭 이벤트를 위한 event 데이터 선언.
+    DATA: node_table TYPE node_table_type,
+          events TYPE cntl_simple_events,
+          event TYPE cntl_simple_event.
+
+    " Tree 컨테이너 생성.
+    CREATE OBJECT tree_con_ref
+      EXPORTING
+        container_name              = 'TREE1'.
+
+    " Tree 컨트롤 생성.
+    CREATE OBJECT g_tree
+      EXPORTING
+        parent                      = tree_con_ref
+        node_selection_mode         = cl_gui_simple_tree=>node_sel_mode_single.
+
+    " Tree에 데이터 넣어주는 Node 생성.
+    PERFORM build_node_table USING node_table.
+
+    " Tree에 Node 추가.
+    CALL METHOD g_tree->add_nodes
+      EXPORTING
+        table_structure_name           = 'MTREESNODE'
+        node_table                     = node_table.
+
+    " 더블클릭 이벤트 생성.
+    CREATE OBJECT go_handler.
+
+    " 더블클릭 이벤트 실행.
+    event-eventid = cl_gui_simple_tree=>eventid_node_double_click.
+    event-appl_event = 'X'.
+    APPEND event TO events.
+
+    " Tree 이벤트 등록.
+    CALL METHOD g_tree->set_registered_events
+      EXPORTING
+        events                    = events
+      EXCEPTIONS
+        cntl_error                = 1
+        cntl_system_error         = 2
+        illegal_event_combination = 3
+        OTHERS                    = 4.
+
+    " Tree 이벤트 핸들러.
+    SET HANDLER go_handler->on_double_click FOR g_tree.
+  ENDIF.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CREATE_AND_TRANSFER OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE create_and_transfer OUTPUT.
+  IF go_container IS INITIAL.
+    " ALV 컨테이너 생성.
+    CREATE OBJECT go_container
+      EXPORTING
+        container_name    = 'MY_CONTROL_AREA'.
+
+    " ALV 그리드 생성.
+    CREATE OBJECT go_alv_grid
+      EXPORTING
+        i_parent          = go_container.
+
+  " 필드 카탈로그 설정.
+  PERFORM make_fieldcat.
+
+  " ALV 실행 함수.
+  CALL METHOD go_alv_grid->set_table_for_first_display
+    EXPORTING
+      is_layout                     = gs_layo
+    CHANGING
+      it_outtab                     = gt_sum
+      it_fieldcatalog               = gt_fcat.
+
+  ELSE.
+    " go_container가 초기값이 아닐 때, grid 초기화.
+    PERFORM refresh_grid.
+  ENDIF.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CLEAR_OK_CODE OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE clear_ok_code OUTPUT.
+  CLEAR ok_code.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_CONDITION OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_condition OUTPUT.
+  PERFORM init_condition. " 100번 스크린 조회 버튼 클릭시, 조회 기간 1월~현재월로 자동 설정.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_CONDITION_200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_condition_200 OUTPUT.
+  PERFORM init_cond_200.  " 200번 스크린 조회 버튼 클릭시, 조회 기간 1월1일~현재월로 자동 설정.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CREATE_AND_TRANSFER_INCOME OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE create_and_transfer_income OUTPUT.
+  IF go_container2 IS INITIAL.
+   CREATE OBJECT go_container2
+     EXPORTING
+       container_name    = 'MY_CONTROL_INCOME'.
+   CREATE OBJECT go_alv_grid2
+     EXPORTING
+       i_parent          = go_container2.
+
+   CLEAR gs_fcat2.
+   gs_fcat2-fieldname     = 'DOCUDATE_A'.
+   gs_fcat2-no_out        = 'X'.
+   APPEND gs_fcat2 TO gt_fcat2.
+
+   CLEAR gs_fcat2.
+   gs_fcat2-fieldname     = 'DOCUDATE_B'.
+   gs_fcat2-no_out        = 'X'.
+   APPEND gs_fcat2 TO gt_fcat2.
+
+   CLEAR gs_fcat2.
+   gs_fcat2-fieldname     = 'ACCNAME'.
+   gs_fcat2-coltext       = '계정과목'.
+   gs_fcat2-just          = 'C'.
+   APPEND gs_fcat2 TO gt_fcat2.
+
+   CLEAR gs_fcat2.
+   gs_fcat2-fieldname     = 'AMOUNT'.
+   gs_fcat2-coltext       = '금액'.
+   gs_fcat2-just          = 'C'.
+   gs_fcat2-cfieldname    = 'CURRENCY'.
+   APPEND gs_fcat2 TO gt_fcat2.
+
+   CLEAR gs_fcat2.
+   gs_fcat2-fieldname     = 'CURRENCY'.
+   gs_fcat2-coltext       = '통화'.
+   gs_fcat2-just          = 'C'.
+   gs_fcat2-currency      = 'KRW'.
+   APPEND gs_fcat2 TO gt_fcat2.
+
+   CALL METHOD go_alv_grid2->set_table_for_first_display
+     CHANGING
+       it_fieldcatalog    = gt_fcat2
+       it_outtab          = gt_tab2.
+  ELSE.
+    CALL METHOD go_alv_grid2->refresh_table_display.
+  ENDIF.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CREATE_AND_TRANSFER_POSITION OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE create_and_transfer_position OUTPUT.
+  IF go_container3 IS INITIAL.
+   CREATE OBJECT go_container3
+     EXPORTING
+       container_name    = 'MY_CONTROL_POSITION'.
+   CREATE OBJECT go_alv_grid3
+     EXPORTING
+       i_parent          = go_container3.
+
+   CLEAR gs_fcat3.
+   gs_fcat3-fieldname     = 'DOCUDATE_A'.
+   gs_fcat3-no_out        = 'X'.
+   APPEND gs_fcat3 TO gt_fcat3.
+
+   CLEAR gs_fcat3.
+   gs_fcat3-fieldname     = 'DOCUDATE_B'.
+   gs_fcat3-no_out        = 'X'.
+   APPEND gs_fcat3 TO gt_fcat3.
+
+   CLEAR gs_fcat3.
+   gs_fcat3-fieldname     = 'ACCNAME'.
+   gs_fcat3-coltext       = '계정과목'.
+   gs_fcat3-just          = 'C'.
+   APPEND gs_fcat3 TO gt_fcat3.
+
+   CLEAR gs_fcat3.
+   gs_fcat3-fieldname     = 'AMOUNT'.
+   gs_fcat3-coltext       = '금액'.
+   gs_fcat3-just          = 'C'.
+   gs_fcat3-cfieldname    = 'CURRENCY'.
+   APPEND gs_fcat3 TO gt_fcat3.
+
+   CLEAR gs_fcat3.
+   gs_fcat3-fieldname     = 'CURRENCY'.
+   gs_fcat3-coltext       = '통화'.
+   gs_fcat3-just          = 'C'.
+   gs_fcat3-currency      = 'KRW'.
+   APPEND gs_fcat3 TO gt_fcat3.
+
+   CALL METHOD go_alv_grid3->set_table_for_first_display
+     CHANGING
+       it_fieldcatalog    = gt_fcat3
+       it_outtab          = gt_tab3.
+  ELSE.
+    CALL METHOD go_alv_grid3->refresh_table_display.
+  ENDIF.
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

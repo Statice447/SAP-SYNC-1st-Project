@@ -1,0 +1,45 @@
+*&---------------------------------------------------------------------*
+*& Include MZC702_MM_05_TOP                         - Module Pool      SAPMZC702_MM_05
+*&---------------------------------------------------------------------*
+PROGRAM sapmzc702_mm_05.
+
+TABLES: ztc702_mpr, ztc702_mtmaster, ysztc702_mpr, icon. "화면 스트럭쳐 선언
+
+TYPES: BEGIN OF gty_s_ztc702_mpr.
+    INCLUDE TYPE ztc702_mpr.
+TYPES: light  TYPE c LENGTH 1,
+       plname TYPE ztc702_plant-plname,
+       gdname TYPE ztc702_mtmaster-gdname,
+       END OF gty_s_ztc702_mpr.
+
+DATA: gt_ztc702_mpr TYPE TABLE OF gty_s_ztc702_mpr,
+      gs_ztc702_mpr LIKE LINE OF gt_ztc702_mpr. "아밥 스트럭쳐 선언
+
+DATA: gt_ztc702_mpr_200 TYPE TABLE OF gty_s_ztc702_mpr,
+      gs_ztc702_mpr_200 LIKE LINE OF gt_ztc702_mpr_200.
+
+DATA: go_container TYPE REF TO cl_gui_custom_container,
+      go_alv_grid  TYPE REF TO cl_gui_alv_grid.
+
+DATA: go_container_200 TYPE REF TO cl_gui_custom_container,
+      go_alv_grid_200  TYPE REF TO cl_gui_alv_grid.
+
+DATA: gs_layout TYPE lvc_s_layo.
+
+DATA: gt_fcat TYPE lvc_t_fcat,
+      gs_fcat TYPE lvc_s_fcat.
+
+DATA: gt_fcat_200 TYPE lvc_t_fcat,
+      gs_fcat_200 TYPE lvc_s_fcat.
+
+DATA: gt_exclude_100 TYPE ui_functions.
+DATA: gt_exclude_200 TYPE ui_functions.
+
+DATA: ok_code TYPE sy-ucomm.
+
+DATA: ra1 TYPE c LENGTH 1 VALUE 'X',
+      ra2 TYPE c LENGTH 1,
+      ra3 TYPE c LENGTH 1.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

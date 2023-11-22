@@ -1,0 +1,48 @@
+*&---------------------------------------------------------------------*
+*& Module Pool      SAPMZC702_SD_01
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+
+INCLUDE sapmzc702_sd_01top                      .    " Global Data
+INCLUDE sapmzc702_sd_01o01                      .  " PBO-Modules
+INCLUDE sapmzc702_sd_01i01                      .  " PAI-Modules
+INCLUDE sapmzc702_sd_01f01                      .  " FORM-Routines
+
+load-OF-PROGRAm.
+
+gv_year = sy-datum(4).
+**** initial date setting
+  IF gv_pre_date IS INITIAL.
+    CALL FUNCTION 'RP_CALC_DATE_IN_INTERVAL'
+      EXPORTING
+        date      = sy-datum
+        days      = '00'
+        months    = '01'
+        signum    = '-'
+        years     = '00'
+      IMPORTING
+        calc_date = gv_date.
+
+    gv_pre_date = gv_date.
+    gv_post_date = sy-datum.
+  ENDIF.
+
+*GUI Texts
+*----------------------------------------------------------
+* S0100 --> 판매 계획 관리
+* S0200 --> 판매 계획 상세 조회
+* S0300 --> 판매 계획 생성
+
+
+*Messages
+*----------------------------------------------------------
+*
+* Message class: Hard coded
+*   라인을 선택해주세요.
+*
+* Message class: ZC702_MESSAGE
+*000   등록 성공.  번호  ( & ).
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

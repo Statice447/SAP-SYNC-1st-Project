@@ -1,0 +1,71 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_FI_02I01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  EXIT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE exit INPUT.
+  CASE ok_code.
+    WHEN 'EXIT'.
+      LEAVE PROGRAM.
+    WHEN 'CANC'.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN 'SEARCH'.
+      " 전표 날짜 & 전표 유형은 꼭 하게 설정함(전부 데이터를 가져오면 양이 많아질 수 있어서).
+      " 날짜, 전표 유형은 꼭 있어야함. and 거래처명 있으면 해당 데이터만 가져오기.
+      IF zsc702_docu_h-docudate_a > zsc702_docu_h-docudate_b.
+        MESSAGE '시작일자와 종료일자가 잘못 입력되었습니다.' TYPE 'I'.
+        RETURN.
+      ENDIF.
+      IF zsc702_docu_h-docudate_a IS NOT INITIAL AND zsc702_docu_h-cusnum_a IS NOT INITIAL. " 전표 날짜, 거래처 있으면.
+        PERFORM get_cusnum CHANGING gt_tab.
+        SORT gt_tab BY docunum.
+        DELETE ADJACENT DUPLICATES FROM gt_tab COMPARING docunum.
+      ELSEIF zsc702_docu_h-docudate_a IS NOT INITIAL AND zsc702_docu_h-cusnum_a IS INITIAL. " 전표 날짜 있으면.
+        PERFORM get_docu_data CHANGING gt_tab.
+        SORT gt_tab BY docunum.
+        DELETE ADJACENT DUPLICATES FROM gt_tab COMPARING docunum.
+      ELSE.
+        MESSAGE '날짜를 입력하세요.' TYPE 'I'.
+      ENDIF.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0200  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0200 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN 'BEFORE'.
+      CLEAR: zsc702_docu_i, zsc702_docu_h, gt_tab2.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_CONDITION_200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_condition_200 OUTPUT.
+  MOVE-CORRESPONDING gs_tab TO zsc702_docu_i.
+  PERFORM get_docu_i_data USING gt_tab2.
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

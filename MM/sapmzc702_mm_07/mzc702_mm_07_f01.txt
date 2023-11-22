@@ -1,0 +1,688 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_MM_07_F01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form FCAT_MPRNO_X
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM fcat_mprno_x.
+  CLEAR gt_fcat_200.
+  CLEAR gs_fcat_200.
+
+  gs_fcat_200-fieldname = 'CUSCODE'.
+  gs_fcat_200-coltext = '업체코드'.
+  gs_fcat_200-just = 'C'.
+  gs_fcat_200-outputlen = 13.
+  APPEND gs_fcat_200 TO gt_fcat_200.
+
+  gs_fcat_200-fieldname = 'CUSNAME'.
+  gs_fcat_200-coltext = '업체명'.
+  gs_fcat_200-just = 'C'.
+  gs_fcat_200-outputlen = 20.
+  APPEND gs_fcat_200 TO gt_fcat_200.
+
+  CLEAR gs_fcat_200.
+  gs_fcat_200-fieldname = 'GDCODE'.
+  gs_fcat_200-coltext = '품목코드'.
+  gs_fcat_200-just = 'C'.
+  gs_fcat_200-outputlen = 7.
+  gs_fcat_200-edit = 'X'.
+  gs_fcat_200-f4availabl = 'X'.
+  APPEND gs_fcat_200 TO gt_fcat_200.
+
+  CLEAR gs_fcat_200.
+  gs_fcat_200-fieldname = 'GDNAME'.
+  gs_fcat_200-coltext = '품목명'.
+  gs_fcat_200-just = 'C'.
+  gs_fcat_200-outputlen = 30.
+  APPEND gs_fcat_200 TO gt_fcat_200.
+
+  CLEAR gs_fcat_200.
+  gs_fcat_200-fieldname = 'QUANTITY'.
+  gs_fcat_200-coltext = '수량'.
+  gs_fcat_200-just = 'C'.
+  gs_fcat_200-outputlen = 7.
+  gs_fcat_200-qfieldname = 'UNIT'.
+  gs_fcat_200-edit = 'X'.
+  APPEND gs_fcat_200 TO gt_fcat_200.
+
+  CLEAR gs_fcat_200.
+  gs_fcat_200-fieldname = 'UNIT'.
+  gs_fcat_200-coltext = '단위'.
+  gs_fcat_200-just = 'C'.
+  gs_fcat_200-outputlen = 7.
+  gs_fcat_200-quantity = 'EA'.
+  gs_fcat_200-edit = 'X'.
+  APPEND gs_fcat_200 TO gt_fcat_200.
+
+  CLEAR gs_fcat_200.
+  gs_fcat_200-fieldname = 'PRICE'.
+  gs_fcat_200-coltext = '단가'.
+  gs_fcat_200-just = 'C'.
+  gs_fcat_200-outputlen = 10.
+*  gs_fcat_200-cfieldname = 'CURRENCY'.
+  gs_fcat_200-edit = 'X'.
+  gs_fcat_200-f4availabl = 'X'.
+  gs_fcat_200-decimals_o = 0.
+  gs_fcat_200-decimals = -2.
+  APPEND gs_fcat_200 TO gt_fcat_200.
+
+  CLEAR gs_fcat_200.
+  gs_fcat_200-fieldname = 'CURRENCY'.
+  gs_fcat_200-coltext = '통화'.
+  gs_fcat_200-just = 'C'.
+  gs_fcat_200-outputlen = 7.
+*  gs_fcat_200-currency = 'KRW'.
+  APPEND gs_fcat_200 TO gt_fcat_200.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form FCAT_MPRNO_O
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM fcat_mprno_o.
+  CLEAR gt_fcat_200.
+  CLEAR gs_fcat_200.
+
+  gs_fcat_200-fieldname = 'CUSCODE'.
+  gs_fcat_200-coltext = '업체코드'.
+  gs_fcat_200-just = 'C'.
+  gs_fcat_200-outputlen = 13.
+  APPEND gs_fcat_200 TO gt_fcat_200.
+
+  gs_fcat_200-fieldname = 'CUSNAME'.
+  gs_fcat_200-coltext = '업체명'.
+  gs_fcat_200-just = 'C'.
+  gs_fcat_200-outputlen = 20.
+  APPEND gs_fcat_200 TO gt_fcat_200.
+
+  CLEAR gs_fcat_200.
+  gs_fcat_200-fieldname = 'GDCODE'.
+  gs_fcat_200-coltext = '품목코드'.
+  gs_fcat_200-just = 'C'.
+  gs_fcat_200-outputlen = 7.
+*  gs_fcat_200-edit = 'X'.
+  APPEND gs_fcat_200 TO gt_fcat_200.
+
+  CLEAR gs_fcat_200.
+  gs_fcat_200-fieldname = 'GDNAME'.
+  gs_fcat_200-coltext = '품목명'.
+  gs_fcat_200-just = 'C'.
+  gs_fcat_200-outputlen = 30.
+  APPEND gs_fcat_200 TO gt_fcat_200.
+
+  CLEAR gs_fcat_200.
+  gs_fcat_200-fieldname = 'QUANTITY'.
+  gs_fcat_200-coltext = '수량'.
+  gs_fcat_200-just = 'C'.
+  gs_fcat_200-outputlen = 7.
+  gs_fcat_200-qfieldname = 'UNIT'.
+*  gs_fcat_200-edit = 'X'.
+  APPEND gs_fcat_200 TO gt_fcat_200.
+
+  CLEAR gs_fcat_200.
+  gs_fcat_200-fieldname = 'UNIT'.
+  gs_fcat_200-coltext = '단위'.
+  gs_fcat_200-just = 'C'.
+  gs_fcat_200-outputlen = 7.
+  gs_fcat_200-quantity = 'EA'.
+*  gs_fcat_200-edit = 'X'.
+  APPEND gs_fcat_200 TO gt_fcat_200.
+
+  CLEAR gs_fcat_200.
+  gs_fcat_200-fieldname = 'PRICE'.
+  gs_fcat_200-coltext = '단가'.
+  gs_fcat_200-just = 'C'.
+  gs_fcat_200-outputlen = 10.
+*  gs_fcat_200-cfieldname = 'CURRENCY'.
+  gs_fcat_200-edit = 'X'.
+  gs_fcat_200-f4availabl = 'X'.
+  gs_fcat_200-decimals_o = 0.
+  gs_fcat_200-decimals = -2.
+  APPEND gs_fcat_200 TO gt_fcat_200.
+
+  CLEAR gs_fcat_200.
+  gs_fcat_200-fieldname = 'CURRENCY'.
+  gs_fcat_200-coltext = '통화'.
+  gs_fcat_200-just = 'C'.
+  gs_fcat_200-outputlen = 7.
+*  gs_fcat_200-currency = 'KRW'.
+  APPEND gs_fcat_200 TO gt_fcat_200.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ON_F4
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*      -->P_E_FIELDNAME  text
+*      -->P_E_FIELDVALUE  text
+*      -->P_ES_ROW_NO  text
+*      -->P_ER_EVENT_DATA  text
+*      -->P_ET_BAD_CELLS  text
+*      -->P_E_DISPLAY  text
+*&---------------------------------------------------------------------*
+FORM on_f4  USING    pc_sender     TYPE REF TO cl_gui_alv_grid
+                     pv_fieldname  TYPE lvc_fname
+                     pv_fieldvalue TYPE lvc_value
+                     ps_row_no     TYPE lvc_s_roid
+                     pt_event_data TYPE REF TO cl_alv_event_data
+                     pt_bad_cells  TYPE lvc_t_modi
+                     pv_display    TYPE char01.
+
+  DATA: BEGIN OF lt_gdcode OCCURS 0,
+          gdcode LIKE ztc702_mtmaster-gdcode,
+          gdname LIKE ztc702_mtmaster-gdname,
+        END OF lt_gdcode.
+
+  DATA: BEGIN OF lt_price OCCURS 0,
+          cuscode  LIKE ztc702_mir-cuscode,
+          cusname  LIKE ztc702_cusmaster-cusname,
+*          price    LIKE ztc702_mir-price,
+          price    TYPE p DECIMALS 0,
+          currency LIKE ztc702_mir-currency,
+          exdate   LIKE ztc702_mir-exdate,
+        END OF lt_price.
+
+  DATA: ls_price LIKE LINE OF lt_price.
+
+  DATA: lv_num TYPE ztc702_mir-price.
+
+  DATA: lv_gdcode TYPE ztc702_mir-gdcode.
+
+  DATA: BEGIN OF lt_value OCCURS 0,
+          value TYPE c LENGTH 20,
+        END OF lt_value.
+
+  DATA: BEGIN OF lt_value2 OCCURS 0,
+          value TYPE c LENGTH 20,
+        END OF lt_value2.
+
+  DATA: lt_field TYPE TABLE OF dfies WITH HEADER LINE.
+  DATA: lt_map TYPE TABLE OF dselc WITH HEADER LINE.
+  DATA: lt_return TYPE TABLE OF ddshretval WITH HEADER LINE.
+  DATA: lt_update LIKE dynpread OCCURS 0 WITH HEADER LINE.
+
+  DATA: lt_field2 TYPE TABLE OF dfies WITH HEADER LINE.
+  DATA: lt_map2 TYPE TABLE OF dselc WITH HEADER LINE.
+  DATA: lt_return2 TYPE TABLE OF ddshretval WITH HEADER LINE.
+  DATA: lt_update2 LIKE dynpread OCCURS 0 WITH HEADER LINE.
+
+  DATA: lt_f4 TYPE TABLE OF ddshretval,
+        ls_f4 TYPE ddshretval.
+
+  DATA: ls_modified TYPE lvc_s_modi.
+  FIELD-SYMBOLS: <ft_f4> TYPE lvc_t_modi.
+
+  CASE pv_fieldname.
+    WHEN 'GDCODE'.
+      SELECT gdcode gdname
+        FROM ztc702_mtmaster
+        INTO CORRESPONDING FIELDS OF TABLE lt_gdcode.
+      SORT lt_gdcode ASCENDING BY gdcode.
+
+      LOOP AT lt_gdcode.
+        CLEAR lt_value.
+        lt_value-value = lt_gdcode-gdcode.
+        APPEND lt_value.
+
+        CLEAR lt_value.
+        lt_value-value = lt_gdcode-gdname.
+        APPEND lt_value.
+      ENDLOOP.
+
+      CLEAR lt_field.
+      lt_field-fieldname = 'GDCODE'.
+      lt_field-outputlen = 10.
+      lt_field-leng = 10.
+      lt_field-intlen = 10.
+      lt_field-reptext = '품목코드'.
+      APPEND lt_field.
+
+      CLEAR lt_field.
+      lt_field-fieldname = 'GDNAME'.
+      lt_field-outputlen = 100.
+      lt_field-leng = 100.
+      lt_field-intlen = 100.
+      lt_field-reptext = '품목명'.
+      APPEND lt_field.
+
+      CLEAR lt_map.
+      lt_map-fldname = 'GDCODE'.
+      lt_map-dyfldname = 'GDCODE'.
+      APPEND lt_map.
+
+      CLEAR lt_map.
+      lt_map-fldname = 'GDNAME'.
+      lt_map-dyfldname = 'GDNAME'.
+      APPEND lt_map.
+
+      CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+        EXPORTING
+*         DDIC_STRUCTURE  = ' '
+          retfield        = 'GDCODE'
+*         PVALKEY         = ' '
+          dynpprog        = sy-repid
+          dynpnr          = sy-dynnr
+*         dynprofield     =
+*         STEPL           = 0
+          window_title    = '품목 정보'
+*         VALUE           = ' '
+          value_org       = 'C'
+*         MULTIPLE_CHOICE = ' '
+*         DISPLAY         = ' '
+*         CALLBACK_PROGRAM       = ' '
+*         CALLBACK_FORM   = ' '
+*         CALLBACK_METHOD =
+*         MARK_TAB        =
+*     IMPORTING
+*         USER_RESET      =
+        TABLES
+          value_tab       = lt_value
+          field_tab       = lt_field
+          return_tab      = lt_return
+          dynpfld_mapping = lt_map
+        EXCEPTIONS
+          OTHERS          = 1.
+
+      IF sy-subrc <> 0.
+        WRITE: '에러가 발생했습니다.'.
+      ENDIF.
+
+      lt_update-fieldname = 'GDCODE'.
+      READ TABLE lt_return WITH KEY fieldname = lt_update-fieldname.
+      IF sy-subrc = 0.
+        lt_update-fieldvalue = lt_return-fieldval.
+        pv_fieldvalue = lt_update-fieldvalue.
+        lv_gdcode = pv_fieldvalue.
+        APPEND lt_update.
+      ENDIF.
+
+      gv_gdcode = pv_fieldvalue.
+
+      ASSIGN pt_event_data->m_data->* TO <ft_f4>.
+      ls_modified-row_id = ps_row_no-row_id.
+      ls_modified-fieldname = 'GDCODE'.
+      ls_modified-value = lt_return-fieldval.
+      APPEND ls_modified TO <ft_f4>.
+
+      lt_update-fieldname = 'GDNAME'.
+      READ TABLE lt_return WITH KEY fieldname = lt_update-fieldname.
+      IF sy-subrc = 0.
+        lt_update-fieldvalue = lt_return-fieldval.
+*        pv_fieldvalue = lt_update-fieldvalue.
+        APPEND lt_update.
+      ENDIF.
+
+      CLEAR ls_modified.
+      ls_modified-row_id = ps_row_no-row_id.
+      ls_modified-fieldname = 'GDNAME'.
+      ls_modified-value = lt_return-fieldval.
+      APPEND ls_modified TO <ft_f4>.
+
+    WHEN 'PRICE'.
+      IF gs_ztc702_mpo_h-mprno IS INITIAL.
+        SELECT r~cuscode c~cusname r~currency r~exdate
+         FROM ztc702_mir AS r INNER JOIN ztc702_cusmaster AS c ON r~cuscode = c~cuscode
+         INTO CORRESPONDING FIELDS OF TABLE lt_price
+        WHERE gdcode = gv_gdcode
+          AND r~exdate > sy-datum.
+
+        SORT lt_price ASCENDING BY cuscode price.
+        DELETE ADJACENT DUPLICATES FROM lt_price COMPARING cuscode.
+
+        LOOP AT lt_price INTO ls_price.
+          SELECT SINGLE price
+            FROM ztc702_mir AS r
+            INTO lv_num
+            WHERE gdcode = gv_gdcode
+              AND cuscode = ls_price-cuscode.
+
+          ls_price-price = lv_num. "* 100.
+          MODIFY lt_price FROM ls_price.
+        ENDLOOP.
+
+*        SELECT r~cuscode c~cusname r~price r~currency r~exdate
+*          FROM ztc702_mir AS r INNER JOIN ztc702_cusmaster AS c ON r~cuscode = c~cuscode
+*          INTO CORRESPONDING FIELDS OF TABLE lt_price
+*         WHERE gdcode = gv_gdcode
+*           AND r~exdate > sy-datum.
+*
+*        SORT lt_price ASCENDING BY cuscode price.
+*        DELETE ADJACENT DUPLICATES FROM lt_price COMPARING cuscode.
+
+      ELSEIF gs_ztc702_mpo_h-mprno IS NOT INITIAL.
+
+        READ TABLE gt_ztc702_mpo_i INTO gs_ztc702_mpo_i INDEX ps_row_no-row_id.
+        lv_gdcode = gs_ztc702_mpo_i-gdcode.
+
+        SELECT r~cuscode c~cusname r~currency r~exdate
+          FROM ztc702_mir AS r INNER JOIN ztc702_cusmaster AS c ON r~cuscode = c~cuscode
+          INTO CORRESPONDING FIELDS OF TABLE lt_price
+         WHERE gdcode = lv_gdcode
+           AND r~exdate > sy-datum.
+
+        SORT lt_price ASCENDING BY cuscode price.
+        DELETE ADJACENT DUPLICATES FROM lt_price COMPARING cuscode.
+
+*        LOOP AT lt_price INTO ls_price.
+*          SELECT SINGLE price
+*            FROM ztc702_mir
+*            INTO lv_num
+*            WHERE gdcode = lv_gdcode.
+
+        LOOP AT lt_price INTO ls_price.
+          SELECT SINGLE price
+            FROM ztc702_mir
+            INTO lv_num
+            WHERE gdcode = lv_gdcode
+              AND cuscode = ls_price-cuscode.
+
+          ls_price-price = lv_num. "* 100.
+          MODIFY lt_price FROM ls_price.
+          CLEAR lt_price.
+        ENDLOOP.
+      ENDIF.
+
+*        READ TABLE gt_ztc702_mpo_i INTO gs_ztc702_mpo_i INDEX ps_row_no-row_id.
+*        lv_gdcode = gs_ztc702_mpo_i-gdcode.
+*
+*        SELECT r~cuscode c~cusname r~price r~currency r~exdate
+*          FROM ztc702_mir AS r INNER JOIN ztc702_cusmaster AS c ON r~cuscode = c~cuscode
+*          INTO CORRESPONDING FIELDS OF TABLE lt_price
+*         WHERE gdcode = lv_gdcode
+*           AND r~exdate > sy-datum.
+*
+*        SORT lt_price ASCENDING BY cuscode price.
+*        DELETE ADJACENT DUPLICATES FROM lt_price COMPARING cuscode.
+*      ENDIF.
+
+*      PERFORM f4_price.
+
+*      SELECT r~cuscode c~cusname r~price r~currency r~exdate
+*        FROM ztc702_mir AS r INNER JOIN ztc702_cusmaster AS c ON r~cuscode = c~cuscode
+*        INTO CORRESPONDING FIELDS OF TABLE lt_price
+*       WHERE gdcode = gv_gdcode
+*         AND r~exdate > sy-datum.
+*
+*      SORT lt_price ASCENDING BY cuscode price.
+*      DELETE ADJACENT DUPLICATES FROM lt_price COMPARING cuscode.
+
+      LOOP AT lt_price.
+        CLEAR lt_value2.
+        lt_value2-value = lt_price-cuscode.
+        APPEND lt_value2.
+
+        CLEAR lt_value2.
+        lt_value2-value = lt_price-cusname.
+        APPEND lt_value2.
+
+        CLEAR lt_value2.
+        lt_value2-value = lt_price-price * 100.
+        APPEND lt_value2.
+
+        CLEAR lt_value2.
+        lt_value2-value = lt_price-currency.
+        APPEND lt_value2.
+
+        CLEAR lt_value2.
+        lt_value2-value = lt_price-exdate.
+        APPEND lt_value2.
+      ENDLOOP.
+
+      CLEAR lt_field2.
+      lt_field2-fieldname = 'CUSCODE'.
+      lt_field2-outputlen = 30.
+      lt_field2-leng = 30.
+      lt_field2-intlen = 30.
+      lt_field2-reptext = '업체코드'.
+      APPEND lt_field2.
+
+      CLEAR lt_field2.
+      lt_field2-fieldname = 'CUSNAME'.
+      lt_field2-outputlen = 100.
+      lt_field2-leng = 100.
+      lt_field2-intlen = 100.
+      lt_field2-reptext = '업체명'.
+      APPEND lt_field2.
+
+      CLEAR lt_field2.
+      lt_field2-fieldname = 'PRICE'.
+      lt_field2-outputlen = 30.
+      lt_field2-leng = 30.
+      lt_field2-intlen = 30.
+      lt_field2-reptext = '단가'.
+*      lt_field2-reftable = ztc702_mpo_i.
+*      lt_field2-precfield = gt_fcat_200.
+*      lt_field2-reffield = 'CURRENCY'.
+      APPEND lt_field2.
+
+      CLEAR lt_field2.
+      lt_field2-fieldname = 'CURRENCY'.
+      lt_field2-outputlen = 10.
+      lt_field2-leng = 10.
+      lt_field2-intlen = 10.
+      lt_field2-reptext = '통화'.
+      APPEND lt_field2.
+
+      CLEAR lt_field2.
+      lt_field2-fieldname = 'EXDATE'.
+      lt_field2-outputlen = 15.
+      lt_field2-leng = 15.
+      lt_field2-intlen = 15.
+      lt_field2-reptext = '유효기간'.
+      APPEND lt_field2.
+
+      CLEAR lt_map2.
+      lt_map2-fldname = 'CUSCODE'.
+      lt_map2-dyfldname = 'CUSCODE'.
+      APPEND lt_map2.
+
+      CLEAR lt_map2.
+      lt_map2-fldname = 'CUSNAME'.
+      lt_map2-dyfldname = 'CUSNAME'.
+      APPEND lt_map2.
+
+      CLEAR lt_map2.
+      lt_map2-fldname = 'PRICE'.
+      lt_map2-dyfldname = 'PRICE'.
+      APPEND lt_map2.
+
+      CLEAR lt_map2.
+      lt_map2-fldname = 'CURRENCY'.
+      lt_map2-dyfldname = 'CURRENCY'.
+      APPEND lt_map2.
+
+*      CLEAR lt_map2.
+*      lt_map2-fldname = 'EXDATE'.
+*      lt_map2-dyfldname = 'EXDATE'.
+*      APPEND lt_map2.
+
+      CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+        EXPORTING
+*         DDIC_STRUCTURE  = ' '
+          retfield        = 'PRICE'
+*         PVALKEY         = ' '
+          dynpprog        = sy-repid
+          dynpnr          = sy-dynnr
+*         DYNPROFIELD     = ' '
+*         STEPL           = 0
+          window_title    = '구매 정보'
+*         VALUE           = ' '
+          value_org       = 'C'
+*         MULTIPLE_CHOICE = ' '
+*         DISPLAY         = ' '
+*         CALLBACK_PROGRAM       = ' '
+*         CALLBACK_FORM   = ' '
+*         CALLBACK_METHOD =
+*         MARK_TAB        =
+*       IMPORTING
+*         USER_RESET      =
+        TABLES
+          value_tab       = lt_value2
+          field_tab       = lt_field2
+          return_tab      = lt_return2
+          dynpfld_mapping = lt_map2
+        EXCEPTIONS
+          OTHERS          = 1.
+
+      IF sy-subrc <> 0.
+        WRITE: '에러가 발생했습니다.'.
+      ENDIF.
+
+      lt_update2-fieldname = 'CUSCODE'.
+      READ TABLE lt_return2 WITH KEY fieldname = lt_update2-fieldname.
+      IF sy-subrc = 0.
+        lt_update2-fieldvalue = lt_return2-fieldval.
+*        pv_fieldvalue = lt_update2-fieldvalue.
+        APPEND lt_update2.
+      ENDIF.
+
+      ASSIGN pt_event_data->m_data->* TO <ft_f4>.
+      ls_modified-row_id = ps_row_no-row_id.
+      ls_modified-fieldname = 'CUSCODE'.
+      ls_modified-value = lt_return2-fieldval.
+      APPEND ls_modified TO <ft_f4>.
+
+      lt_update2-fieldname = 'CUSNAME'.
+      READ TABLE lt_return2 WITH KEY fieldname = lt_update2-fieldname.
+      IF sy-subrc = 0.
+        lt_update2-fieldvalue = lt_return2-fieldval.
+*        pv_fieldvalue = lt_update2-fieldvalue.
+        APPEND lt_update2.
+      ENDIF.
+
+      ASSIGN pt_event_data->m_data->* TO <ft_f4>.
+      ls_modified-row_id = ps_row_no-row_id.
+      ls_modified-fieldname = 'CUSNAME'.
+      ls_modified-value = lt_return2-fieldval.
+      APPEND ls_modified TO <ft_f4>.
+
+      lt_update2-fieldname = 'PRICE'.
+      READ TABLE lt_return2 WITH KEY fieldname = lt_update2-fieldname.
+      IF sy-subrc = 0.
+        lt_update2-fieldvalue = lt_return2-fieldval.
+*        pv_fieldvalue = lt_update2-fieldvalue.
+        APPEND lt_update2.
+      ENDIF.
+
+      ASSIGN pt_event_data->m_data->* TO <ft_f4>.
+      ls_modified-row_id = ps_row_no-row_id.
+      ls_modified-fieldname = 'PRICE'.
+      ls_modified-value = lt_return2-fieldval.
+      APPEND ls_modified TO <ft_f4>.
+
+      lt_update2-fieldname = 'CURRENCY'.
+      READ TABLE lt_return2 WITH KEY fieldname = lt_update2-fieldname.
+      IF sy-subrc = 0.
+        lt_update2-fieldvalue = lt_return2-fieldval.
+*        pv_fieldvalue = lt_update2-fieldvalue.
+        APPEND lt_update2.
+      ENDIF.
+
+      ASSIGN pt_event_data->m_data->* TO <ft_f4>.
+      ls_modified-row_id = ps_row_no-row_id.
+      ls_modified-fieldname = 'CURRENCY'.
+      ls_modified-value = lt_return2-fieldval.
+      APPEND ls_modified TO <ft_f4>.
+
+*      lt_update2-fieldname = 'EXDATE'.
+*      READ TABLE lt_return2 WITH KEY fieldname = lt_update2-fieldname.
+*      IF sy-subrc = 0.
+*        lt_update2-fieldvalue = lt_return2-fieldval.
+*        pv_fieldvalue = lt_update2-fieldvalue.
+*        APPEND lt_update2.
+*      ENDIF.
+*
+*      ASSIGN pt_event_data->m_data->* TO <ft_f4>.
+*      ls_modified-row_id = ps_row_no-row_id.
+*      ls_modified-fieldname = 'EXDATE'.
+*      ls_modified-value = lt_return2-fieldval.
+*      APPEND ls_modified TO <ft_f4>.
+  ENDCASE.
+  pt_event_data->m_event_handled = 'X'.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form F4_PRICE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM f4_price .
+  DATA: BEGIN OF ls_price,
+          cuscode  TYPE ztc702_cusmaster-cuscode,
+          cusname  TYPE ztc702_cusmaster-cusname,
+*         price    TYPE ztc702_mpo_i-price,
+          price    TYPE ztc702_cusmaster-cuscode,
+          currency TYPE ztc702_mpo_i-currency,
+        END OF ls_price,
+        lt_price LIKE TABLE OF ls_price.
+
+  DATA: lv_num TYPE ztc702_mir-price.
+
+  CLEAR: ls_price.
+  REFRESH: lt_price.
+
+*  SELECT r~cuscode c~cusname r~price r~currency
+*    FROM ztc702_cusmaster AS c INNER JOIN ztc702_mir AS r ON c~cuscode = r~cuscode
+*    INTO CORRESPONDING FIELDS OF TABLE lt_price.
+
+  SELECT r~cuscode c~cusname r~currency
+    FROM ztc702_cusmaster AS c INNER JOIN ztc702_mir AS r ON c~cuscode = r~cuscode
+    INTO CORRESPONDING FIELDS OF TABLE lt_price.
+
+  LOOP AT lt_price INTO ls_price.
+    SELECT SINGLE r~price
+      FROM ztc702_cusmaster AS c INNER JOIN ztc702_mir AS r ON c~cuscode = r~cuscode
+      INTO lv_num
+      WHERE c~cuscode = ls_price-cuscode.
+    ls_price-price = lv_num * 100.
+    MODIFY lt_price FROM ls_price.
+  ENDLOOP.
+
+
+  CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+    EXPORTING
+*     DDIC_STRUCTURE         = ' '
+      retfield     = 'PRICE'
+*     PVALKEY      = ' '
+      dynpprog     = sy-repid
+      dynpnr       = sy-dynnr
+*     DYNPROFIELD  = ' '
+*     STEPL        = 0
+      window_title = '구매 정보'
+*     VALUE        = ' '
+      value_org    = 'S'
+*     MULTIPLE_CHOICE        = ' '
+*     DISPLAY      = ' '
+*     CALLBACK_PROGRAM       = ' '
+*     CALLBACK_FORM          = ' '
+*     CALLBACK_METHOD        =
+*     MARK_TAB     =
+* IMPORTING
+*     USER_RESET   =
+    TABLES
+      value_tab    = lt_price
+*     FIELD_TAB    =
+*     RETURN_TAB   =
+*     DYNPFLD_MAPPING        =
+* EXCEPTIONS
+*     PARAMETER_ERROR        = 1
+*     NO_VALUES_FOUND        = 2
+*     OTHERS       = 3
+    .
+  IF sy-subrc <> 0.
+    WRITE: '에러가 발생했습니다.'.
+  ENDIF.
+ENDFORM.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

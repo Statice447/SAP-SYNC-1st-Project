@@ -1,0 +1,1129 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_MM_12F01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form DISPLAY_MPO_H
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM display_mpo_h .
+  PERFORM get_mpo_h. " 구매오더 헤더 스테이터스 갱신 서브루틴.
+  PERFORM search.    " 검색 조건에 따른 데이터 조회 서브루틴.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_MPO_H
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM get_mpo_h .
+* 구매오더 아이템 조회.
+  SELECT mpono status
+    FROM ztc702_mpo_h INTO CORRESPONDING FIELDS OF TABLE gt_mpo_h
+    ORDER BY mpono ASCENDING.
+
+* 구매오더 헤더 조회.
+  SELECT *
+    FROM ztc702_mpo_i INTO CORRESPONDING FIELDS OF TABLE gt_mpo_i
+    ORDER BY mpono ASCENDING.
+
+* 구매오더 헤더 스테이터스 갱신.
+  LOOP AT gt_mpo_h INTO gs_mpo_h.
+    LOOP AT gt_mpo_i INTO gs_mpo_i WHERE mpono = gs_mpo_h-mpono.
+
+      IF gs_mpo_i-postatus = '발주 완료'. " 구매오더 아이템 스테이터스가 발주완료일 때.
+        gs_mpo_h-status = '2'. " 구매오더 헤드 스테이터스를 2로 변경.
+        UPDATE ztc702_mpo_h SET status = gs_mpo_h-status " DB 업데이트.
+                          WHERE mpono  = gs_mpo_h-mpono.
+      ELSEIF gs_mpo_i-postatus = '반려'. " 구매오더 아이템 스테이터스가 반려일 때.
+        gs_mpo_h-status = '1'. " 구매오더 헤드 스테이터스를 1로 변경.
+        UPDATE ztc702_mpo_h SET status = gs_mpo_h-status " DB 업데이트.
+                          WHERE mpono  = gs_mpo_h-mpono.
+      ELSEIF gs_mpo_i-postatus = '입고 완료'. " 구매오더 아이템 스테이터스가 입고완료일 때.
+        gs_mpo_h-status = '3'. " 구매오더 헤드 스테이터스를 3로 변경.
+        UPDATE ztc702_mpo_h SET status = gs_mpo_h-status " DB 업데이트.
+                          WHERE mpono  = gs_mpo_h-mpono.
+      ELSE. " 구매오더 아이템 스테이터스가 결제 대기 혹은 승인일 때.
+        gs_mpo_h-status = '0'. " 구매오더 헤드 스테이터스를 1로 변경.
+        UPDATE ztc702_mpo_h SET status = gs_mpo_h-status " DB 업데이트.
+                          WHERE mpono  = gs_mpo_h-mpono.
+      ENDIF.
+
+      COMMIT WORK.
+    ENDLOOP.
+
+
+  ENDLOOP.
+
+  IF sy-subrc = 0.
+    COMMIT WORK.
+  ELSE.
+    MESSAGE '데이터를 갱신하는데 실패했습니다. SY-SUBRC = ' && sy-subrc TYPE 'I'.
+    ROLLBACK WORK.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_FCAT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_fcat .
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'LIGHT'.
+  gs_fcat-ref_table = 'GTY_MPR_H'.
+  gs_fcat-coltext = '상태표시'.
+  gs_fcat-outputlen = 4.
+  gs_fcat-col_pos = 1.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'STATUS'.
+  gs_fcat-coltext = '상태표시'.
+  gs_fcat-no_out = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'DELFLAG'.
+  gs_fcat-coltext = '삭제플래그'.
+  gs_fcat-no_out = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+**  CLEAR gs_fcat.
+**  gs_fcat-fieldname = 'MPONO'.
+**  gs_fcat-coltext = '구매오더번호'.
+**  gs_fcat-key = 'X'.
+**  APPEND gs_fcat TO gt_fcat.
+*
+**  CLEAR gs_fcat.
+**  gs_fcat-fieldname = 'REFNUM'.
+**  gs_fcat-coltext = '참조문서번호'.
+**  gs_fcat-outputlen = 10.
+**  APPEND gs_fcat TO gt_fcat.
+*
+*  CLEAR gs_fcat.
+*  gs_fcat-fieldname = 'GDCODE'.
+*  gs_fcat-coltext = '품목코드'.
+*  APPEND gs_fcat TO gt_fcat.
+*
+**  CLEAR gs_fcat.
+**  gs_fcat-fieldname = 'GDNAME'.
+**  gs_fcat-coltext = '품목명'.
+**  APPEND gs_fcat TO gt_fcat.
+*
+*  CLEAR gs_fcat.
+*  gs_fcat-fieldname = 'PRICE'.
+*  gs_fcat-coltext = '단가'.
+*  gs_fcat-cfieldname = 'CURRENCY'.
+*  APPEND gs_fcat TO gt_fcat.
+*
+*
+*  CLEAR gs_fcat.
+*  gs_fcat-fieldname = 'QUANTITY'.
+*  gs_fcat-coltext = '수량'.
+*  gs_fcat-qfieldname = 'UNIT'.
+*  APPEND gs_fcat TO gt_fcat.
+*
+*  CLEAR gs_fcat.
+*  gs_fcat-fieldname = 'UNIT'.
+*  gs_fcat-coltext = '단위'.
+*  gs_fcat-quantity = 'EA'.
+*  APPEND gs_fcat TO gt_fcat.
+*
+*  CLEAR gs_fcat.
+*  gs_fcat-fieldname = 'AMOUNT'.
+*  gs_fcat-coltext = '총액'.
+*  gs_fcat-cfieldname = 'CURRENCY'.
+*  APPEND gs_fcat TO gt_fcat.
+*
+*  CLEAR gs_fcat.
+*  gs_fcat-fieldname = 'CURRENCY'.
+*  gs_fcat-coltext = '통화'.
+*  gs_fcat-currency = 'KRW'.
+*  APPEND gs_fcat TO gt_fcat.
+*
+*
+*
+*
+*
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'CRNAM'.
+  gs_fcat-coltext = '생성자'.
+  gs_fcat-outputlen = 6.
+*  GS_FCAT-COL_OPT = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'ERDAT'.
+  gs_fcat-coltext = '생성 일자'.
+  gs_fcat-outputlen = 8.
+*  GS_FCAT-COL_OPT = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'ERTIM'.
+  gs_fcat-coltext = '생성 시각'.
+  gs_fcat-outputlen = 8.
+*  GS_FCAT-COL_OPT = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'CHNAM'.
+  gs_fcat-coltext = '변경자'.
+  gs_fcat-outputlen = 6.
+*  GS_FCAT-COL_OPT = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'CHDAT'.
+  gs_fcat-coltext = '변경 일자'.
+  gs_fcat-outputlen = 8.
+*  GS_FCAT-COL_OPT = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'CHTIM'.
+  gs_fcat-coltext = '변경 시각'.
+  gs_fcat-outputlen = 8.
+*  GS_FCAT-COL_OPT = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_FCAT_200
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_fcat_200 .
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'LIGHT'.
+  gs_fcat-no_out = 'X'.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDCODE'.
+  gs_fcat-coltext = '품목코드'.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDNAME'.
+  gs_fcat-coltext = '품목명'.
+  gs_fcat-outputlen = '25'.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'PRICE'.
+  gs_fcat-coltext = '단가'.
+  gs_fcat-cfieldname = 'CURRENCY'.
+  APPEND gs_fcat TO gt_fcat_200.
+
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'QUANTITY'.
+  gs_fcat-coltext = '수량'.
+  gs_fcat-qfieldname = 'UNIT'.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'UNIT'.
+  gs_fcat-coltext = '단위'.
+  gs_fcat-quantity = 'EA'.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'AMOUNT'.
+  gs_fcat-coltext = '총액'.
+  gs_fcat-cfieldname = 'CURRENCY'.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'CURRENCY'.
+  gs_fcat-coltext = '통화'.
+  gs_fcat-currency = 'KRW'.
+  APPEND gs_fcat TO gt_fcat_200.
+
+*  CLEAR gs_fcat.
+*  gs_fcat-fieldname = 'PLPNAME'.
+*  gs_fcat-coltext = '계획담당자이름'.
+*  gs_fcat-outputlen = 10.
+*  APPEND gs_fcat TO gt_fcat_200.
+*
+*  CLEAR gs_fcat.
+*  gs_fcat-fieldname = 'ERDAT'.
+*  gs_fcat-coltext = '생성날짜'.
+*  gs_fcat-outputlen = 10.
+*  APPEND gs_fcat TO gt_fcat_200.
+*
+*  CLEAR gs_fcat.
+*  gs_fcat-fieldname = 'ERTIM'.
+*  gs_fcat-coltext = '생성시간'.
+*  gs_fcat-outputlen = 10.
+*  APPEND gs_fcat TO gt_fcat_200.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_LAYOUT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_layout .
+*  gs_layout-info_fname = 'COLOR'.
+  gs_layout-excp_fname = 'LIGHT'.
+  gs_layout-excp_led = 'X'.
+  gs_layout-sel_mode = 'A'.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CREATE_DOCU
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM create_docu .
+  DATA : lt_index  TYPE lvc_t_row, "ALV 선택라인 저장 인터널테이블
+         ls_index  LIKE LINE OF lt_index, "ALV 선택라인 저장 스트럭쳐
+         lv_lines  TYPE i, "선택한 라인수를 저장할 변수
+         lv_answer TYPE c LENGTH 1.   " 팝업 체크 용 변수.
+
+  DATA: ls_mpo_h TYPE gty_mpo_h.
+
+  DATA: lv_text  TYPE string,
+        lv_subrc TYPE string.
+
+  DATA: lt_bimanage TYPE TABLE OF ztc702_bimanage,
+        ls_bimanage TYPE ztc702_bimanage,
+        ls_srm      TYPE ztc702_srmanage,
+        ls_mtiv     TYPE ztc702_mtiv,
+        ls_exp      TYPE ztc702_exp,
+        lv_num      TYPE c LENGTH 8,
+        lv_dnum     TYPE c LENGTH 12,
+        lv_lot      TYPE c LENGTH 12,
+        lv_expfin   TYPE s_date,
+        lv_exptype  TYPE ztc702_mtmaster-exptype,
+        ls_ivcheck  TYPE ztc702_mtiv,
+        ls_mpo      TYPE ztc702_mpo_h.
+
+***** alv row 인데스 찾기
+  CALL METHOD go_alv_grid->get_selected_rows
+    IMPORTING
+      et_index_rows = lt_index.
+
+***** 선택된 ROW 개수 찾기
+  DESCRIBE TABLE lt_index LINES lv_lines.
+
+  IF lt_index IS INITIAL.
+    MESSAGE '라인을 선택해주세요.' TYPE 'I'.
+  ELSEIF lv_lines > 1.
+    MESSAGE '라인을 하나만 선택해주세요.' TYPE 'I'.
+  ELSE.
+    LOOP AT lt_index INTO ls_index.
+      READ TABLE gt_mpo_h INTO gs_mpo_h_110 INDEX ls_index.
+    ENDLOOP.
+
+    SELECT *
+      FROM ztc702_mpo_i INTO CORRESPONDING FIELDS OF TABLE gt_mpo_i_110
+      WHERE mpono = gs_mpo_h_110-mpono.
+
+    SELECT *
+      FROM zdvc702_inv INTO CORRESPONDING FIELDS OF TABLE gt_inv
+      WHERE mpono = gs_mpo_h_110-mpono.
+
+    IF GS_MPO_H_110-STATUS = 2.
+
+**** 인보이스 채번.
+    CALL FUNCTION 'ZFMC702_CNRO'
+      EXPORTING
+        fv_module_name   = 'IVN'
+        fv_cnro_nr       = '1'
+        fv_object        = 'ZNRC702MM5'
+      CHANGING
+        fv_change_codenr = lv_text.
+
+
+* 유통기한 만료일자 계산.(입고날짜 + 1년)
+    CALL FUNCTION 'RP_CALC_DATE_IN_INTERVAL'
+      EXPORTING
+        date      = sy-datum
+        days      = '00'
+        months    = '00'
+        signum    = '+'
+        years     = '01'
+      IMPORTING
+        calc_date = lv_expfin.
+
+    LOOP AT gt_inv INTO gs_inv .
+
+* LOT넘버 채번.
+      CALL FUNCTION 'NUMBER_GET_NEXT'
+        EXPORTING
+          nr_range_nr = '1'
+          object      = 'ZNRC702MM2'
+        IMPORTING
+          number      = lv_num.
+
+      lv_num = lv_num + 279.
+      CONCATENATE 'LOT00' lv_num+1(7) INTO lv_lot.
+
+      MOVE-CORRESPONDING gs_inv TO ls_bimanage.
+      ls_bimanage-ivnum = lv_text.
+      ls_bimanage-issuedate = sy-datum.
+      ls_bimanage-crnam = sy-uname.
+      ls_bimanage-erdat = sy-datum.
+      ls_bimanage-ertim = sy-uzeit.
+      ls_bimanage-chnam = sy-uname.
+      ls_bimanage-chdat = sy-datum.
+      ls_bimanage-chtim = sy-uzeit.
+
+      INSERT ztc702_bimanage FROM ls_bimanage.
+
+      IF sy-subrc = 0.
+      ELSE.
+        lv_subrc = sy-subrc.
+        MESSAGE '송장 등록을 하는데 오류가 발생했습니다. SY-SUBRC : ' && lv_subrc TYPE 'I'.
+        ROLLBACK WORK.
+        RETURN.
+      ENDIF.
+
+*** 수불문서 채번.
+      CALL FUNCTION 'NUMBER_GET_NEXT'
+        EXPORTING
+          nr_range_nr = '1'
+          object      = 'ZNRC702MM7'
+        IMPORTING
+          number      = lv_num.
+
+      lv_num  = lv_num + 550.
+
+      CONCATENATE 'SRD' sy-datum(4) lv_num+3(5) INTO lv_dnum.
+
+
+      ls_srm-srdocu = lv_dnum.
+      ls_srm-srtype = 'GR'.
+      ls_srm-gdcode = gs_inv-gdcode.
+      ls_srm-lotnum = lv_lot.
+      ls_srm-quantity = gs_inv-quantity.
+      ls_srm-unit = gs_inv-unit.
+      ls_srm-erdat = sy-datum.
+      ls_srm-reference = gs_inv-mpono.
+
+      ls_srm-crnam = sy-uname.
+      ls_srm-erdat = sy-datum.
+      ls_srm-ertim = sy-uzeit.
+      ls_srm-chnam = sy-uname.
+      ls_srm-chdat = sy-datum.
+      ls_srm-chtim = sy-uzeit.
+
+      INSERT ztc702_srmanage FROM ls_srm.
+
+      IF sy-subrc = 0.
+      ELSE.
+        lv_subrc = sy-subrc.
+        MESSAGE '수불문서를 생성하는데 오류가 발생했습니다. SY-SUBRC : ' && lv_subrc TYPE 'I'.
+        ROLLBACK WORK.
+        RETURN.
+      ENDIF.
+
+      SELECT *
+        FROM ztc702_mtiv
+        INTO CORRESPONDING FIELDS OF ls_ivcheck
+       WHERE status = 'A'
+         AND gdcode = gs_inv-gdcode.
+      ENDSELECT.
+
+*      IF ls_ivcheck-gdcode IS INITIAL.
+*        ls_mtiv-status = 'A'.
+*        ls_mtiv-gdcode = gs_inv-gdcode.
+*        ls_mtiv-plcode = 'P0100'.
+*        ls_mtiv-whcode = 'WH01'.
+*        ls_mtiv-rinven = gs_inv-quantity.
+*        ls_mtiv-unit = gs_inv-unit.
+*
+*        ls_mtiv-crnam = sy-uname.
+*        ls_mtiv-erdat = sy-datum.
+*        ls_mtiv-ertim = sy-uzeit.
+*        ls_mtiv-chnam = sy-uname.
+*        ls_mtiv-chdat = sy-datum.
+*        ls_mtiv-chtim = sy-uzeit.
+*
+**        UPDATE ztc702_mtiv FROM ls_mtiv.
+**
+**        IF sy-subrc = 0.
+**        ELSE.
+**          lv_subrc = sy-subrc.
+**          MESSAGE '실재고 데이터를 추가하는데 오류가 발생했습니다. SY-SUBRC : ' && lv_subrc TYPE 'I'.
+**          ROLLBACK WORK.
+**          RETURN.
+**        ENDIF.
+*
+*        ls_mtiv-status = 'R'.
+*        ls_mtiv-gdcode = gs_inv-gdcode.
+*        ls_mtiv-plcode = 'P0100'.
+*        ls_mtiv-whcode = 'WH01'.
+*        ls_mtiv-rinven = 0.
+*        ls_mtiv-unit = gs_inv-unit.
+*
+*        ls_mtiv-crnam = sy-uname.
+*        ls_mtiv-erdat = sy-datum.
+*        ls_mtiv-ertim = sy-uzeit.
+*        ls_mtiv-chnam = sy-uname.
+*        ls_mtiv-chdat = sy-datum.
+*        ls_mtiv-chtim = sy-uzeit.
+*
+**        INSERT ztc702_mtiv FROM ls_mtiv.
+**
+**        IF sy-subrc = 0.
+**        ELSE.
+**          lv_subrc = sy-subrc.
+**          MESSAGE '실재고 데이터를 추가하는데 오류가 발생했습니다. SY-SUBRC : ' && lv_subrc TYPE 'I'.
+**          ROLLBACK WORK.
+**          RETURN.
+**        ENDIF.
+*      ELSE.
+      gs_inv-quantity = ls_ivcheck-rinven + gs_inv-quantity.
+
+      ls_mtiv-status = 'A'.
+      ls_mtiv-gdcode = gs_inv-gdcode.
+      ls_mtiv-plcode = 'P0100'.
+      ls_mtiv-whcode = 'WH01'.
+      ls_mtiv-rinven = gs_inv-quantity.
+      gs_inv-quantity = gs_inv-quantity - ls_ivcheck-rinven.
+      ls_mtiv-unit = gs_inv-unit.
+
+      ls_mtiv-crnam = sy-uname.
+      ls_mtiv-erdat = sy-datum.
+      ls_mtiv-ertim = sy-uzeit.
+      ls_mtiv-chnam = sy-uname.
+      ls_mtiv-chdat = sy-datum.
+      ls_mtiv-chtim = sy-uzeit.
+
+      UPDATE ztc702_mtiv FROM ls_mtiv.
+
+      IF sy-subrc = 0.
+      ELSE.
+        lv_subrc = sy-subrc.
+        MESSAGE '실재고 데이터를 추가하는데 오류가 발생했습니다. SY-SUBRC : ' && lv_subrc TYPE 'I'.
+        ROLLBACK WORK.
+        RETURN.
+      ENDIF.
+*      ENDIF.
+
+      SELECT SINGLE exptype
+         FROM ztc702_mtmaster
+         INTO lv_exptype
+        WHERE gdcode = gs_inv-gdcode.
+
+      IF lv_exptype = 'O'.
+        ls_exp-lotnum = lv_lot.
+        ls_exp-gdcode = gs_inv-gdcode .
+        ls_exp-plcode = 'P0100'.
+        ls_exp-whcode = 'WH01'.
+        ls_exp-quan = gs_inv-quantity.
+        ls_exp-unit = gs_inv-unit.
+        ls_exp-srdate = sy-datum.
+        ls_exp-expfin = lv_expfin.
+
+        ls_exp-crnam = sy-uname.
+        ls_exp-erdat = sy-datum.
+        ls_exp-ertim = sy-uzeit.
+        ls_exp-chnam = sy-uname.
+        ls_exp-chdat = sy-datum.
+        ls_exp-chtim = sy-uzeit.
+
+        INSERT ztc702_exp FROM ls_exp.
+
+        IF sy-subrc = 0.
+          MESSAGE i000 WITH lv_text.
+          UPDATE ztc702_mpo_h SET status = 3 chnam = sy-uname chdat = sy-datum chtim = sy-uzeit
+                            WHERE mpono = gs_mpo_h_110-mpono.
+          COMMIT WORK.
+
+          UPDATE ztc702_mpo_i SET postatus = '입고 완료'
+                            WHERE mpono = gs_mpo_h_110-mpono.
+          COMMIT WORK.
+          gv_switch2 = '1'.
+        ELSE.
+          lv_subrc = sy-subrc.
+          MESSAGE '유통기한 데이터를 추가하는데 오류가 발생했습니다. SY-SUBRC : ' && lv_subrc TYPE 'I'.
+          ROLLBACK WORK.
+          RETURN.
+        ENDIF.
+      ELSE.
+        IF sy-subrc = 0.
+          MESSAGE i000 WITH lv_text.
+          COMMIT WORK.
+
+          UPDATE ztc702_mpo_h SET status = 3 chnam = sy-uname chdat = sy-datum chtim = sy-uzeit
+                            WHERE mpono = gs_mpo_h_110-mpono.
+          COMMIT WORK.
+
+          UPDATE ztc702_mpo_i SET postatus = '입고 완료'
+                            WHERE mpono = gs_mpo_h_110-mpono.
+          COMMIT WORK.
+          gv_switch2 = '1'.
+        ELSE.
+          lv_subrc = sy-subrc.
+          MESSAGE '오류가 발생했습니다. SY-SUBRC : ' && lv_subrc TYPE 'I'.
+          ROLLBACK WORK.
+          RETURN.
+        ENDIF.
+      ENDIF.
+    ENDLOOP.
+
+    IF gv_switch2 = '1'.
+      gv_switch2 = '0'.
+    ELSE.
+    ENDIF.
+      ELSE.
+       MESSAGE '입고대기 중인 상태가 아닙니다.' TYPE 'I'.
+       RETURN.
+    ENDIF.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_FCAT_110
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_fcat_110 .
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDCODE'.
+  gs_fcat-coltext = '품목코드'.
+  APPEND gs_fcat TO gt_fcat_110.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDNAME'.
+  gs_fcat-coltext = '품목명'.
+  APPEND gs_fcat TO gt_fcat_110.
+
+*  CLEAR gs_fcat.
+*  gs_fcat-fieldname = 'PRICE'.
+*  gs_fcat-coltext = '단가'.
+*  gs_fcat-cfieldname = 'CURRENCY'.
+*  APPEND gs_fcat TO gt_fcat_110.
+
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'QUANTITY'.
+  gs_fcat-coltext = '수량'.
+  gs_fcat-qfieldname = 'UNIT'.
+  APPEND gs_fcat TO gt_fcat_110.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'UNIT'.
+  gs_fcat-coltext = '단위'.
+  gs_fcat-quantity = 'EA'.
+  APPEND gs_fcat TO gt_fcat_110.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'AMOUNT'.
+  gs_fcat-coltext = '총액'.
+  gs_fcat-cfieldname = 'CURRENCY'.
+  APPEND gs_fcat TO gt_fcat_110.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'STATUS'.
+  gs_fcat-no_out = 'X'.
+  APPEND gs_fcat TO gt_fcat_110.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SAVE_INV
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM save_inv .
+  DATA: lv_text  TYPE string,
+        lv_subrc TYPE string.
+
+  DATA: lt_bimanage TYPE TABLE OF ztc702_bimanage,
+        ls_bimanage TYPE ztc702_bimanage,
+        ls_srm      TYPE ztc702_srmanage,
+        ls_mtiv     TYPE ztc702_mtiv,
+        ls_exp      TYPE ztc702_exp,
+        lv_num      TYPE c LENGTH 8,
+        lv_dnum     TYPE c LENGTH 12,
+        lv_lot      TYPE c LENGTH 12,
+        lv_expfin   TYPE s_date,
+        lv_exptype  TYPE ztc702_mtmaster-exptype,
+        ls_ivcheck  TYPE ztc702_mtiv,
+        ls_mpo      TYPE ztc702_mpo_h.
+
+* 인보이스 채번.
+  CALL FUNCTION 'ZFMC702_CNRO'
+    EXPORTING
+      fv_module_name   = 'IVN'
+      fv_cnro_nr       = '03'
+      fv_object        = 'ZCL719FINR'
+    CHANGING
+      fv_change_codenr = lv_text.
+
+
+* 유통기한 만료일자 계산.(입고날짜 + 1년)
+  CALL FUNCTION 'RP_CALC_DATE_IN_INTERVAL'
+    EXPORTING
+      date      = sy-datum
+      days      = '00'
+      months    = '00'
+      signum    = '+'
+      years     = '01'
+    IMPORTING
+      calc_date = lv_expfin.
+
+  LOOP AT gt_inv INTO gs_inv .
+
+* LOT넘버 채번.
+    CALL FUNCTION 'NUMBER_GET_NEXT'
+      EXPORTING
+        nr_range_nr = '1'
+        object      = 'ZNRC702MM2'
+      IMPORTING
+        number      = lv_num.
+    lv_num = lv_num + 279.
+    CONCATENATE 'LOT00' lv_num+1(7) INTO lv_lot.
+
+    MOVE-CORRESPONDING gs_inv TO ls_bimanage.
+    ls_bimanage-ivnum = lv_text.
+    ls_bimanage-issuedate = sy-datum.
+    ls_bimanage-crnam = sy-uname.
+    ls_bimanage-erdat = sy-datum.
+    ls_bimanage-ertim = sy-uzeit.
+    ls_bimanage-chnam = sy-uname.
+    ls_bimanage-chdat = sy-datum.
+    ls_bimanage-chtim = sy-uzeit.
+
+    INSERT ztc702_bimanage FROM ls_bimanage.
+
+    IF sy-subrc = 0.
+    ELSE.
+      lv_subrc = sy-subrc.
+      MESSAGE '인보이스를 생성하는데 오류가 발생했습니다. SY-SUBRC : ' && lv_subrc TYPE 'I'.
+      ROLLBACK WORK.
+      RETURN.
+    ENDIF.
+
+* 수불문서 채번.
+    CALL FUNCTION 'NUMBER_GET_NEXT'
+      EXPORTING
+        nr_range_nr = '1'
+        object      = 'ZNRC702MM7'
+      IMPORTING
+        number      = lv_num.
+
+    CONCATENATE 'SRD' sy-datum(4) lv_num+3(5) INTO lv_dnum.
+
+
+    ls_srm-srdocu = lv_dnum.
+    ls_srm-srtype = 'GR'.
+    ls_srm-gdcode = gs_inv-gdcode.
+    ls_srm-lotnum = lv_lot.
+    ls_srm-quantity = gs_inv-quantity.
+    ls_srm-unit = gs_inv-unit.
+    ls_srm-erdat = sy-datum.
+    ls_srm-reference = gs_inv-mpono.
+
+    ls_srm-crnam = sy-uname.
+    ls_srm-erdat = sy-datum.
+    ls_srm-ertim = sy-uzeit.
+    ls_srm-chnam = sy-uname.
+    ls_srm-chdat = sy-datum.
+    ls_srm-chtim = sy-uzeit.
+
+    INSERT ztc702_srmanage FROM ls_srm.
+
+    IF sy-subrc = 0.
+    ELSE.
+      lv_subrc = sy-subrc.
+      MESSAGE '수불문서를 생성하는데 오류가 발생했습니다. SY-SUBRC : ' && lv_subrc TYPE 'I'.
+      ROLLBACK WORK.
+      RETURN.
+    ENDIF.
+
+    SELECT *
+      FROM ztc702_mtiv
+      INTO CORRESPONDING FIELDS OF ls_ivcheck
+     WHERE status = 'A'
+       AND gdcode = gs_inv-gdcode.
+    ENDSELECT.
+
+    IF ls_ivcheck-gdcode IS INITIAL.
+      ls_mtiv-status = 'A'.
+      ls_mtiv-gdcode = gs_inv-gdcode.
+      ls_mtiv-plcode = 'P0100'.
+      ls_mtiv-whcode = 'WH01'.
+      ls_mtiv-rinven = gs_inv-quantity.
+      ls_mtiv-unit = gs_inv-unit.
+
+      ls_mtiv-crnam = sy-uname.
+      ls_mtiv-erdat = sy-datum.
+      ls_mtiv-ertim = sy-uzeit.
+      ls_mtiv-chnam = sy-uname.
+      ls_mtiv-chdat = sy-datum.
+      ls_mtiv-chtim = sy-uzeit.
+
+      UPDATE ztc702_mtiv FROM ls_mtiv.
+
+      IF sy-subrc = 0.
+      ELSE.
+        lv_subrc = sy-subrc.
+        MESSAGE '실재고 데이터를 추가하는데 오류가 발생했습니다. SY-SUBRC : ' && lv_subrc TYPE 'I'.
+        ROLLBACK WORK.
+        RETURN.
+      ENDIF.
+
+      ls_mtiv-status = 'R'.
+      ls_mtiv-gdcode = gs_inv-gdcode.
+      ls_mtiv-plcode = 'P0100'.
+      ls_mtiv-whcode = 'WH01'.
+      ls_mtiv-rinven = 0.
+      ls_mtiv-unit = gs_inv-unit.
+
+      ls_mtiv-crnam = sy-uname.
+      ls_mtiv-erdat = sy-datum.
+      ls_mtiv-ertim = sy-uzeit.
+      ls_mtiv-chnam = sy-uname.
+      ls_mtiv-chdat = sy-datum.
+      ls_mtiv-chtim = sy-uzeit.
+
+      INSERT ztc702_mtiv FROM ls_mtiv.
+
+      IF sy-subrc = 0.
+      ELSE.
+        lv_subrc = sy-subrc.
+        MESSAGE '실재고 데이터를 추가하는데 오류가 발생했습니다. SY-SUBRC : ' && lv_subrc TYPE 'I'.
+        ROLLBACK WORK.
+        RETURN.
+      ENDIF.
+    ELSE.
+      gs_inv-quantity = ls_ivcheck-rinven + gs_inv-quantity.
+
+      ls_mtiv-status = 'A'.
+      ls_mtiv-gdcode = gs_inv-gdcode.
+      ls_mtiv-plcode = 'P0100'.
+      ls_mtiv-whcode = 'WH01'.
+      ls_mtiv-rinven = gs_inv-quantity.
+      gs_inv-quantity = gs_inv-quantity - ls_ivcheck-rinven.
+      ls_mtiv-unit = gs_inv-unit.
+
+      ls_mtiv-crnam = sy-uname.
+      ls_mtiv-erdat = sy-datum.
+      ls_mtiv-ertim = sy-uzeit.
+      ls_mtiv-chnam = sy-uname.
+      ls_mtiv-chdat = sy-datum.
+      ls_mtiv-chtim = sy-uzeit.
+
+      UPDATE ztc702_mtiv FROM ls_mtiv.
+
+      IF sy-subrc = 0.
+      ELSE.
+        lv_subrc = sy-subrc.
+        MESSAGE '실재고 데이터를 추가하는데 오류가 발생했습니다. SY-SUBRC : ' && lv_subrc TYPE 'I'.
+        ROLLBACK WORK.
+        RETURN.
+      ENDIF.
+    ENDIF.
+
+    SELECT SINGLE exptype
+       FROM ztc702_mtmaster
+       INTO lv_exptype
+      WHERE gdcode = gs_inv-gdcode.
+
+    IF lv_exptype = 'O'.
+      ls_exp-lotnum = lv_lot.
+      ls_exp-gdcode = gs_inv-gdcode .
+      ls_exp-plcode = 'P0100'.
+      ls_exp-whcode = 'WH01'.
+      ls_exp-quan = gs_inv-quantity.
+      ls_exp-unit = gs_inv-unit.
+      ls_exp-srdate = sy-datum.
+      ls_exp-expfin = lv_expfin.
+
+      ls_exp-crnam = sy-uname.
+      ls_exp-erdat = sy-datum.
+      ls_exp-ertim = sy-uzeit.
+      ls_exp-chnam = sy-uname.
+      ls_exp-chdat = sy-datum.
+      ls_exp-chtim = sy-uzeit.
+
+      INSERT ztc702_exp FROM ls_exp.
+
+      IF sy-subrc = 0.
+        MESSAGE i000 WITH lv_text.
+
+        UPDATE ztc702_mpo_h SET status = 3 chnam = sy-uzeit chdat = sy-datum chtim = sy-uzeit
+                          WHERE mpono = gs_mpo_h_110-mpono.
+        COMMIT WORK.
+
+        UPDATE ztc702_mpo_i SET postatus = '입고 완료'
+                          WHERE mpono = gs_mpo_h_110-mpono.
+        COMMIT WORK.
+        gv_switch2 = '1'.
+      ELSE.
+        lv_subrc = sy-subrc.
+        MESSAGE '유통기한 데이터를 추가하는데 오류가 발생했습니다. SY-SUBRC : ' && lv_subrc TYPE 'I'.
+        ROLLBACK WORK.
+        RETURN.
+      ENDIF.
+    ELSE.
+      IF sy-subrc = 0.
+        MESSAGE i000 WITH lv_text.
+        COMMIT WORK.
+
+        UPDATE ztc702_mpo_h SET status = 3 chnam = sy-uzeit chdat = sy-datum chtim = sy-uzeit
+                          WHERE mpono = gs_mpo_h_110-mpono.
+        COMMIT WORK.
+
+        UPDATE ztc702_mpo_i SET postatus = '입고 완료'
+                          WHERE mpono = gs_mpo_h_110-mpono.
+        COMMIT WORK.
+        gv_switch2 = '1'.
+      ELSE.
+        lv_subrc = sy-subrc.
+        MESSAGE '오류가 발생했습니다. SY-SUBRC : ' && lv_subrc TYPE 'I'.
+        ROLLBACK WORK.
+        RETURN.
+      ENDIF.
+    ENDIF.
+  ENDLOOP.
+
+  IF gv_switch2 = '1'.
+    gv_switch2 = '0'.
+    LEAVE TO SCREEN 0.
+  ELSE.
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_INV_FIELD
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_inv_field .
+  DATA: lt_mpo_i TYPE TABLE OF ztc702_mpo_i,
+        ls_mpo_i TYPE ztc702_mpo_i.
+
+*  SELECT *
+*    FROM ztc702_mpo_i INTO CORRESPONDING FIELDS OF TABLE lt_mpo_i
+*    WHERE mpono = gs_mpo_hf.
+
+  LOOP AT gt_inv INTO gs_inv WHERE gdcode = gs_mpo_if-gdcode.
+    MOVE-CORRESPONDING gs_inv TO zdvc702_inv.
+
+  ENDLOOP.
+
+*  READ TABLE gt_inv INTO gs_inv INDEX gs_index.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SEARCH
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM search .
+  IF gv_mpono = space. " 구매오더 번호가 빈 칸일 때.
+
+* 검색 날짜 LOW 값이 공백일 때.
+    IF gv_low IS INITIAL.
+      gv_low = '00010101'.
+    ENDIF.
+
+* 검색 날짜 HIGH 값이 공백일 때.
+    IF gv_high IS INITIAL.
+      gv_high = '99991231'.
+    ENDIF.
+
+    CASE 'X'.
+      WHEN gv_ra1. " 전체 조회.
+        SELECT *
+          FROM ztc702_mpo_h
+          INTO CORRESPONDING FIELDS OF TABLE gt_mpo_h
+         WHERE erdat BETWEEN gv_low AND gv_high.
+
+      WHEN gv_ra2. " 대기 조회.
+        SELECT *
+          FROM ztc702_mpo_h
+          INTO CORRESPONDING FIELDS OF TABLE gt_mpo_h
+         WHERE erdat BETWEEN gv_low AND gv_high
+           AND status = 2.
+
+      WHEN gv_ra3. " 반려 조회.
+        SELECT *
+          FROM ztc702_mpo_h
+          INTO CORRESPONDING FIELDS OF TABLE gt_mpo_h
+         WHERE erdat BETWEEN gv_low AND gv_high
+           AND status = 1.
+
+      WHEN gv_ra4. " 완료 조회.
+        SELECT *
+          FROM ztc702_mpo_h
+          INTO CORRESPONDING FIELDS OF TABLE gt_mpo_h
+         WHERE erdat BETWEEN gv_low AND gv_high
+           AND status = 3.
+
+      WHEN OTHERS. " 에러 상황이면.
+        MESSAGE e021(zc702_message).
+    ENDCASE.
+
+  ELSE. " 구매오더 번호가 작성될 때.
+    SELECT *
+      FROM ztc702_mpo_h
+      INTO CORRESPONDING FIELDS OF TABLE gt_mpo_h
+     WHERE mpono = gv_mpono " 하기 조건을 제외하고 구매오더 번호로만 조회.
+     ORDER BY mpono ASCENDING.
+
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CALC_GV_LOW
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM calc_gv_low .
+* 검색 날짜 LOW 값 계산.(한 달 전 날짜)
+  CALL FUNCTION 'RP_CALC_DATE_IN_INTERVAL'
+    EXPORTING
+      date      = gv_high
+      days      = '00'
+      months    = '01'
+      signum    = '-'
+      years     = '00'
+    IMPORTING
+      calc_date = gv_low.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form RESET_NR
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM reset_nr .
+  DATA: ls_bim TYPE ztc702_bimanage,
+        ls_srm TYPE ztc702_srmanage,
+        ls_exp TYPE ztc702_exp.
+
+  IF ls_bim-ivnum IS INITIAL.   " 인보이스 송장 번호 확인.
+    SELECT ivnum                " 문서번호만 확인하기 위해 필드 하나만 설정.
+      FROM ztc702_bimanage
+      INTO CORRESPONDING FIELDS OF ls_bim
+      UP TO 1 ROWS                " 맨 위 한줄만.
+      ORDER BY ivnum DESCENDING. " 가장 마지막 데이터를 내림차순으로 정렬.
+    ENDSELECT.
+
+    IF ls_bim-ivnum+3(6) <> sy-datum+2(6).      " 문서번호의 연월일과 현재 날짜 연월일 6자리만 비교.
+      CALL FUNCTION 'NUMBER_RANGE_INTERVAL_INIT'  " 채번 초기화 함수.
+        EXPORTING
+          object            = 'ZCL19FINR'        " 초기화 할 snro 오브젝트.
+        EXCEPTIONS
+          no_interval_found = 1
+          object_not_found  = 2.
+    ENDIF.
+  ENDIF.
+
+  IF ls_srm-srdocu IS INITIAL.   " 수불문서 번호 확인.
+    SELECT srdocu                " 문서번호만 확인하기 위해 필드 하나만 설정.
+    FROM ztc702_srmanage
+    INTO CORRESPONDING FIELDS OF ls_srm
+    UP TO 1 ROWS                " 맨 위 한줄만.
+    ORDER BY srdocu DESCENDING. " 가장 마지막 데이터를 내림차순으로 정렬.
+    ENDSELECT.
+
+    IF ls_srm-srdocu+3(6) <> sy-datum+2(6).      " 문서번호의 연월일과 현재 날짜 연월일 6자리만 비교.
+      CALL FUNCTION 'NUMBER_RANGE_INTERVAL_INIT'  " 채번 초기화 함수.
+        EXPORTING
+          object            = 'ZNRC702MM7'        " 초기화 할 snro 오브젝트.
+        EXCEPTIONS
+          no_interval_found = 1
+          object_not_found  = 2.
+    ENDIF.
+  ENDIF.
+
+  IF ls_exp-lotnum IS INITIAL. " LOT넘버 번호 확인.
+    SELECT lotnum              " 문서번호만 확인하기 위해 필드 하나만 설정.
+    FROM ztc702_exp
+    INTO CORRESPONDING FIELDS OF ls_exp
+    UP TO 1 ROWS                " 맨 위 한줄만.
+    ORDER BY lotnum DESCENDING. " 가장 마지막 데이터를 내림차순으로 정렬.
+    ENDSELECT.
+
+    IF ls_exp-lotnum+3(6) <> sy-datum+2(6).      " 문서번호의 연월일과 현재 날짜 연월일 6자리만 비교.
+      CALL FUNCTION 'NUMBER_RANGE_INTERVAL_INIT'  " 채번 초기화 함수.
+        EXPORTING
+          object            = 'ZNRC702MM2'        " 초기화 할 snro 오브젝트.
+        EXCEPTIONS
+          no_interval_found = 1
+          object_not_found  = 2.
+    ENDIF.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_EXCLUDE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_exclude .
+  APPEND cl_gui_alv_grid=>mc_fc_detail TO gt_exclude.
+  APPEND cl_gui_alv_grid=>mc_fc_sort_asc TO gt_exclude.
+  APPEND cl_gui_alv_grid=>mc_fc_sort_dsc TO gt_exclude.
+  APPEND cl_gui_alv_grid=>mc_fc_find TO gt_exclude.
+  APPEND cl_gui_alv_grid=>mc_fc_filter TO gt_exclude.
+  APPEND cl_gui_alv_grid=>mc_mb_sum TO gt_exclude.
+  APPEND cl_gui_alv_grid=>mc_fc_print_back TO gt_exclude.
+  APPEND cl_gui_alv_grid=>mc_mb_view TO gt_exclude.
+  APPEND cl_gui_alv_grid=>mc_mb_export TO gt_exclude.
+  APPEND cl_gui_alv_grid=>mc_mb_variant TO gt_exclude.
+  APPEND cl_gui_alv_grid=>mc_fc_info TO gt_exclude.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_LAYOUT_200
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_layout_200 .
+  gs_layout_200-grid_title = '구매오더 상세정보'.
+
+ENDFORM.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

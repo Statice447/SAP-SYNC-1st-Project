@@ -1,0 +1,164 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_MM_08_O01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'S0100'.
+  SET TITLEBAR 'T0100'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0110 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0110 OUTPUT.
+  SET PF-STATUS 'S0110'.
+  SET TITLEBAR 'T0110'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0120 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0120 OUTPUT.
+  SET PF-STATUS 'S0120'.
+  SET TITLEBAR 'T0120'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CLEAR_OK_CODE OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE clear_ok_code OUTPUT.
+  CLEAR ok_code.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init OUTPUT.
+  LOOP AT gt_ztc702_mpa INTO gs_ztc702_mpa.
+    IF gs_ztc702_mpa-apstatus = '승인'.
+      gs_ztc702_mpa-light = '3'.
+    ELSEIF gs_ztc702_mpa-apstatus = '반려'.
+      gs_ztc702_mpa-light = '1'.
+    ELSE.
+      gs_ztc702_mpa-light = '2'.
+    ENDIF.
+
+    MODIFY gt_ztc702_mpa FROM gs_ztc702_mpa TRANSPORTING light.
+  ENDLOOP.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SET_ALV OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE set_alv OUTPUT.
+  IF go_container IS INITIAL.
+
+    CREATE OBJECT go_container
+      EXPORTING
+        container_name = 'MY_CONTROL_AREA'.
+
+    CREATE OBJECT go_alv_grid
+      EXPORTING
+        i_parent = go_container.
+
+*    SET HANDLER lcl_handler=>on_double_click FOR go_alv_grid.
+
+    gs_layout-excp_fname = 'LIGHT'.
+    gs_layout-excp_led = 'X'.
+*    gs_layout-stylefname = 'STYLE'.
+
+    CLEAR gs_fcat.
+    gs_fcat-fieldname = 'LIGHT'.
+    gs_fcat-coltext = '구분'.
+    gs_fcat-just = 'C'. "필드명 가운데 정렬
+*    gs_fcat-outputlen = 7. "excp의 경우 outputlen이 안먹음.
+    APPEND gs_fcat TO gt_fcat.
+
+*    CLEAR gs_fcat.
+*    gs_fcat-fieldname = 'STATUS'.
+*    gs_fcat-coltext = '구분'.
+*    gs_fcat-just = 'C'.
+*    gs_fcat-outputlen = 7. "excp의 경우 outputlen이 안먹음.
+*    APPEND gs_fcat TO gt_fcat.
+
+    CLEAR gs_fcat.
+    gs_fcat-fieldname = 'MPANO'.
+    gs_fcat-coltext = '결재요청번호'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 13.
+    APPEND gs_fcat TO gt_fcat.
+
+    CLEAR gs_fcat.
+    gs_fcat-fieldname = 'MPADATE'.
+    gs_fcat-coltext = '요청일'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 10.
+    APPEND gs_fcat TO gt_fcat.
+
+    CLEAR gs_fcat.
+    gs_fcat-fieldname = 'PNAME'.
+    gs_fcat-coltext = '요청자'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 7.
+    APPEND gs_fcat TO gt_fcat.
+
+    CLEAR gs_fcat.
+    gs_fcat-fieldname = 'MPONO'.
+    gs_fcat-coltext = '구매오더번호'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 13.
+    APPEND gs_fcat TO gt_fcat.
+
+    CLEAR gs_fcat.
+    gs_fcat-fieldname = 'REMARK'.
+    gs_fcat-coltext = '비고'.
+    gs_fcat-just = 'C'.
+    gs_fcat-outputlen = 30.
+    APPEND gs_fcat TO gt_fcat.
+
+    CALL METHOD go_alv_grid->set_table_for_first_display
+      EXPORTING
+*       i_buffer_active =
+*       i_bypassing_buffer            =
+*       i_consistency_check           =
+*       i_structure_name              =
+*       is_variant      =
+*       i_save          =
+*       i_default       = 'X'
+        is_layout       = gs_layout
+*       is_print        =
+*       it_special_groups             =
+*       it_toolbar_excluding          =
+*       it_hyperlink    =
+*       it_alv_graphics =
+*       it_except_qinfo =
+*       ir_salv_adapter =
+      CHANGING
+        it_outtab       = gt_ztc702_mpa
+        it_fieldcatalog = gt_fcat
+*       it_sort         =
+*       it_filter       =
+      EXCEPTIONS
+        OTHERS          = 1.
+
+    IF sy-subrc <> 0.
+      WRITE: '에러가 발생했습니다.'.
+    ENDIF.
+
+  ELSE.
+    go_alv_grid->refresh_table_display( ).
+
+  ENDIF.
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

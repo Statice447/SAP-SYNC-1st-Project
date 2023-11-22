@@ -1,0 +1,59 @@
+*&---------------------------------------------------------------------*
+*& Include MZC702_FI_03TOP                          - Module Pool      SAPMZC702_FI_03
+*&---------------------------------------------------------------------*
+PROGRAM sapmzc702_fi_03 MESSAGE-ID zc702_message.
+
+" _in: 입금 테이블 컨트롤 사용, _out: 출금 테이블 컨트롤 사용, _inout: 조회 필드 사용.
+TABLES: zsc702_in, zsc702_out, zsc702_inout.
+" _sale:매출전표, _buy: 매입전표.
+TABLES: zsc702_sale, zsc702_buy.
+TABLES: zsc702_insal.
+
+CONSTANTS: co_waers TYPE waers VALUE 'KRW'.
+
+DATA: ok_code LIKE sy-ucomm,
+      gv_subrc TYPE sy-subrc,
+      gv_mesg TYPE string.
+
+DATA: gt_tab TYPE TABLE OF zsc702_in,   " 입금 내역 테이블 컨트롤.
+      gt_tab2 TYPE TABLE OF zsc702_out, " 출금 내역 테이블 컨트롤.
+      gt_tab3 TYPE TABLE OF zsc702_sale," 매출 전표 테이블 컨트롤.
+      gt_tab4 TYPE TABLE OF zsc702_buy, " 매입 전표 테이블 컨트롤.
+      gs_tab LIKE LINE OF gt_tab,
+      gs_tab2 LIKE LINE OF gt_tab2,
+      gs_tab3 LIKE LINE OF gt_tab3,
+      gs_tab4 LIKE LINE OF gt_tab4,
+      gs_in_re TYPE zsc702_in,
+      gs_ou_re TYPE zsc702_out.
+
+DATA: gt_sale TYPE TABLE OF zsc702_sale,
+      gt_buy TYPE TABLE OF zsc702_buy,
+      gs_sale TYPE zsc702_sale,
+      gs_buy TYPE zsc702_buy.
+
+TYPES: BEGIN OF gty_docu_h.
+          INCLUDE TYPE ztc702_docu_h.
+TYPES: END OF gty_docu_h.
+
+TYPES: BEGIN OF gty_docu_i.
+          INCLUDE TYPE ztc702_docu_i.
+TYPES: END OF gty_docu_i.
+
+DATA: gt_sal_h TYPE TABLE OF gty_docu_h, " 입금 전표 데이터 중 헤더 테이블로 전달.
+      gt_sal_i TYPE TABLE OF gty_docu_i, " 입금 전표 데이터 중 아이템 테이블로 전달.
+      gt_buy_h TYPE TABLE OF gty_docu_h, " 출금 전표 데이터 중 아이템 테이블로 전달.
+      gt_buy_i TYPE TABLE OF gty_docu_i, " 출금 전표 데이터 중 아이템 테이블로 전달.
+      gs_sal_h LIKE LINE OF gt_sal_h,
+      gs_sal_i LIKE LINE OF gt_sal_i,
+      gs_buy_h LIKE LINE OF gt_buy_h,
+      gs_buy_i LIKE LINE OF gt_buy_i.
+
+CONTROLS: my_table_in TYPE TABLEVIEW USING SCREEN '0100'.
+CONTROLS: my_table_out TYPE TABLEVIEW USING SCREEN '0100'.
+CONTROLS: my_table_insal TYPE TABLEVIEW USING SCREEN '0200'.
+CONTROLS: my_table_sale TYPE TABLEVIEW USING SCREEN '0200'.
+CONTROLS: my_table_outbu TYPE TABLEVIEW USING SCREEN '0300'.
+CONTROLS: my_table_buy TYPE TABLEVIEW USING SCREEN '0300'.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

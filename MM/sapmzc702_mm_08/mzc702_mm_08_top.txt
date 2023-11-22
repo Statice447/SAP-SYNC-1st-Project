@@ -1,0 +1,35 @@
+*&---------------------------------------------------------------------*
+*& Include MZC702_MM_08_TOP                         - Module Pool      SAPMZC702_MM_08
+*&---------------------------------------------------------------------*
+PROGRAM sapmzc702_mm_08.
+
+TABLES: ztc702_mpa_h.
+
+TYPES: BEGIN OF gty_s_ztc702_mpa.
+    INCLUDE TYPE: ztc702_mpa_i.
+TYPES: light   TYPE c LENGTH 1,
+       pname   TYPE ztc702_employee-pname,
+       mpadate TYPE ztc702_mpa_h-mpadate,
+       remark  TYPE ztc702_mpo_i-remark,
+       END OF gty_s_ztc702_mpa.
+
+DATA: gt_ztc702_mpa TYPE TABLE OF gty_s_ztc702_mpa,
+      gs_ztc702_mpa LIKE LINE OF gt_ztc702_mpa.
+
+DATA: go_container TYPE REF TO cl_gui_custom_container,
+      go_alv_grid  TYPE REF TO cl_gui_alv_grid.
+
+DATA: gs_layout TYPE lvc_s_layo.
+
+DATA: gt_fcat TYPE lvc_t_fcat,
+      gs_fcat TYPE lvc_s_fcat.
+
+DATA: ok_code TYPE sy-ucomm.
+
+DATA: ra1 TYPE c LENGTH 1 VALUE 'X',
+      ra2 TYPE c LENGTH 1,
+      ra3 TYPE c LENGTH 1,
+      ra4 TYPE c LENGTH 1.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

@@ -1,0 +1,60 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_SD_02I01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0100 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN 'SEARCH'.
+      PERFORM get_data.
+    WHEN 'CREATE'.
+      PERFORM create_docu.
+    WHEN 'TRANS'.
+      PERFORM trans_info.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  EXIT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE exit INPUT.
+  CASE ok_code.
+    WHEN 'CANC' OR 'EXIT'.
+      LEAVE PROGRAM.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0200  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE user_command_0200 INPUT.
+  CASE ok_code.
+    WHEN 'BACK'.
+      LEAVE TO SCREEN 0.
+    WHEN 'PRINT'.
+      DATA : ls_bill2 LIKE gs_bill.
+      READ TABLE gt_bill2 INTO ls_bill2 INDEX 1.
+      IF ls_bill2-status = 'A'.
+        MESSAGE '이미 문서 출력을 완료하였습니다.' TYPE 'I'.
+      elseif ls_bill2-status = ''.
+        MESSAGE '문서 출력 성공.' TYPE  'I'.
+
+        UPDATE ztc702_billing SET status = 'A'
+        WHERE ornum = ls_bill2-ornum.
+
+        PERFORM get_data.
+        LEAVE TO SCREEN 0.
+        endif.
+
+    ENDCASE.
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

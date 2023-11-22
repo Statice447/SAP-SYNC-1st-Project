@@ -1,0 +1,35 @@
+*&---------------------------------------------------------------------*
+*& Module Pool      SAPMZC702_HR_01
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+
+INCLUDE MZC702_HR_01TOP.
+*INCLUDE MZC702_SD_08TOP.
+"INCLUDE mzc702_hr_01top                         .    " Global Data
+
+INCLUDE MZC702_HR_01O01.
+*INCLUDE MZC702_SD_08O01.
+*INCLUDE mzc702_hr_01o01                         .  " PBO-Modules
+INCLUDE MZC702_HR_01I01.
+*INCLUDE MZC702_SD_08I01.
+*INCLUDE mzc702_hr_01i01                         .  " PAI-Modules
+INCLUDE MZC702_HR_01F01.
+*INCLUDE MZC702_SD_08F01.
+*INCLUDE mzc702_hr_01f01                         .  " FORM-Routines
+
+*GUI Texts
+*----------------------------------------------------------
+* 0110 --> 사원 정보 등록
+* S0100 --> 사원 조회
+* 0120 --> 사원 정보 수정
+
+
+*Messages
+*----------------------------------------------------------
+*
+* Message class: Hard coded
+*   작업 취소
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

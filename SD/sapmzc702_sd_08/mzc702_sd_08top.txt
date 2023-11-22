@@ -1,0 +1,70 @@
+*&---------------------------------------------------------------------*
+*& Include MZC702_HR_01TOP                          - Module Pool      SAPMZC702_HR_01
+*&---------------------------------------------------------------------*
+PROGRAM sapmzc702_hr_01.
+
+TABLES: ztc702_conmaster.
+
+TYPES: BEGIN OF gty_emp .
+    INCLUDE TYPE ztc702_conmaster .
+TYPES: color TYPE c LENGTH 4,
+       END OF gty_emp .
+
+DATA: gt_emp      TYPE TABLE OF gty_emp,
+      gt_emp2     TYPE TABLE OF gty_emp,
+      gs_emp_f    TYPE gty_emp,
+      gs_emp      TYPE gty_emp,
+      gs_emdrog   TYPE ztc702_conmaster,
+      gv_code     TYPE ztc702_conmaster-gdcode,
+
+      gt_mtm      TYPE TABLE OF ztc702_mtmaster,
+      gs_mtm      LIKE LINE OF gt_mtm,
+      lr_salv_tab TYPE REF TO cl_salv_table,
+
+      go_con      TYPE REF TO cl_gui_custom_container,
+      go_con2     TYPE REF TO cl_gui_custom_container,
+      go_alv      TYPE REF TO cl_gui_custom_alv_grid,
+      go_alv2     TYPE REF TO cl_gui_custom_alv_grid,
+      ok_code     TYPE sy-ucomm,
+      gv_refresh  TYPE c LENGTH 1,
+      gs_lay      TYPE lvc_s_layo,
+      gs_lay2     TYPE lvc_s_layo,
+      gt_cat      TYPE lvc_t_fcat,
+      gt_cat2     TYPE lvc_t_fcat,
+      gs_cat      TYPE lvc_s_fcat,
+      gs_cat2     TYPE lvc_s_fcat,
+      gt_exclude  TYPE ui_functions,
+      gs_exclude  TYPE ui_func,
+
+      gt_index    TYPE lvc_t_row, "ALV 선택라인 저장 인터널테이블
+      gs_index    LIKE LINE OF gt_index, "ALV 선택라인 저장 스트럭쳐
+      gv_lines    TYPE i, "선택한 라인수를 저장할 변수
+      gv_check    TYPE c LENGTH 1.
+
+*ListBox 변수 선언
+DATA: gv_list TYPE char50,
+      gt_list TYPE TABLE OF ztc702_conmaster,
+      gs_list LIKE LINE OF gt_list.
+
+*리스트 박스 구현
+DATA: list  TYPE vrm_values,
+      value LIKE LINE OF list.
+
+CLASS lcl_event DEFINITION.
+  PUBLIC SECTION.
+    CLASS-METHODS : on_dc
+        FOR EVENT double_click OF cl_gui_alv_grid.
+ENDCLASS.
+*&---------------------------------------------------------------------*
+*& Class (Implementation) LCL_EVENT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+CLASS lcl_event IMPLEMENTATION.
+  METHOD on_dc.
+
+  ENDMETHOD.
+ENDCLASS.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

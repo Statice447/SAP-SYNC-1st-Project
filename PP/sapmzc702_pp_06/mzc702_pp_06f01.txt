@@ -1,0 +1,413 @@
+*&---------------------------------------------------------------------*
+*& Form SET_FCAT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_fcat .
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDCODE_M'.
+  gs_fcat-coltext = '품목코드'.
+  gs_fcat-key = 'X'.
+  gs_fcat-outputlen = 5.
+  gs_fcat-just = 'C'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'MTCODE_M'.
+  gs_fcat-coltext = '품목구분'.
+  gs_fcat-outputlen = 2.
+  gs_fcat-just = 'C'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDNAME_M'.
+  gs_fcat-coltext = '품목명'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 25.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'QUAN'.
+  gs_fcat-coltext = '필요수량'.
+  gs_fcat-qfieldname = 'UNIT'.
+  gs_fcat-outputlen = 6.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'MTIVQUAN'.
+  gs_fcat-coltext = '실재고량'.
+  gs_fcat-qfieldname = 'UNIT'.
+  gs_fcat-outputlen = 6.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'MPRQUAN'.
+  gs_fcat-coltext = '구매요청량'.
+  gs_fcat-qfieldname = 'UNIT'.
+  gs_fcat-outputlen = 8.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'UNIT'.
+  gs_fcat-coltext = '단위'.
+  gs_fcat-quantity = 'EA'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 3.
+  APPEND gs_fcat TO gt_fcat.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CREATE_PRDORD
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM create_prdord .
+****  DATA: lv_answer     TYPE c LENGTH 1,
+****        lv_text_subrc TYPE string,
+****        lv_text       TYPE string.
+****
+****  DATA: lt_prdord_h TYPE TABLE OF ztc702_prdord_h,
+****        ls_prdord_h TYPE ztc702_prdord_h.
+****
+****  DATA: lt_prdord_i TYPE TABLE OF ztc702_prdord_i,
+****        ls_prdord_i TYPE ztc702_prdord_i.
+****
+*****  UPDATE y19_mm_inv FROM TABLE gt_mtiv2.
+****  IF sy-subrc = 0.
+****    MESSAGE '업데이트 성공' TYPE 'I'.
+****  ELSE.
+****    MESSAGE lv_text_subrc TYPE 'I'.
+****  ENDIF.
+****
+****  CALL FUNCTION 'POPUP_TO_CONFIRM'
+****    EXPORTING
+****      text_question = '생산오더를 만드시겠습니까?'
+****      text_button_1 = '예'
+****      text_button_2 = '아니오'
+****    IMPORTING
+****      answer        = lv_answer.
+****
+****  IF lv_answer = 1.
+****    CALL FUNCTION 'ZFMC702_CNRO'
+****      EXPORTING
+****        fv_module_name   = 'POR'
+****        fv_cnro_nr       = '05'
+****        fv_object        = 'ZCL719FINR'
+****      CHANGING
+****        fv_change_codenr = lv_text.
+****
+****    ls_prdord_h-pornum = lv_text.
+****    ls_prdord_h-crnam = sy-uname.
+****    ls_prdord_h-erdat = sy-datum.
+****    ls_prdord_h-ertim = sy-uzeit.
+****    ls_prdord_h-pname = sy-uname.
+****
+****    ls_prdord_i-pornum = lv_text.
+*****    ls_prdord_i-plcode = 'P0100'.
+****    ls_prdord_i-gdcode = gs_bom_h-gdcode.
+****    ls_prdord_i-gdname = gs_bom_h-gdname.
+****    ls_prdord_i-ppstdat = sy-datum.
+****    ls_prdord_i-ppeddat = sy-datum.
+****    ls_prdord_i-unit = 'EA'.
+****
+****    APPEND ls_prdord_i TO lt_prdord_i.
+****
+****    INSERT ztc702_prdord_h FROM ls_prdord_h.
+****    INSERT ztc702_prdord_i FROM TABLE lt_prdord_i.
+****
+****    IF sy-subrc = 0.
+****      MESSAGE '생산 오더 성공' TYPE 'I'.
+****
+****    ENDIF.
+****
+****  ENDIF.
+
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CREATE_CONDITION
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM create_condition .
+  DATA: lv_text TYPE string.
+
+  lv_text = 'BOM*'.
+
+  IF  zsc702_prdplan_h-pplnum = space OR
+      zsc702_prdplan_h-gdcode = space OR
+      zsc702_prdplan_h-gdname = space OR
+      ztc702_bom_h-bomid = space.
+
+    MESSAGE '모든 필드를 입력해 주세요.' TYPE 'I'.
+
+  ELSEIF ztc702_bom_h-bomid NP lv_text.
+    MESSAGE 'BOM 번호를 확인해 주세요' TYPE 'I'.
+
+  ELSE.
+    PERFORM set_mrp_list.
+*    CALL SCREEN 200.
+
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SAVE_MRP_LIST
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM save_mrp_list .
+  DATA: lv_text   TYPE string,
+        lv_answer TYPE c LENGTH 1,
+        ls_mrp    TYPE ztc702_mrp_i.
+
+  DATA: lt_prdplan  TYPE TABLE OF ztc702_prdplan_h,
+        ls_prdplan  TYPE ztc702_prdplan_h,
+        ls_prdplan2 TYPE ztc702_prdplan_h.
+
+  LOOP AT gt_mrp_i INTO ls_mrp.
+
+  ENDLOOP.
+
+  IF ls_mrp = space.
+    MESSAGE 'MRP를 실행해 주세요' TYPE 'I'.
+
+  ELSE.
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        text_question         = 'MRP 리스트를 저장하시겠습니까?'
+        text_button_1         = '예'
+        text_button_2         = '아니오'
+        display_cancel_button = space
+      IMPORTING
+        answer                = lv_answer.
+    IF sy-subrc <> 0.
+* Implement suitable error handling here
+    ENDIF.
+
+    IF lv_answer = 1.
+      CALL FUNCTION 'ZFMC702_CNRO'
+        EXPORTING
+          fv_module_name   = 'MRP'
+          fv_cnro_nr       = '03'
+          fv_object        = 'ZNRC702PP1'
+        CHANGING
+          fv_change_codenr = lv_text.
+
+      gs_mrp_h-mrpnum = lv_text.
+
+      LOOP AT gt_mrp_i INTO gs_mrp_i.
+        gs_mrp_i-mrpnum = lv_text.
+        MODIFY gt_mrp_i FROM gs_mrp_i TRANSPORTING mrpnum.
+
+      ENDLOOP.
+
+      SELECT pplnum gdcode quan
+        FROM ztc702_prdplan_h INTO CORRESPONDING FIELDS OF ls_prdplan2
+        WHERE pplnum = zsc702_prdplan_h-pplnum
+        AND gdcode = zsc702_prdplan_h-gdcode.
+      ENDSELECT.
+
+      gs_mrp_h-quan = ls_prdplan2-quan.
+      gs_mrp_h-unit = 'EA'.
+      gs_mrp_h-crnam = sy-uname.
+      gs_mrp_h-erdat = sy-datum.
+      gs_mrp_h-ertim = sy-uzeit.
+
+      MOVE-CORRESPONDING gs_mrp_h TO ls_prdplan.
+      ls_prdplan-mrpstatus = 'X'.
+      UPDATE ztc702_prdplan_h SET mrpstatus = ls_prdplan-mrpstatus WHERE gdcode = ls_prdplan-gdcode.
+
+      INSERT ztc702_mrp_h FROM gs_mrp_h.
+      INSERT ztc702_mrp_i FROM TABLE gt_mrp_i.
+
+      IF sy-subrc = 0.
+        MESSAGE i000 WITH lv_text.
+        COMMIT WORK.
+      ELSE.
+        MESSAGE '4번' TYPE 'I'.
+        ROLLBACK WORK.
+      ENDIF.
+
+    ENDIF.
+
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_FCAT_200
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_fcat_200 .
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDCODE_M'.
+  gs_fcat-coltext = '품목코드'.
+  gs_fcat-key = 'X'.
+  gs_fcat-outputlen = 5.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'MTCODE_M'.
+  gs_fcat-coltext = '품목구분'.
+  gs_fcat-outputlen = 2.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'GDNAME_M'.
+  gs_fcat-coltext = '품목명'.
+  gs_fcat-outputlen = 25.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'QUAN'.
+  gs_fcat-coltext = '필요수량'.
+  gs_fcat-qfieldname = 'UNIT'.
+  gs_fcat-outputlen = 6.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'MTIVQUAN'.
+  gs_fcat-coltext = '실재고량'.
+  gs_fcat-qfieldname = 'UNIT'.
+  gs_fcat-outputlen = 6.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'MPRQUAN'.
+  gs_fcat-coltext = '구매요청량'.
+  gs_fcat-qfieldname = 'UNIT'.
+  gs_fcat-outputlen = 8.
+  APPEND gs_fcat TO gt_fcat_200.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'UNIT'.
+  gs_fcat-coltext = '단위'.
+  gs_fcat-quantity = 'EA'.
+  gs_fcat-outputlen = 3.
+  APPEND gs_fcat TO gt_fcat_200.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_MRP_LIST
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_mrp_list .
+***** mrp 실행을 위한 데이터 변수
+  DATA: lv_number  TYPE string,
+        lv_number2 TYPE string,
+        lv_number3 TYPE string.
+
+  DATA: lt_bom_i TYPE TABLE OF ztc702_bom_i,
+        ls_bom_i TYPE ztc702_bom_i.
+
+  DATA: lt_bom_h TYPE TABLE OF ztc702_bom_h,
+        ls_bom_h TYPE ztc702_bom_h.
+
+  DATA: lt_mrp_h TYPE TABLE OF ztc702_mrp_h,
+        ls_mrp_h TYPE ztc702_mrp_h.
+
+  DATA: lt_mrp_i TYPE TABLE OF ztc702_mrp_i,
+        ls_mrp_i TYPE ztc702_mrp_i.
+
+  DATA: lt_mtiv TYPE TABLE OF ztc702_mtiv,
+        ls_mtiv TYPE ztc702_mtiv.
+
+  DATA: lt_prdplan TYPE TABLE OF ztc702_prdplan_h,
+        ls_prdplan TYPE ztc702_prdplan_h.
+
+**** 입력된 생산계획의 품목과 계획수량 가져오기
+  SELECT pplnum gdcode quan
+    FROM ztc702_prdplan_h INTO CORRESPONDING FIELDS OF TABLE lt_prdplan
+    WHERE pplnum = zsc702_prdplan_h-pplnum.
+
+**** 실재고 테이블에서 원자재,부자재의 실재고량 가져오기
+  SELECT gdcode rinven
+    FROM ztc702_mtiv INTO CORRESPONDING FIELDS OF TABLE lt_mtiv
+    WHERE status = 'A'
+    AND ( gdcode LIKE 'A%' OR gdcode LIKE 'R%' ).
+
+**** 입력된 생산계획과 같은 품목코드의 BOM 정보 가져오기
+  SELECT bomid gdcode
+    FROM ztc702_bom_h INTO CORRESPONDING FIELDS OF ls_bom_h
+    WHERE gdcode = zsc702_prdplan_h-gdcode
+    AND delflag = space.
+  ENDSELECT.
+
+**** 해당 BOM의 전체 정보 가져오기
+  SELECT *
+    FROM ztc702_bom_i INTO CORRESPONDING FIELDS OF TABLE lt_bom_i
+    WHERE bomid = ls_bom_h-bomid.
+
+**** 빠른 서치를 위한 SORT
+  SORT gt_mrp_i ASCENDING BY gdcode_m.
+
+**** 생산계획의 품목과 BOM 일치하는 지 확인
+  IF ztc702_bom_h-gdcode <> zsc702_prdplan_h-gdcode.
+    MESSAGE '해당 품목의 BOM이 일치하지 않습니다.' TYPE 'I'.
+
+  ELSE.
+    MOVE-CORRESPONDING lt_bom_i TO gt_mrp_i.          " 맞다면 BOM 정보 MRP 아이템에 입력
+    MOVE-CORRESPONDING zsc702_prdplan_h TO gs_mrp_h.  " 생산계획 정보 MRP 해더에 입력
+    gs_mrp_h-mtcode = 'P'.                            " 품목구분 고정
+
+**** 해당 생산계획 수량 체크
+    READ TABLE lt_prdplan INTO ls_prdplan WITH KEY gdcode = zsc702_prdplan_h-gdcode.
+    lv_number = ls_prdplan-quan.
+
+    LOOP AT lt_mtiv INTO ls_mtiv.                       " 실재고량과 비교
+      LOOP AT gt_mrp_i INTO ls_mrp_i WHERE gdcode_m = ls_mtiv-gdcode.
+        ls_mrp_i-quan = ls_mrp_i-quan * lv_number.
+
+        IF ls_mrp_i-quan > ls_mtiv-rinven.              " 요구 수량이 실 재고 수량보다 많을 경우
+          lv_number3 = ls_mrp_i-quan - ls_mtiv-rinven.  " 큰 수에서 작은 수를 뺀 값을 구매요청 수량으로 쓰기위함
+
+          ls_mrp_i-mprquan = lv_number3.                " 구매요청수량
+          ls_mrp_i-mtivquan = ls_mtiv-rinven.           " 실 재고량
+
+          MODIFY gt_mrp_i FROM ls_mrp_i TRANSPORTING quan mrpnum mtivquan mprquan.   " 바뀐 필드만 데이터 변경
+        ELSE.
+          lv_number3 = ls_mtiv-rinven - ls_mrp_i-quan.  " 실 재고량이 많을 경우에는 실재고에서 MRP 수량만큼 빼기
+
+*          ls_mrp_i-mrpnum = lv_text.                    " 채번
+          ls_mrp_i-mprquan = 0.                         " 재고량이 충분하므로 구매요청수량 0으로 설정
+          ls_mrp_i-mtivquan = ls_mtiv-rinven.           " 실 재고량
+
+          MODIFY gt_mrp_i FROM ls_mrp_i TRANSPORTING quan mrpnum mtivquan mprquan.   " 바뀐 필드만 데이터 변경
+
+        ENDIF.
+      ENDLOOP.
+    ENDLOOP.
+
+    gv_check = '0'.       " 필드 비활성화.
+
+
+
+  ENDIF.
+
+
+
+
+ENDFORM.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

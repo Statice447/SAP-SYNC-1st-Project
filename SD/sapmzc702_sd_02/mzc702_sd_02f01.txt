@@ -1,0 +1,705 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_SD_02F01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form ALV_SETTING
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM alv_setting .
+  gs_lay-zebra = 'X'.
+  gs_lay-sel_mode = 'B'.
+ gs_lay-excp_fname = 'LED'.
+
+  gs_cat-fieldname = 'LED'.
+  gs_cat-coltext = '상태'.
+  gs_cat-outputlen = '8'.
+  APPEND gs_cat TO gt_cat.
+  CLEAR gs_cat.
+
+
+  gs_sort-fieldname = 'DEVDATE'.
+  gs_sort-down = 'X'.
+  APPEND gs_sort TO gt_sort.
+  CLEAR gs_sort.
+  gs_sort-fieldname = 'ORNUM'.
+  gs_sort-down = 'X'.
+  APPEND gs_sort TO gt_sort.
+  CLEAR gs_sort.
+
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'DEVDATE'.
+  gs_cat-coltext   = '출고 일자'.
+  gs_cat-col_pos = '1'.
+  APPEND gs_cat TO gt_cat.
+
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'ORNUM'.
+  gs_cat-coltext   = '제품 주문 번호'.
+  gs_cat-col_pos = '2'.
+  APPEND gs_cat TO gt_cat.
+
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'GDCODE'.
+  gs_cat-coltext   = '품목 코드'.
+  gs_cat-col_pos = '3'.
+  gs_cat-outputlen = '6'.
+  APPEND gs_cat TO gt_cat.
+
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'GDNAME'.
+  gs_cat-coltext   = '품목명'.
+  gs_cat-outputlen = '22'.
+  gs_cat-col_pos = '4'.
+  APPEND gs_cat TO gt_cat.
+
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'QUANTITY'.
+  gs_cat-coltext   = '품목 수량'.
+  gs_cat-qfieldname = 'UNIT'.
+  gs_cat-outputlen = '6'.
+  gs_cat-col_pos = '5'.
+  APPEND gs_cat TO gt_cat.
+
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'UNIT'.
+  gs_cat-coltext   = '단위'.
+  gs_cat-quantity  = 'EA'.
+  gs_cat-col_pos = '6'.
+  gs_cat-outputlen = '3'.
+  APPEND gs_cat TO gt_cat.
+
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'PRICE'.
+  gs_cat-coltext   = '품목 단가'.
+  gs_cat-cfieldname = 'CURRENCY'.
+  gs_cat-col_pos = '7'.
+  gs_cat-outputlen = '6'.
+  APPEND gs_cat TO gt_cat.
+
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'CURRENCY'.
+  gs_cat-coltext   = '통화'.
+  gs_cat-currency  = 'KRW'.
+  gs_cat-col_pos = '8'.
+  gs_cat-outputlen = '3'.
+  APPEND gs_cat TO gt_cat.
+
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'AMOUNT'.
+  gs_cat-coltext   = '합계 금액'.
+  gs_cat-cfieldname = 'CURRENCY'.
+  gs_cat-col_pos = '9'.
+  APPEND gs_cat TO gt_cat.
+
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'CUSCODE'.
+  gs_cat-coltext   = '거래처 코드'.
+  gs_cat-col_pos = '10'.
+  APPEND gs_cat TO gt_cat.
+
+  CLEAR gs_cat.
+  gs_cat-fieldname = 'CUSNAME'.
+  gs_cat-coltext   = '거래처명'.
+  gs_cat-col_pos = '11'.
+  APPEND gs_cat TO gt_cat.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form TRANS_INFO
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM trans_info .
+*  DATA : ls_bill    TYPE ztc702_billing,
+*         ls_docu_h  TYPE ztc702_docu_h,
+*         ls_docu_i  TYPE ztc702_docu_i,
+*         lv_docunum TYPE ztc702_docu_h-docunum,
+*         lv_a       TYPE n LENGTH 1,
+*         lv_b       TYPE n LENGTH 1,
+*         lv_c       TYPE n LENGTH 1,
+*         lv_num     TYPE c LENGTH 8,
+*         lv_temnum  TYPE c LENGTH 12,
+*         lv_recnum  TYPE c LENGTH 12.
+*
+*  PERFORM read_line USING ls_bill.
+*
+*  IF ls_bill IS INITIAL.
+*    MESSAGE '라인을 선택해주세요.' TYPE 'I'.
+*  ELSE.
+*    LOOP AT gt_bill INTO gs_bill WHERE ornum  = ls_bill-ornum.
+*      CALL FUNCTION 'NUMBER_GET_NEXT'
+*        EXPORTING
+*          nr_range_nr = '1'
+*          object      = 'ZNRC702_SD'
+*        IMPORTING
+*          number      = lv_num.
+*
+*      CONCATENATE sy-datum lv_num+6(2) INTO lv_temnum.
+*
+*      "출고 쪽 헤더/아이템 만들기
+*      ls_docu_h-company = 'DD'.
+*      ls_docu_h-accyear = sy-datum(4).
+*      ls_docu_h-docutype = 'A2'.
+*
+*      CLEAR lv_docunum.
+*      CONCATENATE 'A2' lv_temnum INTO lv_docunum.
+*
+*      ls_docu_h-docunum  = lv_docunum.
+*      ls_docu_h-docudate = gs_bill-devdate.
+*      ls_docu_h-docupernr = '10000005'.
+*      ls_docu_h-docupname = '이찬수'.
+*
+*      ls_docu_h-crnam = sy-uname.
+*      ls_docu_h-erdat = sy-datum.
+*      ls_docu_h-ertim = sy-uzeit.
+*      ls_docu_h-chnam = sy-uname.
+*      ls_docu_h-chdat = sy-datum.
+*      ls_docu_h-chtim = sy-uzeit.
+*
+*      CLEAR ls_docu_i.
+*      MOVE-CORRESPONDING gs_bill TO ls_docu_i.
+*      ls_docu_i-company = 'DD'.
+*      ls_docu_i-accyear = sy-datum(4).
+*      ls_docu_i-docutype = 'A2'.
+*      ls_docu_i-docunum  = lv_docunum.
+*      ls_docu_i-acccode = '146'.
+*      ls_docu_i-drcrsort = space.
+*      ls_docu_i-accname = '상품'.
+*      ls_docu_i-price = space.
+*      ls_docu_i-amount = space.
+*      ls_docu_i-currency = space.
+*
+*      SELECT taxcode bankname acno acholder
+*        FROM ztc702_cusmaster
+*        INTO CORRESPONDING FIELDS OF ls_docu_i
+*       WHERE cuscode = ls_bill-cuscode.
+*      ENDSELECT.
+*
+*      ls_docu_i-crnam = sy-uname.
+*      ls_docu_i-erdat = sy-datum.
+*      ls_docu_i-ertim = sy-uzeit.
+*      ls_docu_i-chnam = sy-uname.
+*      ls_docu_i-chdat = sy-datum.
+*      ls_docu_i-chtim = sy-uzeit.
+*
+*      INSERT ztc702_docu_h FROM ls_docu_h.
+*      lv_a = sy-subrc.
+*      INSERT ztc702_docu_i FROM ls_docu_i.
+*      lv_a = lv_a + sy-subrc.
+**------------------------------------------------------
+*      "매출 쪽 헤더/아이템 만들기 108매출금 146상품
+*      ls_docu_h-company = 'DD'.
+*      ls_docu_h-accyear = sy-datum(4).
+*      ls_docu_h-docutype = 'B2'.
+*
+*      CLEAR lv_docunum.
+*      CONCATENATE 'B2' lv_temnum INTO lv_docunum.
+*
+*      ls_docu_h-docunum  = lv_docunum.
+*      ls_docu_h-docudate = gs_bill-devdate.
+*      ls_docu_h-docupernr = '10000005'.
+*      ls_docu_h-docupname = '이찬수'.
+*
+*      ls_docu_h-crnam = sy-uname.
+*      ls_docu_h-erdat = sy-datum.
+*      ls_docu_h-ertim = sy-uzeit.
+*      ls_docu_h-chnam = sy-uname.
+*      ls_docu_h-chdat = sy-datum.
+*      ls_docu_h-chtim = sy-uzeit.
+*
+*      CLEAR ls_docu_i.
+*      MOVE-CORRESPONDING gs_bill TO ls_docu_i.
+*      ls_docu_i-company = 'DD'.
+*      ls_docu_i-accyear = sy-datum(4).
+*      ls_docu_i-docutype = 'B2'.
+*      ls_docu_i-docunum  = lv_docunum.
+*      ls_docu_i-acccode = '146'.
+*      ls_docu_i-drcrsort = 'CR'.
+*      ls_docu_i-accname = '상품'.
+*      ls_docu_i-cusnum = gs_bill-cuscode.
+*
+*      SELECT taxcode bankname acno acholder
+*        FROM ztc702_cusmaster
+*        INTO CORRESPONDING FIELDS OF ls_docu_i
+*       WHERE cuscode = ls_bill-cuscode.
+*      ENDSELECT.
+*
+*      ls_docu_i-crnam = sy-uname.
+*      ls_docu_i-erdat = sy-datum.
+*      ls_docu_i-ertim = sy-uzeit.
+*      ls_docu_i-chnam = sy-uname.
+*      ls_docu_i-chdat = sy-datum.
+*      ls_docu_i-chtim = sy-uzeit.
+*
+*      INSERT ztc702_docu_h FROM ls_docu_h.
+*      lv_b = sy-subrc.
+*      INSERT ztc702_docu_i FROM ls_docu_i.
+*      lv_b = lv_b + sy-subrc.
+*
+** 매입, 150, 부채, 외상매입금, 대변.
+*
+*      CLEAR ls_docu_i.
+*      MOVE-CORRESPONDING gs_bill TO ls_docu_i.
+*      ls_docu_i-company = 'DD'.
+*      ls_docu_i-accyear = sy-datum(4).
+*      ls_docu_i-docutype = 'B2'.
+*      ls_docu_i-docunum  = lv_docunum.
+*      ls_docu_i-acccode = '108'.
+*      ls_docu_i-drcrsort = 'DR'.
+*      ls_docu_i-accname = '외상매출금'.
+*      ls_docu_i-cusnum = gs_bill-cuscode.
+*
+*      SELECT taxcode bankname acno acholder
+*        FROM ztc702_cusmaster
+*        INTO CORRESPONDING FIELDS OF ls_docu_i
+*       WHERE cuscode = ls_bill-cuscode.
+*      ENDSELECT.
+*
+*      ls_docu_i-crnam = sy-uname.
+*      ls_docu_i-erdat = sy-datum.
+*      ls_docu_i-ertim = sy-uzeit.
+*      ls_docu_i-chnam = sy-uname.
+*      ls_docu_i-chdat = sy-datum.
+*      ls_docu_i-chtim = sy-uzeit.
+*
+*      INSERT ztc702_docu_i FROM ls_docu_i.
+*      lv_c = sy-subrc.
+*    ENDLOOP.
+*    IF lv_a = 0 AND lv_b = 0 AND lv_c = 0.
+*      MESSAGE '빌링 전송 완료' TYPE 'I'.
+*      UPDATE ztc702_billing SET delflag = 'X'
+*      WHERE ornum = gs_bill-ornum AND gdcode = gs_bill-gdcode.
+*      COMMIT WORK.
+*    ELSE.
+*      MESSAGE '빌링 전송 실패' TYPE 'I'.
+*      ROLLBACK WORK.
+*    ENDIF.
+*  ENDIF.
+
+  DATA : ls_bill    TYPE ztc702_billing,
+         ls_docu_h  TYPE ztc702_docu_h,
+         ls_docu_i  TYPE ztc702_docu_i,
+         lv_docunum TYPE ztc702_docu_h-docunum,
+         lv_a       TYPE n LENGTH 1,
+         lv_b       TYPE n LENGTH 1,
+         lv_c       TYPE n LENGTH 1,
+         lv_num     TYPE c LENGTH 8,
+         lv_temnum  TYPE c LENGTH 12,
+         lv_recnum  TYPE c LENGTH 12,
+         lv_answer  TYPE string.
+
+  PERFORM read_line USING ls_bill.
+
+  IF ls_bill IS INITIAL.
+    MESSAGE '라인을 선택해주세요.' TYPE 'I'.
+  ELSEIF ls_bill-status = 'A'.
+    MESSAGE '이미 전송이 완료 되었습니다.' TYPE 'I'.
+  ELSE.
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        titlebar              = '빌링 전송 승인'
+        text_question         = ls_bill-ornum && ' / 빌링 전송 승인'
+        text_button_1         = '확인'
+        icon_button_1         = 'ICON_OKAY'
+        text_button_2         = '취소'
+        icon_button_2         = 'ICON_INCOMPLETE'
+        display_cancel_button = ''
+      IMPORTING
+        answer                = lv_answer.
+    IF lv_answer = 1.
+
+      CALL FUNCTION 'NUMBER_GET_NEXT'
+        EXPORTING
+          nr_range_nr = '01'
+          object      = 'ZNRC702SD4'
+        IMPORTING
+          number      = lv_num.
+
+      CONCATENATE sy-datum(4) lv_num+2(6) INTO lv_temnum.
+      "출고 쪽 헤더/아이템 만들기
+      ls_docu_h-company = 'DD'.
+      ls_docu_h-accyear = sy-datum(4).
+      ls_docu_h-docutype = 'A2'.
+
+      CLEAR lv_docunum.
+      CONCATENATE 'A2' lv_temnum INTO lv_docunum.
+
+      ls_docu_h-docunum  = lv_docunum.
+      ls_docu_h-docudate = ls_bill-devdate.
+      ls_docu_h-docupernr = 'DD000005'.
+      ls_docu_h-docupname = '이찬수'.
+
+      ls_docu_h-crnam = sy-uname.
+      ls_docu_h-erdat = sy-datum.
+      ls_docu_h-ertim = sy-uzeit.
+      ls_docu_h-chnam = sy-uname.
+      ls_docu_h-chdat = sy-datum.
+      ls_docu_h-chtim = sy-uzeit.
+
+      INSERT ztc702_docu_h FROM ls_docu_h.  "A2 헤더
+      lv_a = sy-subrc.
+
+      CLEAR ls_docu_h.
+      ls_docu_h-company = 'DD'.
+      ls_docu_h-accyear = sy-datum(4).
+      ls_docu_h-docutype = 'B2'.
+
+      CLEAR lv_docunum.
+      CONCATENATE 'B2' lv_temnum INTO lv_docunum.
+
+      ls_docu_h-docunum  = lv_docunum.
+      ls_docu_h-docudate = ls_bill-devdate.
+      ls_docu_h-docupernr = 'DD000005'.
+      ls_docu_h-docupname = '이찬수'.
+
+      ls_docu_h-crnam = sy-uname.
+      ls_docu_h-erdat = sy-datum.
+      ls_docu_h-ertim = sy-uzeit.
+      ls_docu_h-chnam = sy-uname.
+      ls_docu_h-chdat = sy-datum.
+      ls_docu_h-chtim = sy-uzeit.
+
+      INSERT ztc702_docu_h FROM ls_docu_h.  "B2 헤더
+      lv_b = sy-subrc.
+
+      CLEAR lv_docunum.
+      CONCATENATE 'A2' lv_temnum INTO lv_docunum.
+
+      LOOP AT gt_bill INTO gs_bill WHERE ornum  = ls_bill-ornum.
+        CLEAR ls_docu_i.
+        MOVE-CORRESPONDING gs_bill TO ls_docu_i.
+        ls_docu_i-company = 'DD'.
+        ls_docu_i-accyear = sy-datum(4).
+        ls_docu_i-docutype = 'A2'.
+        ls_docu_i-docunum  = lv_docunum.
+        ls_docu_i-acccode = '146'.
+        ls_docu_i-drcrsort = space.
+        ls_docu_i-accname = '상품'.
+        ls_docu_i-cusnum = gs_bill-cuscode.
+
+        SELECT taxcode bankname acno acholder
+          FROM ztc702_cusmaster
+          INTO CORRESPONDING FIELDS OF ls_docu_i
+         WHERE cuscode = ls_bill-cuscode.
+        ENDSELECT.
+
+        ls_docu_i-crnam = sy-uname.
+        ls_docu_i-erdat = sy-datum.
+        ls_docu_i-ertim = sy-uzeit.
+        ls_docu_i-chnam = sy-uname.
+        ls_docu_i-chdat = sy-datum.
+        ls_docu_i-chtim = sy-uzeit.
+
+
+        INSERT ztc702_docu_i FROM ls_docu_i.  "A2 아이템
+        lv_a = lv_a + sy-subrc.
+*------------------------------------------------------
+        "매출 쪽 헤더/아이템 만들기 108매출금 146상품
+        CLEAR lv_docunum.
+        CONCATENATE 'B2' lv_temnum INTO lv_docunum.
+
+        CLEAR ls_docu_i.
+        MOVE-CORRESPONDING gs_bill TO ls_docu_i.
+        ls_docu_i-company = 'DD'.
+        ls_docu_i-accyear = sy-datum(4).
+        ls_docu_i-docutype = 'B2'.
+        ls_docu_i-docunum  = lv_docunum.
+        ls_docu_i-acccode = '146'.
+        ls_docu_i-drcrsort = 'CR'.
+        ls_docu_i-accname = '상품'.
+        ls_docu_i-cusnum = gs_bill-cuscode.
+
+        SELECT taxcode bankname acno acholder
+          FROM ztc702_cusmaster
+          INTO CORRESPONDING FIELDS OF ls_docu_i
+         WHERE cuscode = ls_bill-cuscode.
+        ENDSELECT.
+
+        ls_docu_i-crnam = sy-uname.
+        ls_docu_i-erdat = sy-datum.
+        ls_docu_i-ertim = sy-uzeit.
+        ls_docu_i-chnam = sy-uname.
+        ls_docu_i-chdat = sy-datum.
+        ls_docu_i-chtim = sy-uzeit.
+
+
+        INSERT ztc702_docu_i FROM ls_docu_i. "B2아이템 1
+        lv_b = lv_b + sy-subrc.
+
+* 매입, 150, 부채, 외상매입금, 대변.
+
+        CLEAR ls_docu_i.
+        MOVE-CORRESPONDING gs_bill TO ls_docu_i.
+        ls_docu_i-company = 'DD'.
+        ls_docu_i-accyear = sy-datum(4).
+        ls_docu_i-docutype = 'B2'.
+        ls_docu_i-docunum  = lv_docunum.
+        ls_docu_i-acccode = '108'.
+        ls_docu_i-drcrsort = 'DR'.
+        ls_docu_i-accname = '외상매출금'.
+        ls_docu_i-cusnum = gs_bill-cuscode.
+
+        SELECT taxcode bankname acno acholder
+          FROM ztc702_cusmaster
+          INTO CORRESPONDING FIELDS OF ls_docu_i
+         WHERE cuscode = ls_bill-cuscode.
+        ENDSELECT.
+
+        ls_docu_i-crnam = sy-uname.
+        ls_docu_i-erdat = sy-datum.
+        ls_docu_i-ertim = sy-uzeit.
+        ls_docu_i-chnam = sy-uname.
+        ls_docu_i-chdat = sy-datum.
+        ls_docu_i-chtim = sy-uzeit.
+
+        INSERT ztc702_docu_i FROM ls_docu_i.   "B2 아이템 2
+        lv_c = sy-subrc.
+
+        UPDATE ztc702_billing SET status = 'A'
+        WHERE ornum = gs_bill-ornum AND gdcode = gs_bill-gdcode.
+      ENDLOOP.
+
+      IF lv_a = 0 AND lv_b = 0 AND lv_c = 0.
+        MESSAGE '빌링 전송 완료' TYPE 'I'.
+*        GV_BOX = 'X'.
+        PERFORM GET_DATA.
+        COMMIT WORK.
+      ELSE.
+        MESSAGE '빌링 전송 실패' TYPE 'I'.
+        ROLLBACK WORK.
+      ENDIF.
+    ELSE.
+      MESSAGE '요청이 취소되었습니다.' TYPE 'I'.
+    ENDIF.
+  ENDIF.
+
+  PERFORM get_data.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM get_data .
+  DATA: lt_bill  LIKE TABLE OF gt_bill,
+        ls_bill  LIKE LINE OF gt_bill,
+        lt_ornum TYPE RANGE OF gty_bill-ornum,
+        ls_ornum LIKE LINE OF lt_ornum.
+
+**** 조건 검색을 위한 range 타입 조건 설정 => 필드가 입력되면 필드와 동일한 조건으로
+  IF zsc702_inc-ornum IS NOT INITIAL.
+    ls_ornum-sign = 'I'.
+    ls_ornum-option = 'EQ'.
+    ls_ornum-low = zsc702_inc-ornum.
+    APPEND ls_ornum TO lt_ornum.
+  ENDIF.
+
+  CLEAR gt_bill.
+
+  IF zsc702_inc-ordate_a > zsc702_inc-ordate_b.
+    MESSAGE '시작일자와 종료일자가 잘못 입력되었습니다.' TYPE 'I'.
+    RETURN.
+  ENDIF.
+
+
+  "IF gv_box = ''.
+    SELECT *
+    FROM ztc702_billing AS a
+    LEFT OUTER JOIN ztc702_ord_h AS b
+    ON a~ornum = b~ornum
+    LEFT OUTER JOIN ztc702_cusmaster AS c
+    ON b~cuscode = c~cuscode
+    INTO CORRESPONDING FIELDS OF TABLE @gt_bill
+    WHERE a~devdate BETWEEN @zsc702_inc-ordate_a AND @zsc702_inc-ordate_b.
+    "AND a~delflag = ''.
+
+*  ELSEIF gv_box = 'X'.
+*    SELECT *
+*    FROM ztc702_billing AS a
+*    LEFT OUTER JOIN ztc702_ord_h AS b
+*    ON a~ornum = b~ornum
+*    LEFT OUTER JOIN ztc702_cusmaster AS c
+*    ON b~cuscode = c~cuscode
+*    INTO CORRESPONDING FIELDS OF TABLE @gt_bill
+*    WHERE a~devdate BETWEEN @zsc702_inc-ordate_a AND @zsc702_inc-ordate_b
+*    AND a~delflag = 'X'.
+*
+*  ENDIF.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form READ_LINE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*      -->P_LS_BILL  text
+*&---------------------------------------------------------------------*
+FORM read_line  USING ps_bill.
+  CLEAR ps_bill.
+  CALL METHOD go_alv->get_selected_rows "선택된 열의 INDEX를 읽어 오는 함수
+    IMPORTING
+      et_index_rows = gt_index.
+
+  LOOP AT gt_index INTO gs_index. "INDEX에 해당하는 ALV의 정보를 저장
+    READ TABLE gt_bill INTO ps_bill INDEX gs_index-index.
+  ENDLOOP.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CREATE_DOCU
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM create_docu .
+  DATA: ls_bill LIKE gs_bill.
+  PERFORM read_line USING ls_bill.
+
+  IF ls_bill IS  INITIAL.
+    MESSAGE '라인을 선택해주세요.' TYPE 'I'.
+  ELSE.
+    CLEAR gt_bill2.
+    LOOP AT gt_bill INTO gs_bill WHERE ornum = ls_bill-ornum.
+      APPEND gs_bill TO gt_bill2.
+    ENDLOOP.
+
+    zsc702_billing-billdate = sy-datum.
+    zsc702_billing-cname_a = ls_bill-cusname.
+    zsc702_billing-cname_b = '(주) 술독'.
+    zsc702_billing-pname_a = '이찬수'.
+
+    SELECT SINGLE cusaddr cuscell
+      FROM ztc702_cusmaster
+      INTO (zsc702_billing-addr_b, zsc702_billing-pcont_b)
+      WHERE cuscode = ls_bill-cuscode.
+    SELECT  SINGLE pcont
+      FROM ztc702_employee
+      INTO zsc702_billing-pcont_a
+      WHERE pname = '이찬수'.
+
+    CALL SCREEN 200.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ALV_SETTING2
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM alv_setting2 .
+  gs_lay2-zebra = 'X'.
+
+*
+*  gs_sort-fieldname = 'GDCODE'.
+*  gs_sort-up = ''.
+*  APPEND gs_sort TO gt_sort.
+*  CLEAR gs_sort.
+  gs_excl  = cl_gui_alv_grid=>mc_fc_excl_all.
+  APPEND gs_excl TO gt_excl.
+
+  CLEAR gs_cat2.
+  gs_cat2-fieldname = 'GDCODE'.
+  gs_cat2-coltext   = '품목 코드'.
+  gs_cat2-col_pos = '1'.
+  gs_cat2-outputlen = '6'.
+  APPEND gs_cat2 TO gt_cat2.
+
+  CLEAR gs_cat2.
+  gs_cat2-fieldname = 'GDNAME'.
+  gs_cat2-coltext   = '품목명'.
+  gs_cat2-outputlen = '22'.
+  gs_cat2-col_pos = '2'.
+  APPEND gs_cat2 TO gt_cat2.
+
+  CLEAR gs_cat2.
+  gs_cat2-fieldname = 'QUANTITY'.
+  gs_cat2-coltext   = '품목 수량'.
+  gs_cat2-qfieldname = 'UNIT'.
+  gs_cat2-outputlen = '6'.
+  gs_cat2-col_pos = '3'.
+  APPEND gs_cat2 TO gt_cat2.
+
+  CLEAR gs_cat2.
+  gs_cat2-fieldname = 'UNIT'.
+  gs_cat2-coltext   = '단위'.
+  gs_cat2-quantity  = 'EA'.
+  gs_cat2-col_pos = '4'.
+  gs_cat2-outputlen = '3'.
+  APPEND gs_cat2 TO gt_cat2.
+
+  CLEAR gs_cat2.
+  gs_cat2-fieldname = 'PRICE'.
+  gs_cat2-coltext   = '품목 단가'.
+  gs_cat2-cfieldname = 'CURRENCY'.
+  gs_cat2-col_pos = '5'.
+  gs_cat2-outputlen = '6'.
+  APPEND gs_cat2 TO gt_cat2.
+
+  CLEAR gs_cat2.
+  gs_cat2-fieldname = 'CURRENCY'.
+  gs_cat2-coltext   = '통화'.
+  gs_cat2-currency  = 'KRW'.
+  gs_cat2-col_pos = '7'.
+  gs_cat2-outputlen = '3'.
+  APPEND gs_cat2 TO gt_cat2.
+
+  CLEAR gs_cat2.
+  gs_cat2-fieldname = 'AMOUNT'.
+  gs_cat2-coltext   = '합계 금액'.
+  gs_cat2-cfieldname = 'CURRENCY'.
+  gs_cat2-col_pos = '6'.
+  gs_cat2-do_sum = 'X'.
+  APPEND gs_cat2 TO gt_cat2.
+
+ENDFORM.
+FORM create_salv USING ps_ordst LIKE gs_bill2.
+  DATA lv_title TYPE lvc_title.
+  lv_title  = '주문 정보'.
+
+  SELECT *    "주문정보 불러오기
+    FROM  zdvc702_ord
+    INTO CORRESPONDING FIELDS OF TABLE gt_ordst
+    WHERE ornum = ps_ordst-ornum.
+
+  cl_salv_table=>factory( "salv 설정
+    IMPORTING
+  r_salv_table = gr_table
+    CHANGING
+    t_table = gt_ordst ).
+
+  gr_table->set_screen_popup( "salv를 팝업형태로 출력하도록 설정
+  start_column = 40
+  end_column = 87
+  start_line = 1
+  end_line = 8 ).
+
+  go_display = gr_table->get_display_settings( ).
+  go_display->set_list_header( lv_title ).
+  go_sal_cols = gr_table->get_columns( ).
+  go_sal_cols->set_optimize( abap_true ). "salv필드 길이를 글자수에 맞춤
+
+  gr_table->display( ). "salv 출력
+ENDFORM.
+
+CLASS lcl_class IMPLEMENTATION.
+  METHOD on_double.
+    READ TABLE gt_bill  INTO gs_bill2 INDEX es_row_no-row_id.
+    PERFORM create_salv USING gs_bill2.
+  ENDMETHOD.
+ENDCLASS.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

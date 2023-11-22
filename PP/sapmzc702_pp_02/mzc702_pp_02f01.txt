@@ -1,0 +1,731 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_PP_02F01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form SET_LAYOUT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_layout .
+***** ROW 색 변경을 위한 레이아웃 설정
+  gs_layout-info_fname = 'COLOR'.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_FCAT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_fcat .
+  CLEAR  gs_fcat.
+  gs_fcat-fieldname = 'BOMID'.
+  gs_fcat-coltext = 'BOM 번호'.
+  gs_fcat-outputlen = 10.
+  gs_fcat-just = 'C'.
+  gs_fcat-key = 'X'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR  gs_fcat.
+  gs_fcat-fieldname = 'GDCODE'.
+  gs_fcat-coltext = '품목 코드'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 6.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR  gs_fcat.
+  gs_fcat-fieldname = 'GDNAME'.
+  gs_fcat-coltext = '품목명'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 40.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR  gs_fcat.
+  gs_fcat-fieldname = 'CRNAM'.
+  gs_fcat-coltext = '생성자'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 8.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR  gs_fcat.
+  gs_fcat-fieldname = 'ERDAT'.
+  gs_fcat-coltext = '생성 일자'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 10.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR  gs_fcat.
+  gs_fcat-fieldname = 'ERTIM'.
+  gs_fcat-coltext = '생성 시간'.
+  gs_fcat-just = 'C'.
+  gs_fcat-outputlen = 10.
+  APPEND gs_fcat TO gt_fcat.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_BOM_HEAD
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM get_bom_head .
+**** 라디오 버튼에 따른 조건 설정을 위한 데이터 선언
+  DATA: lt_bom TYPE TABLE OF gty_bom_h,
+        ls_bom TYPE gty_bom_h.
+
+**** 조건 검색을 위한 range 타입 설정 -> 사용 필드만큼 선언
+  DATA: lt_bomid TYPE RANGE OF gty_bom_h-bomid,
+        ls_bomid LIKE LINE OF lt_bomid.
+
+  DATA: lt_gdcode TYPE RANGE OF gty_bom_h-gdcode,
+        ls_gdcode LIKE LINE OF lt_gdcode.
+
+  DATA: lt_gdname TYPE RANGE OF gty_bom_h-gdname,
+        ls_gdname LIKE LINE OF lt_gdname.
+
+**** 조건 검색을 위한 range 타입 조건 설정 => 필드가 입력되면 필드와 동일한 조건으로
+  IF ztc702_bom_h-bomid IS NOT INITIAL.
+    ls_bomid-sign = 'I'.
+    ls_bomid-option = 'EQ'.
+    ls_bomid-low = ztc702_bom_h-bomid.
+    APPEND ls_bomid TO lt_bomid.
+  ENDIF.
+
+  IF ztc702_bom_h-gdcode IS NOT INITIAL.
+    ls_gdcode-sign = 'I'.
+    ls_gdcode-option = 'EQ'.
+    ls_gdcode-low = ztc702_bom_h-gdcode.
+    APPEND ls_gdcode TO lt_gdcode.
+  ENDIF.
+*
+*  IF ztc702_bom_h-gdname IS NOT INITIAL.
+*    ls_gdname-sign = 'I'.
+*    ls_gdname-option = 'EQ'.
+*    ls_gdname-low = ztc702_bom_h-gdname.
+*    APPEND ls_gdname TO lt_gdname.
+*  ENDIF.
+**** Select문 range 타입으로 선언했으므로 where ~ in 조건 + 삭제플래그가 체크가 안될 경우 검색.
+
+
+  CASE 'X'.
+    WHEN gv_rad.
+      SELECT *
+        FROM ztc702_bom_h INTO CORRESPONDING FIELDS OF TABLE gt_bom_h
+        WHERE bomid IN lt_bomid
+        AND gdcode IN lt_gdcode
+        AND delflag <> 'X'.
+
+    WHEN gv_rad_chkdel.
+      SELECT *
+        FROM ztc702_bom_h INTO CORRESPONDING FIELDS OF TABLE gt_bom_h
+        WHERE bomid IN lt_bomid
+        AND gdcode IN lt_gdcode
+        AND delflag = 'X'.
+
+    WHEN gv_rad_all.
+      SELECT *
+        FROM ztc702_bom_h INTO CORRESPONDING FIELDS OF TABLE gt_bom_h
+        WHERE bomid IN lt_bomid
+        AND gdcode IN lt_gdcode.
+
+  ENDCASE.
+
+  SORT gt_bom_h ASCENDING BY bomid.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DISPLAY_BOM_HEAD
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM display_bom_head .
+  PERFORM get_bom_head.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DISPLAY_BOM_ITEM
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM display_bom_item .
+***** ALV ROW 인데스 찾기
+  CALL METHOD go_alv_grid->get_selected_rows
+    IMPORTING
+      et_index_rows = gt_index.
+
+***** 선택된 ROW 개수 찾기
+  DESCRIBE TABLE gt_index LINES gv_lines.
+
+
+  LOOP AT gt_index INTO gs_index.
+
+  ENDLOOP.
+
+  CALL SCREEN 200.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_LAYOUT_200
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_layout_200 .
+
+  gs_layout2-info_fname = 'COLOR'.
+  gs_layout2-sel_mode = 'A'.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CREATE_BOM_HEAD
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM create_bom_head .
+***** 필됴 데이터 선언
+  DATA: ls_bom_h  TYPE ztc702_bom_h,
+        lv_text   TYPE string,
+        lv_answer TYPE c LENGTH 1.
+
+***** BOM ID 필드 체크
+  IF ztc702_bom_h-bomid IS NOT INITIAL.
+    MESSAGE 'BOMID는 비워두세요.' TYPE 'I'.
+  ELSE.
+    MOVE-CORRESPONDING ztc702_bom_h TO ls_bom_h.
+
+***** 팝업 화면 설정
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        titlebar              = '계획 등록'
+        text_question         = '새로운 BOM을 등록하시겠습니까?'
+        text_button_1         = '예'
+        text_button_2         = '아니오'
+        display_cancel_button = space
+      IMPORTING
+        answer                = lv_answer.
+
+***** YES 일 경우
+    IF lv_answer = 1.
+
+***** 채번 펑션 모듈 실행
+      CALL FUNCTION 'ZFMC702_CNRO_ORGEH'
+        EXPORTING
+          fv_module_name   = 'BOM'
+          fv_cnro_nr       = '05'
+          fv_object        = 'ZCL719FINR'
+        CHANGING
+          fv_change_codenr = lv_text.
+
+      ls_bom_h-bomid = lv_text.
+
+***** 생성자 정보 넣기
+      ls_bom_h-crnam = sy-uname.
+      ls_bom_h-erdat = sy-datum.
+      ls_bom_h-ertim = sy-uzeit.
+
+***** 데이터 DB에 INSERT
+      INSERT ztc702_bom_h FROM ls_bom_h.
+
+***** SY-SUBRC 확인
+      IF sy-subrc = 0.
+        MESSAGE '등록 성공' TYPE 'I'.
+        PERFORM get_bom_head.
+        COMMIT WORK.
+      ELSE.
+        MESSAGE '등록 실패' TYPE 'I'.
+        ROLLBACK WORK.
+
+      ENDIF.
+
+    ENDIF.
+  ENDIF.
+
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SAVE_BOM
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM save_bom .
+  DATA: lt_bom_h TYPE TABLE OF ztc702_bom_h,
+        ls_bom_h TYPE ztc702_bom_h,
+        lt_bom_i TYPE TABLE OF ztc702_bom_i,
+        ls_bom_i TYPE ztc702_bom_i,
+        lv_text  TYPE string.
+
+
+  IF gt_bom_i IS INITIAL.
+    MESSAGE '리스트에 값을 넣어주세요.' TYPE 'I'.
+    RETURN.
+  ENDIF.
+
+**** 입력된 데이터 로컬 스트럭처에 넣기
+  MOVE-CORRESPONDING zsc702_bom_h TO ls_bom_h.
+
+**** 채번 펑션 모듈
+
+  PERFORM bom_number_range CHANGING lv_text.
+
+  ls_bom_h-bomid = lv_text.
+  ls_bom_h-mtcode = 'P'.
+  ls_bom_h-crnam = sy-uname.
+  ls_bom_h-erdat = sy-datum.
+  ls_bom_h-ertim = sy-uzeit.
+
+  LOOP AT gt_bom_i INTO ls_bom_i.
+    ls_bom_i-bomid = lv_text.
+    MODIFY gt_bom_i FROM ls_bom_i TRANSPORTING bomid.
+  ENDLOOP.
+
+  INSERT ztc702_bom_h FROM ls_bom_h.
+  IF sy-subrc = 0.
+
+  ELSE.
+    MESSAGE '등록 실패 - 위치 헤더' TYPE 'I'.
+    ROLLBACK WORK.
+  ENDIF.
+
+  INSERT ztc702_bom_i FROM TABLE gt_bom_i.
+  IF sy-subrc = 0.
+    MESSAGE i000 WITH lv_text.
+    CLEAR: zsc702_bom_h, ztc702_bom_i, gt_bom_i.
+    COMMIT WORK.
+  ELSE.
+    MESSAGE '등록 실패 - 위치 아이템' TYPE 'I'.
+    ROLLBACK WORK.
+  ENDIF.
+
+
+
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CHECK_BOM_HEAD
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM check_bom_head .
+  DATA: ls_bom_h  TYPE ztc702_bom_h,
+        lt_row    TYPE lvc_t_row,
+        ls_row    TYPE lvc_s_row,
+        lv_line   TYPE i,
+        lv_answer TYPE c LENGTH 1.
+
+**** ALV ROW 인덱스 찾기
+  CALL METHOD go_alv_grid->get_selected_rows
+    IMPORTING
+      et_index_rows = lt_row.
+
+  DESCRIBE TABLE lt_row LINES lv_line.
+
+**** ALV ROW 체크
+  IF lt_row IS INITIAL.
+    MESSAGE '라인을 선택해주세요.' TYPE 'I'.
+  ELSEIF lv_line > 1.
+    MESSAGE '라인을 하나만 선택해주세요.' TYPE 'I'.
+  ELSE.
+    LOOP AT lt_row INTO ls_row.
+      READ TABLE gt_bom_h INTO ls_bom_h INDEX ls_row-index.
+    ENDLOOP.
+  ENDIF.
+
+**** 선택된 스트럭처의 삭제플래그가 없을 경우
+  IF ls_bom_h-delflag = space.
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        titlebar              = 'BOM 중지'
+        text_question         = 'BOM을 중지시키겠습니까?'
+        text_button_1         = '예'
+        text_button_2         = '아니오'
+        display_cancel_button = space
+      IMPORTING
+        answer                = lv_answer.
+
+    IF lv_answer = 1.
+**** 삭제플래그 변경 및 LOG 변경
+      ls_bom_h-delflag = 'X'.
+      ls_bom_h-chnam = sy-uname.
+      ls_bom_h-chdat = sy-datum.
+      ls_bom_h-chtim = sy-uzeit.
+
+      UPDATE ztc702_bom_h FROM ls_bom_h.
+      MESSAGE 'BOM 중지' TYPE 'I'.
+
+      COMMIT WORK.
+    ENDIF.
+
+**** 선택된 스트럭처의 삭제플래그가 있을 경우
+  ELSEIF ls_bom_h-delflag = 'X'.
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        titlebar              = 'BOM 재가동'
+        text_question         = 'BOM을 재가동 시키겠습니까?'
+        text_button_1         = '예'
+        text_button_2         = '아니오'
+        display_cancel_button = space
+      IMPORTING
+        answer                = lv_answer.
+
+    IF lv_answer = 1.
+**** 삭제플래그 변경 및 LOG 변경
+      ls_bom_h-delflag = space.
+      ls_bom_h-chnam = sy-uname.
+      ls_bom_h-chdat = sy-datum.
+      ls_bom_h-chtim = sy-uzeit.
+
+      UPDATE ztc702_bom_h FROM ls_bom_h.
+      MESSAGE 'BOM 재가동' TYPE 'I'.
+
+      COMMIT WORK.
+    ENDIF.
+
+  ENDIF.
+
+**** 업데이트 된 DB 다시 불러오기
+  PERFORM get_bom_head.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form ADD_BOM_ITEM
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM add_bom_item .
+  DATA: lt_bom_item   TYPE TABLE OF ztc702_bom_i,
+        ls_bom_item   TYPE ztc702_bom_i,
+        ls_check_item TYPE ztc702_bom_i.
+
+  IF zsc702_bom_h-gdcode = space OR
+     zsc702_bom_h-gdname = space OR
+     ztc702_bom_i-gdcode_m = space OR
+     ztc702_bom_i-gdname_m = space OR
+     ztc702_bom_i-quan = space.
+
+    MESSAGE '모든 필드를 입력해 주세요' TYPE 'I'.
+    RETURN.
+  ENDIF.
+
+  MOVE-CORRESPONDING ztc702_bom_i TO ls_bom_item.
+
+  IF ls_bom_item-mtcode_m = 'P'.
+    MESSAGE '원자재 또는 부자재만 추가 할 수 있습니다.' TYPE 'I'.
+    RETURN.
+  ELSE.
+    LOOP AT gt_bom_i INTO ls_check_item.
+      IF ls_check_item-gdcode_m = ztc702_bom_i-gdcode_m.
+        MESSAGE '중복된 원자재 또는 부자재가 존재합니다.' TYPE 'I'.
+        RETURN.
+      ENDIF.
+    ENDLOOP.
+  ENDIF.
+
+  APPEND ls_bom_item TO gt_bom_i.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CHECK_GDCODE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM check_gdcode .
+  DATA: lv_answer TYPE c LENGTH 1.
+
+  IF ztc702_bom_h <> space.
+    CALL FUNCTION 'POPUP_TO_CONFIRM'
+      EXPORTING
+        titlebar              = '제품 변경'
+        text_question         = '등록할 제품을 변경하시면 과정이 초기화됩니다. 진행하시겠습니까?'
+        text_button_1         = '예'
+        text_button_2         = '아니오'
+        display_cancel_button = space
+      IMPORTING
+        answer                = lv_answer.
+
+**** 팝업에서 YES 일 경우 데이터 생성 작업
+    IF lv_answer = 1.
+      CLEAR: ztc702_bom_h, ztc702_bom_i.
+      CLEAR gt_bom_i.
+
+    ENDIF.
+
+  ENDIF.
+
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CLEAR_SCREEN
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM clear_screen .
+  CLEAR: zsc702_bom_h, ztc702_bom_i, gt_bom_i.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_FCAT_200
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_fcat_200 .
+  CLEAR gs_fcat_200.
+  gs_fcat_200-fieldname = 'GDCODE_M'.
+  gs_fcat_200-coltext = '품목 코드'.
+  gs_fcat_200-key = 'X'.
+  gs_fcat-just = 'C'.
+  gs_fcat_200-outputlen = 6.
+  APPEND gs_fcat_200 TO gt_fcat_200.
+
+  CLEAR gs_fcat_200.
+  gs_fcat_200-fieldname = 'GDNAME_M'.
+  gs_fcat_200-coltext = '품목명'.
+  gs_fcat_200-outputlen = 40.
+  APPEND gs_fcat_200 TO gt_fcat_200.
+
+  CLEAR gs_fcat_200.
+  gs_fcat_200-fieldname = 'QUAN'.
+  gs_fcat_200-coltext = '수량'.
+  gs_fcat_200-qfieldname = 'UNIT'.
+  gs_fcat-just = 'C'.
+  gs_fcat_200-outputlen = 5.
+  APPEND gs_fcat_200 TO gt_fcat_200.
+
+  CLEAR gs_fcat_200.
+  gs_fcat_200-fieldname = 'UNIT'.
+  gs_fcat_200-coltext = '단위'.
+  gs_fcat_200-quantity = 'EA'.
+  gs_fcat-just = 'C'.
+  gs_fcat_200-outputlen = 3.
+  APPEND gs_fcat_200 TO gt_fcat_200.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_FCAT_300
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_fcat_300 .
+  CLEAR gs_fcat_300.
+  gs_fcat_300-fieldname = 'MTCODE_M'.
+  gs_fcat_300-coltext = '품목 구분'.
+  gs_fcat_300-outputlen = 6.
+  gs_fcat_300-key = 'X'.
+  gs_fcat-just = 'C'.
+  APPEND gs_fcat_300 TO gt_fcat_300.
+
+  CLEAR gs_fcat_300.
+  gs_fcat_300-fieldname = 'GDCODE_M'.
+  gs_fcat_300-coltext = '품목 코드'.
+  gs_fcat_300-outputlen = 6.
+  gs_fcat-just = 'C'.
+  gs_fcat_300-key = 'X'.
+  APPEND gs_fcat_300 TO gt_fcat_300.
+
+  CLEAR gs_fcat_300.
+  gs_fcat_300-fieldname = 'GDNAME_M'.
+  gs_fcat_300-coltext = '품목명'.
+  gs_fcat_300-outputlen = 30.
+  APPEND gs_fcat_300 TO gt_fcat_300.
+
+  CLEAR gs_fcat_300.
+  gs_fcat_300-fieldname = 'QUAN'.
+  gs_fcat_300-coltext = '수량'.
+  gs_fcat_300-qfieldname = 'UNIT'.
+  gs_fcat-just = 'C'.
+  gs_fcat_300-outputlen = 6.
+  APPEND gs_fcat_300 TO gt_fcat_300.
+
+  CLEAR gs_fcat_300.
+  gs_fcat_300-fieldname = 'UNIT'.
+  gs_fcat_300-coltext = '단위'.
+  gs_fcat_300-quantity = 'EA'.
+  gs_fcat-just = 'C'.
+  gs_fcat_300-outputlen = 3.
+  APPEND gs_fcat_300 TO gt_fcat_300.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form INIT_200
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM init_110 .
+  DATA: lt_bom_i TYPE TABLE OF ztc702_bom_i.
+  MOVE-CORRESPONDING gs_bom_hf TO ztc702_bom_h.
+
+  SELECT *
+    FROM ztc702_bom_i INTO CORRESPONDING FIELDS OF TABLE gt_bom_200_i
+    WHERE bomid = ztc702_bom_h-bomid.
+
+  SORT gt_bom_200_i ASCENDING BY gdcode_m.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form BACK_SCREEN
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM back_screen .
+  DATA: lv_answer TYPE c LENGTH 1.
+
+**** 경고 팝업
+  CALL FUNCTION 'POPUP_TO_CONFIRM'
+    EXPORTING
+      titlebar              = '뒤로 가기'
+      text_question         = '전 화면으로 갈 시 현재과정이 초기화됩니다. 진행하시겠습니까?'
+      text_button_1         = '예'
+      text_button_2         = '아니오'
+      display_cancel_button = space
+    IMPORTING
+      answer                = lv_answer.
+
+**** 팝업에서 YES 일 경우 데이터 생성 작업
+  IF lv_answer = 1.
+    CLEAR: zsc702_bom_h, ztc702_bom_i, gt_bom_i.
+    LEAVE TO SCREEN 0.
+
+  ENDIF.
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form NUMBER_RANGE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM bom_number_range CHANGING fv_text.
+
+  DATA: lv_number TYPE n LENGTH 9,
+        lv_string TYPE string.
+
+  CALL FUNCTION 'NUMBER_GET_NEXT'
+    EXPORTING
+      nr_range_nr = '01'       " 01 : BOM 번호 채번
+      object      = 'ZNRC702PP1'
+    IMPORTING
+      number      = lv_number.
+
+  lv_string = lv_number.
+
+  CONCATENATE 'BOM' lv_string INTO fv_text.
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Module INIT_110 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_110 OUTPUT.
+  PERFORM init_110.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Form SAVE_BDC_BOM
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM save_bdc_bom .
+  DATA: ls_bom_h TYPE ztc702_bom_h,
+        ls_bom_i TYPE ztc702_bom_i.
+
+**** 입력된 데이터 로컬 스트럭처에 넣기
+  MOVE-CORRESPONDING zsc702_bom_h TO ls_bom_h.
+  ls_bom_h-mtcode = 'P'.
+  ls_bom_h-crnam = sy-uname.
+  ls_bom_h-erdat = sy-datum.
+  ls_bom_h-ertim = sy-uzeit.
+
+  MOVE-CORRESPONDING ztc702_bom_i TO ls_bom_i.
+  ls_bom_i-bomid = zsc702_bom_h-bomid.
+
+  INSERT ztc702_bom_h FROM ls_bom_h.
+  IF sy-subrc = 0.
+
+  ENDIF.
+  INSERT ztc702_bom_i FROM ls_bom_i.
+  IF sy-subrc = 0.
+
+  ENDIF.
+
+  COMMIT WORK.
+
+
+
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_EXCLUDE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_exclude .
+  APPEND cl_gui_alv_grid=>mc_fc_detail TO gt_exclude.
+  APPEND cl_gui_alv_grid=>mc_fc_sort_asc TO gt_exclude.
+  APPEND cl_gui_alv_grid=>mc_fc_sort_dsc TO gt_exclude.
+  APPEND cl_gui_alv_grid=>mc_fc_find TO gt_exclude.
+  APPEND cl_gui_alv_grid=>mc_fc_filter TO gt_exclude.
+  APPEND cl_gui_alv_grid=>mc_mb_sum TO gt_exclude.
+  APPEND cl_gui_alv_grid=>mc_fc_print_back TO gt_exclude.
+  APPEND cl_gui_alv_grid=>mc_mb_view TO gt_exclude.
+  APPEND cl_gui_alv_grid=>mc_mb_export TO gt_exclude.
+  APPEND cl_gui_alv_grid=>mc_mb_variant TO gt_exclude.
+  APPEND cl_gui_alv_grid=>mc_fc_info TO gt_exclude.
+
+ENDFORM.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

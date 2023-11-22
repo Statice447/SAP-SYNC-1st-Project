@@ -1,0 +1,63 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_MM_06I01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*&      Module  EXIT  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE EXIT INPUT.
+  CASE OK_CODE.
+    WHEN 'EXIT'.
+      LEAVE PROGRAM.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0100  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE USER_COMMAND_0100 INPUT.
+  CASE OK_CODE.
+    WHEN 'ENTER'.
+    WHEN 'BACK'. " 이전화면으로 이동.
+      LEAVE TO SCREEN 0.
+    WHEN 'SEARCH'. " 테이블 레코드 조회.
+      PERFORM SEARCH.
+    WHEN 'CLEAR'.  " 필드 초기화.
+      PERFORM CLEAR.
+    WHEN 'STATUS'. " 삭제플래그 변경.
+      PERFORM DELFLAG.
+    WHEN 'MOVE'.
+      CALL SCREEN 200.
+    WHEN 'CANC'.
+      PERFORM CLEAR.
+  ENDCASE.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*&      Module  USER_COMMAND_0200  INPUT
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE USER_COMMAND_0200 INPUT.
+  CASE OK_CODE.
+    WHEN 'ENTER'.
+    WHEN 'BACK'. " 이전화면으로 이동.
+      LEAVE TO SCREEN 0.
+    WHEN 'SEARCH'. " 테이블 레코드 조회.
+      PERFORM SEARCH2.
+    WHEN 'CLEAR'.  " 필드 초기화.
+      PERFORM CLEAR.
+    WHEN 'STATUS'. " 삭제플래그 변경.
+      PERFORM DELFLAG2.
+    WHEN 'DISCARD'. " 폐기처리.
+      PERFORM DISCARD.
+    WHEN 'MOVE100'.
+      CALL SCREEN 100.
+    WHEN 'CANC'.
+      PERFORM CLEAR.
+  ENDCASE.
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

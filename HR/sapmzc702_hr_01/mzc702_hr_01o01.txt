@@ -1,0 +1,153 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_HR_01O01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'S0100'.
+  SET TITLEBAR 'S0100'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CLEAR_OK_CODE OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE clear_ok OUTPUT.
+  CLEAR ok_code.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SET_ALV OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE alv_setting OUTPUT.
+***** 최초 컨테이너 생성 시
+  IF go_con IS INITIAL.
+    CREATE OBJECT go_con
+      EXPORTING
+        container_name = 'EMP_ALV'.
+    gv_refresh     = abap_true.         " 리프레시 체크
+  ENDIF.
+
+***** 최초 ALV 생성 시
+  IF gv_refresh = abap_true.
+    CREATE OBJECT go_alv
+      EXPORTING
+        i_parent = go_con.
+
+
+***** ALV 레이아웃 및 필드카탈로그 설정
+    PERFORM set_lay.
+    PERFORM set_cat.
+
+    CALL METHOD go_alv->set_table_for_first_display
+      EXPORTING
+*       is_variant      = gs_variant
+*       i_save          = gv_save
+
+        is_layout       = gs_lay
+      CHANGING
+        it_outtab       = gt_emp
+        it_fieldcatalog = gt_cat.
+*       it_sort          =
+*       it_filter        =
+
+    gv_refresh = abap_false. " 리프레시 해제
+
+  ELSE. " 기존 ALV가 있을경우 리프레시 => gv_refresh가 false 일 때
+    go_alv->refresh_table_display( ).
+  ENDIF.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_100 OUTPUT.
+CLEAR zdvc702_emporg.
+**** ROW 색을 위한 LOOP문
+  LOOP AT gt_emp INTO gs_emp.
+
+***** 삭제플래그 체크 시 ROW 색 변경
+    IF gs_emp-delflag = 'X'.
+      gs_emp-color = 'C610'.
+    ENDIF.
+
+    MODIFY gt_emp FROM gs_emp TRANSPORTING color.
+  ENDLOOP.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0110 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0110 OUTPUT.
+  SET PF-STATUS '0110'.
+  SET TITLEBAR '0110'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0120 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0120 OUTPUT.
+  SET PF-STATUS '0120'.
+  SET TITLEBAR '0120'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module NUM_INFO OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE num_info OUTPUT.
+  DATA: lv_number TYPE n LENGTH 8,
+        ls_text2  LIKE nriv,
+        lv_text1  TYPE c LENGTH 8.
+
+  CALL FUNCTION 'NUMBER_GET_INFO'
+    EXPORTING
+      nr_range_nr = '01'
+      object      = 'ZNRC702HR2'
+    IMPORTING
+      interval    = ls_text2.
+
+  lv_number = ls_text2-nrlevel + 1.
+
+  lv_text1 = 'DD' && lv_number+2(6).
+  zdvc702_emporg-PERNR =  lv_text1.
+ENDMODULE.
+
+*&---------------------------------------------------------------------*
+*& Module INIT_LIST2 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_list2 OUTPUT.
+  SELECT *
+    FROM ztc702_ORGEHT
+    INTO CORRESPONDING FIELDS OF TABLE gt_list
+    .
+
+  TYPE-POOLS vrm.
+
+  CLEAR: list.
+
+  LOOP AT gt_list INTO gs_list.
+    value-key = gs_list-ORGEH.
+    value-text = gs_list-OTEXT.
+    APPEND value TO list.
+    CLEAR: gs_list, value.
+  ENDLOOP.
+
+  CALL FUNCTION 'VRM_SET_VALUES'
+    EXPORTING
+      id     = 'ZDVC702_EMPORG-ORGEH'
+      values = list.
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

@@ -1,0 +1,951 @@
+*&---------------------------------------------------------------------*
+*& Include          ZC702R_FI_01F01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Form BUILD_NODE_TABLE
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*      -->P_NODE_TABLE  text
+*&---------------------------------------------------------------------*
+FORM build_node_table  USING node_table TYPE node_table_type.
+  " 필드카탈로그처럼 폴더 생성하는 node 데이터 선언.
+  DATA: node LIKE mtreesnode.
+
+  " 자산/부채/자본/수익/비용 폴더 생성.
+  CLEAR node.
+  node-node_key = 'Root'.     " Tree 상위항목 (첫번째 폴더).
+  node-isfolder = 'X'.        " 폴더모양 표시.
+  node-text = '자산'.          " '자산' 이라는 텍스트 표시.
+  APPEND node TO node_table.
+
+  CLEAR node.
+  node-node_key = 'Root2'.
+  node-isfolder = 'X'.
+  node-text = '부채'.
+  APPEND node TO node_table.
+
+  CLEAR node.
+  node-node_key = 'Root3'.
+  node-isfolder = 'X'.
+  node-text = '자본'.
+  APPEND node TO node_table.
+
+  CLEAR node.
+  node-node_key = 'Root4'.
+  node-isfolder = 'X'.
+  node-text = '수익'.
+  APPEND node TO node_table.
+
+  CLEAR node.
+  node-node_key = 'Root5'.
+  node-isfolder = 'X'.
+  node-text = '비용'.
+  APPEND node TO node_table.
+
+  " 자산/부채/자본/수익/비용 하위폴더 생성.
+  CLEAR node.
+  node-node_key = 'Child1'.   " Tree 하위항목 (두번째 폴더).
+  node-relatkey = 'Root'.     " 상위항목 폴더명.
+  node-isfolder = 'X'.        " 폴더모양 표시.
+  node-text = '유동자산'.       " '유동자산' 이라는 텍스트 표시.
+  node-expander = 'X'.        " 폴더 안에 파일 확장해서 넣으려고 표시.
+  APPEND node TO node_table.
+
+  CLEAR node.
+  node-node_key = 'Child2'.
+  node-relatkey = 'Root'.
+  node-isfolder = 'X'.
+  node-text = '비유동자산'.
+  node-expander = 'X'.
+  APPEND node TO node_table.
+
+  CLEAR node.
+  node-node_key = 'Child3'.
+  node-relatkey = 'Root2'.
+  node-isfolder = 'X'.
+  node-text = '유동부채'.
+  node-expander = 'X'.
+  APPEND node TO node_table.
+
+  CLEAR node.
+  node-node_key = 'Child4'.
+  node-relatkey = 'Root2'.
+  node-isfolder = 'X'.
+  node-text = '비유동부채'.
+  node-expander = 'X'.
+  APPEND node TO node_table.
+
+  CLEAR node.
+  node-node_key = 'Child5'.
+  node-relatkey = 'Root3'.
+  node-isfolder = 'X'.
+  node-text = '자본금'.
+  node-expander = 'X'.
+  APPEND node TO node_table.
+
+  CLEAR node.
+  node-node_key = 'Child6'.
+  node-relatkey = 'Root3'.
+  node-isfolder = 'X'.
+  node-text = '이익잉여금'.
+  node-expander = 'X'.
+  APPEND node TO node_table.
+
+  CLEAR node.
+  node-node_key = 'Child7'.
+  node-relatkey = 'Root4'.
+  node-isfolder = 'X'.
+  node-text = '영업수익'.
+  node-expander = 'X'.
+  APPEND node TO node_table.
+
+  CLEAR node.
+  node-node_key = 'Child8'.
+  node-relatkey = 'Root4'.
+  node-isfolder = 'X'.
+  node-text = '영업외수익'.
+  node-expander = 'X'.
+  APPEND node TO node_table.
+
+  CLEAR node.
+  node-node_key = 'Child9'.
+  node-relatkey = 'Root5'.
+  node-isfolder = 'X'.
+  node-text = '판매관리비'.
+  node-expander = 'X'.
+  APPEND node TO node_table.
+
+  CLEAR node.
+  node-node_key = 'Child10'.
+  node-relatkey = 'Root5'.
+  node-isfolder = 'X'.
+  node-text = '영업외비용'.
+  node-expander = 'X'.
+  APPEND node TO node_table.
+
+  " 파일 생성을 위한 데이터 선언.
+  DATA: lt_node LIKE gt_tab,
+        ls_node LIKE gs_tab.
+
+  " 파일에 넣어줄 데이터(계정과목)를 가져오기.
+  CLEAR lt_node.
+  SELECT acccode accname
+    FROM ztc702_account
+    INTO CORRESPONDING FIELDS OF TABLE lt_node
+   WHERE delflag = ''
+   ORDER BY acccode ASCENDING.
+
+  " Tree > Node 안에 넣어줄 파일.
+  LOOP AT lt_node INTO ls_node.
+    CLEAR node.
+    IF ls_node-acccode BETWEEN 100 AND 153.
+      node-node_key = ls_node-acccode.
+      node-text = ls_node-acccode && '   ' && ls_node-accname.
+      node-relatkey = 'Child1'.
+      APPEND node TO node_table.
+    ELSEIF ls_node-acccode BETWEEN 206 AND 210.
+      node-node_key = ls_node-acccode.
+      node-text = ls_node-acccode && '   ' && ls_node-accname.
+      node-relatkey = 'Child2'.
+      APPEND node TO node_table.
+    ELSEIF ls_node-acccode < 300.
+      node-node_key = ls_node-acccode.
+      node-text = ls_node-acccode && '   ' && ls_node-accname.
+      node-relatkey = 'Child3'.
+      APPEND node TO node_table.
+    ELSEIF ls_node-acccode < 330.
+      node-node_key = ls_node-acccode.
+      node-text = ls_node-acccode && '   ' && ls_node-accname.
+      node-relatkey = 'Child4'.
+      APPEND node TO node_table.
+    ELSEIF ls_node-acccode < 370.
+      node-node_key = ls_node-acccode.
+      node-text = ls_node-acccode && '   ' && ls_node-accname.
+      node-relatkey = 'Child5'.
+      APPEND node TO node_table.
+    ELSEIF ls_node-acccode < 400.
+      node-node_key = ls_node-acccode.
+      node-text = ls_node-acccode && '   ' && ls_node-accname.
+      node-relatkey = 'Child6'.
+      APPEND node TO node_table.
+    ELSEIF ls_node-acccode < 500.
+      node-node_key = ls_node-acccode.
+      node-text = ls_node-acccode && '   ' && ls_node-accname.
+      node-relatkey = 'Child7'.
+      APPEND node TO node_table.
+    ELSEIF ls_node-acccode < 840.
+      node-node_key = ls_node-acccode.
+      node-text = ls_node-acccode && '   ' && ls_node-accname.
+      node-relatkey = 'Child9'.
+      APPEND node TO node_table.
+    ELSEIF ls_node-acccode < 940.
+      node-node_key = ls_node-acccode.
+      node-text = ls_node-acccode && '   ' && ls_node-accname.
+      node-relatkey = 'Child8'.
+      APPEND node TO node_table.
+    ELSEIF ls_node-acccode < 990.
+      node-node_key = ls_node-acccode.
+      node-text = ls_node-acccode && '   ' && ls_node-accname.
+      node-relatkey = 'Child10'.
+      APPEND node TO node_table.
+    ENDIF.
+  ENDLOOP.
+  CLEAR lt_node.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form NODE_DOUBLE_CLICK_100
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*      -->P_NODE_KEY  text
+*&---------------------------------------------------------------------*
+FORM node_double_click_100 USING p_node_key.
+  " 더블클릭시 보여줄 데이터 넣기.
+  PERFORM set_data USING p_node_key.
+  " 데이터 보여준 다음 grid는 리프레쉬하기.
+  PERFORM refresh_grid.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form REFRESH_GRID
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM refresh_grid .
+  DATA: l_scroll TYPE lvc_s_stbl.
+  l_scroll-row = 'X'.
+  l_scroll-col = 'X'.
+  CALL METHOD go_alv_grid->refresh_table_display
+    EXPORTING
+      i_soft_refresh = ''
+      is_stable      = l_scroll.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form MAKE_FIELDCAT
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM make_fieldcat .
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'DOCUMONTH'.
+  gs_fcat-coltext = '월별'.
+  gs_fcat-key = 'X'.
+  gs_fcat-just = 'C'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'DRAMOUNT'.
+  gs_fcat-coltext = '차변'.
+  gs_fcat-key = 'X'.
+*  gs_fcat-just = 'C'.
+  gs_fcat-cfieldname = 'CURRENCY'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'CRAMOUNT'.
+  gs_fcat-coltext = '대변'.
+  gs_fcat-key = 'X'.
+*  gs_fcat-just = 'C'.
+  gs_fcat-cfieldname = 'CURRENCY'.
+
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'TOTAMOUNT'.
+  gs_fcat-coltext = '잔액'.
+  gs_fcat-key = 'X'.
+*  gs_fcat-just = 'C'.
+  gs_fcat-cfieldname = 'CURRENCY'.
+  APPEND gs_fcat TO gt_fcat.
+
+  CLEAR gs_fcat.
+  gs_fcat-fieldname = 'CURRENCY'.
+  gs_fcat-coltext = '통화'.
+  gs_fcat-currency = 'KRW'.
+  gs_fcat-just = 'C'.
+  APPEND gs_fcat TO gt_fcat.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form INIT_CONDITION
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM init_condition .
+  " 조회기간을 선택할 수 있게 하려고 했으나, 월별 데이터를 다 보여주기 때문에 고정으로 변경.
+  zsc702_period-docudate_a = sy-datum(4) && '01'.
+  zsc702_period-docudate_b = sy-datum(4) && '12'.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form SET_DATA
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM set_data USING VALUE(p_node_key).
+  " 합계가 더블클릭할 때, 여러번 나오지 않게 gt_sum 클리어.
+  CLEAR gt_sum.
+
+  " 계정별로 차/대변 합계 및 잔액 금액 데이터 넣어주기.
+  " 전표번호(docunum)에 있는 날짜를 기준으로 합계를 위한 데이터를 가져오기.
+  IF zsc702_period-docudate_a IS NOT INITIAL AND zsc702_period-docudate_b IS NOT INITIAL.
+    DATA: lt_tab LIKE gt_tab,
+          ls_tab LIKE gs_tab,
+          lt_sum LIKE gt_sum,
+          ls_sum LIKE gs_sum.
+
+    DATA: lv_sum   TYPE i,
+          lv_text  TYPE string, " 전표번호로 해당 월에 일별 데이터 넣어주기 위해 선언.
+          lv_month TYPE c LENGTH 6. " 조회기간 몇 월인지 구하기 위해 선언.
+
+    DATA: lv_date_a TYPE s_date,
+          lv_date_b TYPE s_date.
+
+    " 조회기간에 입력한 월(기간)만큼 Do 실행.
+    " a to b 값을 b-a+1로 함. (ex. 1월~10월 조회기간일 경우 Do문이 10번 돌아감).
+*lv_month = zsc702_period-docudate_b+4(2) - zsc702_period-docudate_a+4(2) + 1.
+
+    DO 12 TIMES.
+      IF sy-index < 10.
+        CLEAR: ls_sum, lt_sum, ls_tab, lt_tab.
+        ls_sum-documonth = '20230' && sy-index.
+        lv_date_a = ls_sum-documonth && '01'.
+        lv_date_b = ls_sum-documonth && '31'.
+
+        SELECT *
+          FROM zdvc702_docu
+          INTO CORRESPONDING FIELDS OF TABLE lt_tab
+         WHERE docudate BETWEEN lv_date_a AND lv_date_b
+           AND acccode = p_node_key.
+
+        LOOP AT lt_tab INTO ls_tab.
+          IF ls_tab-drcrsort = 'DR'.
+            ls_sum-dramount = ls_sum-dramount + ls_tab-amount.
+          ELSEIF ls_tab-drcrsort = 'CR'.
+            ls_sum-cramount = ls_sum-cramount + ls_tab-amount.
+          ENDIF.
+        ENDLOOP.
+
+        IF ls_sum-dramount > ls_sum-cramount.
+          ls_sum-totamount = ls_sum-totamount + abs( ls_sum-dramount - ls_sum-cramount ).
+        ELSE.
+          ls_sum-totamount = ls_sum-totamount - abs( ls_sum-dramount - ls_sum-cramount ).
+        ENDIF.
+        ls_sum-currency = 'KRW'.
+        APPEND ls_sum TO gt_sum.
+
+      ELSEIF sy-index BETWEEN 10 AND 12.
+        CLEAR: ls_sum, lt_sum, ls_tab, lt_tab.
+        ls_sum-documonth = '2023' && sy-index.
+        lv_date_a = ls_sum-documonth && '01'.
+        lv_date_b = ls_sum-documonth && '31'.
+
+        SELECT *
+          FROM zdvc702_docu
+          INTO CORRESPONDING FIELDS OF TABLE lt_tab
+         WHERE docudate BETWEEN lv_date_a AND lv_date_b
+           AND acccode = p_node_key.
+
+        LOOP AT lt_tab INTO ls_tab.
+          IF ls_tab-drcrsort = 'DR'.
+            ls_sum-dramount = ls_sum-dramount + ls_tab-amount.
+          ELSEIF ls_tab-drcrsort = 'CR'.
+            ls_sum-cramount = ls_sum-cramount + ls_tab-amount.
+          ENDIF.
+        ENDLOOP.
+
+        IF ls_sum-dramount > ls_sum-cramount.
+          ls_sum-totamount = ls_sum-totamount + abs( ls_sum-dramount - ls_sum-cramount ).
+        ELSE.
+          ls_sum-totamount = ls_sum-totamount - abs( ls_sum-dramount - ls_sum-cramount ).
+        ENDIF.
+        ls_sum-currency = 'KRW'.
+        APPEND ls_sum TO gt_sum.
+      ENDIF.
+    ENDDO.
+
+*    p_node_key = 101.
+*    IF sy-index = 10.
+*      ls_sum-documonth = '202310'.
+*      SELECT *
+*      FROM zdvc702_docu
+*      INTO CORRESPONDING FIELDS OF TABLE lt_tab
+*      WHERE acccode = p_node_key.
+*
+*    LOOP AT lt_tab INTO ls_tab.
+*      IF ls_tab-drcrsort = 'DR'.
+*        ls_sum-dramount = ls_tab-amount.
+*      ELSEIF ls_tab-drcrsort = 'CR'.
+*        ls_sum-cramount = ls_tab-amount.
+*      ENDIF.
+*    ENDLOOP.
+*
+*" 외상매입금처럼 대변이 더 큰 계정과목이 있어서 절대값 사용.
+*    IF ls_sum-dramount > ls_sum-cramount.
+*      ls_sum-totamount = ls_sum-totamount + abs( ls_sum-dramount - ls_sum-cramount ).
+*    ELSE.
+*      ls_sum-totamount = ls_sum-totamount - abs( ls_sum-dramount - ls_sum-cramount ).
+*    ENDIF.
+*    ls_sum-currency = 'KRW'.
+*    APPEND ls_sum TO gt_sum.
+*
+*    ELSEIF sy-index < 10.
+*      ls_sum-documonth = '20230' && sy-index.
+*      ls_sum-dramount = 700000 * sy-index.
+*      ls_sum-cramount = 400000 * sy-index.
+*    IF ls_sum-dramount > ls_sum-cramount.
+*      ls_sum-totamount = ls_sum-totamount + abs( ls_sum-dramount - ls_sum-cramount ).
+*    ELSE.
+*      ls_sum-totamount = ls_sum-totamount - abs( ls_sum-dramount - ls_sum-cramount ).
+*    ENDIF.
+*      ls_sum-currency = 'KRW'.
+*      APPEND ls_sum TO gt_sum.
+*    ELSEIF sy-index > 10.
+*      ls_sum-documonth = '20230' && sy-index.
+*      ls_sum-dramount = 700000 * sy-index.
+*      ls_sum-cramount = 400000 * sy-index.
+*    IF ls_sum-dramount > ls_sum-cramount.
+*      ls_sum-totamount = ls_sum-totamount + abs( ls_sum-dramount - ls_sum-cramount ).
+*    ELSE.
+*      ls_sum-totamount = ls_sum-totamount - abs( ls_sum-dramount - ls_sum-cramount ).
+*    ENDIF.
+*      ls_sum-currency = 'KRW'.
+*      APPEND ls_sum TO gt_sum.
+*    ENDIF.
+*  ELSE.
+*    IF sy-index < 10.
+*    CLEAR: lt_sum, ls_tab, lt_tab.
+*    ls_sum-documonth = '20230' && sy-index.
+*    lv_date_a = ls_sum-documonth && '01'.
+*    lv_date_b = ls_sum-documonth && '31'.
+*
+*    SELECT *
+*      FROM zdvc702_docu
+*      INTO CORRESPONDING FIELDS OF TABLE lt_tab
+*      WHERE docudate BETWEEN lv_date_a AND lv_date_b
+*        AND acccode = p_node_key.
+*
+*    LOOP AT lt_tab INTO ls_tab.
+*      IF ls_tab-drcrsort = 'DR'.
+*        ls_sum-dramount = ls_tab-amount.
+*      ELSEIF ls_tab-drcrsort = 'CR'.
+*        ls_sum-cramount = ls_tab-amount.
+*      ENDIF.
+*    ENDLOOP.
+*
+*    IF ls_sum-dramount IS INITIAL AND ls_sum-cramount IS INITIAL.
+*      ls_sum-dramount = 700000 * sy-index.
+*      ls_sum-cramount = 400000 * sy-index.
+*    ENDIF.
+*
+*    ls_sum-totamount = ls_sum-totamount + ( ls_sum-dramount - ls_sum-cramount ). " 외상매입금처럼 대변이 더 큰 계정과목이 있어서 절대값 사용.
+*    ls_sum-currency = 'KRW'.
+*    APPEND ls_sum TO gt_sum.
+*
+*  ELSEIF sy-index >= 10.
+*    CLEAR: lt_sum, ls_tab, lt_tab.
+*    ls_sum-documonth = '2023' && sy-index.
+*    lv_date_a = ls_sum-documonth && '01'.
+*    lv_date_b = ls_sum-documonth && '31'.
+*
+*    SELECT *
+*      FROM zdvc702_docu
+*      INTO CORRESPONDING FIELDS OF TABLE lt_tab
+*      WHERE docudate BETWEEN lv_date_a AND lv_date_b
+*        AND acccode = p_node_key.
+*
+*    LOOP AT lt_tab INTO ls_tab.
+*      IF ls_tab-drcrsort = 'DR'.
+*        ls_sum-dramount = ls_tab-amount.
+*      ELSEIF ls_tab-drcrsort = 'CR'.
+*        ls_sum-cramount = ls_tab-amount.
+*      ENDIF.
+*    ENDLOOP.
+*
+*    IF ls_sum-dramount IS INITIAL AND ls_sum-cramount IS INITIAL.
+*      ls_sum-dramount = 1000000 * sy-index.
+*      ls_sum-cramount = 500000 * sy-index.
+*    ENDIF.
+*
+*    ls_sum-totamount = ls_sum-totamount + ( ls_sum-dramount - ls_sum-cramount ). " 외상매입금처럼 대변이 더 큰 계정과목이 있어서 절대값 사용.
+*    ls_sum-currency = 'KRW'.
+*    APPEND ls_sum TO gt_sum.
+*  ENDIF.
+*  ENDIF.
+
+
+
+
+*    SELECT drcrsort SUM( amount ) AS amount
+*      FROM zdvc702_docu INTO CORRESPONDING FIELDS OF TABLE lt_tab
+*      WHERE docudate BETWEEN '20230101' AND '20230131'   " s_date
+*        AND acccode = p_node_key " ZDEC702_ACCCODE
+*      GROUP BY drcrsort.
+
+*    SELECT *
+*      FROM zdvc702_docu
+*      INTO CORRESPONDING FIELDS OF TABLE lt_tab
+*      WHERE docudate BETWEEN '20231001' AND '20231031'
+*        AND acccode = p_node_key.
+*
+*    LOOP AT lt_tab INTO ls_tab.
+*      IF ls_tab-drcrsort = 'DR'.
+*        ls_sum-dramount = ls_tab-amount.
+*      ELSEIF ls_tab-drcrsort = 'CR'.
+*        ls_sum-cramount = ls_tab-amount.
+*      ENDIF.
+*    ENDLOOP.
+*
+*    ls_sum-totamount = ls_sum-totamount + abs( ls_sum-dramount - ls_sum-cramount ). " 외상매입금처럼 대변이 더 큰 계정과목이 있어서 절대값 사용.
+*    ls_sum-currency = 'KRW'.
+*    APPEND ls_sum TO gt_sum.
+*ENDDO.
+
+
+*DO 12 TIMES.
+*  IF sy-index < 10.
+*    CLEAR: ls_sum, ls_tab, lt_tab.
+*    lv_month = '20230' && sy-index.
+*    ls_sum-documonth = '20230' && sy-index.
+*    lv_date_a = '20230' && sy-index && '%'.
+*    lv_date_b = '20230' && sy-index && '%'.
+*    SELECT drcrsort SUM( amount ) AS amount
+*    FROM zdvc702_docu INTO CORRESPONDING FIELDS OF TABLE lt_tab
+*   WHERE docudate BETWEEN lv_date_a AND lv_date_b
+*     AND acccode = p_node_key
+*   GROUP BY drcrsort.
+*
+*  LOOP AT lt_tab INTO ls_tab.
+*    IF ls_tab-drcrsort = 'DR'.
+*      ls_sum-dramount = ls_tab-amount.
+*    ELSEIF ls_tab-drcrsort = 'CR'.
+*      ls_sum-cramount = ls_tab-amount.
+*    ENDIF.
+*  ENDLOOP.
+*
+*  ls_sum-totamount = ls_sum-totamount + abs( ls_sum-dramount - ls_sum-cramount ).
+*  ls_sum-currency = 'KRW'.
+*  APPEND ls_sum TO gt_sum.
+*  ELSE.
+*    CLEAR: ls_sum, ls_tab, lt_tab.
+*    lv_month = '2023' && sy-index.
+*    ls_sum-documonth = '2023' && sy-index.
+*    lv_date_a = '2023' && sy-index && '%'.
+*    lv_date_b = '2023' && sy-index && '%'.
+*    SELECT drcrsort SUM( amount ) AS amount
+*    FROM zdvc702_docu INTO CORRESPONDING FIELDS OF TABLE lt_tab
+*   WHERE docudate BETWEEN lv_date_a AND lv_date_b
+*     AND acccode = p_node_key
+*   GROUP BY drcrsort.
+*
+*  LOOP AT lt_tab INTO ls_tab.
+*    IF ls_tab-drcrsort = 'DR'.
+*      ls_sum-dramount = ls_tab-amount.
+*    ELSEIF ls_tab-drcrsort = 'CR'.
+*      ls_sum-cramount = ls_tab-amount.
+*    ENDIF.
+*  ENDLOOP.
+*
+*  ls_sum-totamount = ls_sum-totamount + abs( ls_sum-dramount - ls_sum-cramount ).
+*  ls_sum-currency = 'KRW'.
+*  APPEND ls_sum TO gt_sum.
+*  ENDIF.
+**  ls_sum-documonth = '2023.01'.
+**  lv_date_a = ls_sum-documonth && '01'.
+**  lv_date_b = ls_sum-documonth && '31'.
+*ENDDO.
+
+
+
+
+
+*  CLEAR ls_sum.
+*  CLEAR: lt_sum, ls_tab, lt_tab.
+*" 10월 이전과 10~12월로 경우의 수를 나눔.
+*" 10월 이전: 전표번호 끝 0 추가, 10월 부터: 0없이 전표번호 불러오기.
+*  IF sy-index < 10. "a12023000001
+*    ls_sum-documonth = '20230' && sy-index.
+*    lv_text = '____0' && sy-index && '%'.
+**    lv_date_a = ls_sum-documonth && '%'.
+**    lv_text = '__2023' && sy-index && '%'.
+*" 데이터베이스뷰(헤더/아이템 join)에서 데이터를 가져옴.
+*" 전표번호를 기준으로 차변/대변 값 가져옴.
+*    SELECT drcrsort SUM( amount ) AS amount
+*      FROM zdvc702_docu INTO CORRESPONDING FIELDS OF TABLE lt_tab
+*      WHERE docudate = lv_text
+*        AND  acccode = p_node_key  " 더블클릭한 계정과목에 대해서만 출력되게끔 node_key 넣어줌.
+*      GROUP BY drcrsort.
+*" 차변일 경우 해당 합계가 차변에 들어감, 대변일 경우 해당 합계가 대변에 들어감.
+*    LOOP AT lt_tab INTO ls_tab.
+*      IF ls_tab-drcrsort = 'DR'.
+*        ls_sum-dramount = ls_tab-amount.
+*      ELSEIF ls_tab-drcrsort = 'CR'.
+*        ls_sum-cramount = ls_tab-amount.
+*      ENDIF.
+*    ENDLOOP.
+*    ls_sum-totamount = ls_sum-totamount + abs( ls_sum-dramount - ls_sum-cramount ). " 외상매입금처럼 대변이 더 큰 계정과목이 있어서 절대값 사용.
+*    ls_sum-currency = 'KRW'.
+*    APPEND ls_sum TO gt_sum.
+*
+*" IF문과 동일한 내용으로, 10월이후 데이터에 대한 처리 방법.
+*  CLEAR: lt_sum, ls_tab, lt_tab.
+*  ELSEIF sy-index >= 10.
+*    ls_sum-documonth = '2023' && sy-index.
+*    lv_text = '____0' && sy-index && '%'.
+**    lv_text = '______0000' && sy-index && '%'.
+*    SELECT drcrsort SUM( amount ) AS amount
+*      FROM zdvc702_docu INTO CORRESPONDING FIELDS OF TABLE lt_tab
+*      WHERE docudate = lv_text
+*       AND acccode = p_node_key
+*      GROUP BY drcrsort.
+*    LOOP AT lt_tab INTO ls_tab.
+*      IF ls_tab-drcrsort = 'DR'.
+*        ls_sum-dramount = ls_tab-amount.
+*      ELSEIF ls_tab-drcrsort = 'CR'.
+*        ls_sum-cramount = ls_tab-amount.
+*      ENDIF.
+*    ENDLOOP.
+*    ls_sum-totamount = ls_sum-totamount + abs( ls_sum-dramount - ls_sum-cramount ).
+*    ls_sum-currency = 'KRW'.
+*    APPEND ls_sum TO gt_sum.
+*    CLEAR: ls_sum, lt_sum, ls_tab, lt_tab.
+*  ENDIF. " 10월 이전/10월 이후 데이터를 구분하기위한 IF문.
+*ENDDO.   " 조회기간에 따라 몇개의 월을 가져올지 선택하는 DO문.
+  ELSE.    " 날짜에 값이 없을 경우 입력하라는 에러 메시지 나옴.
+    MESSAGE '조회기간을 입력하세요.' TYPE 'I'.
+  ENDIF.   " 날짜에 값이 있을 때만 실행되는 IF문.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0200 OUTPUT.
+  SET PF-STATUS 'P0200'.
+  SET TITLEBAR 'T0200'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Form INIT_COND_200
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM init_cond_200 .
+  zsc702_income-docudate_a = '20230101'.
+  zsc702_income-docudate_b = sy-datum.
+
+  IF zsc702_income-docudate_a > zsc702_income-docudate_b.
+    MESSAGE '시작일자와 종료일자가 잘못 입력되었습니다.' TYPE 'I'.
+    RETURN.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_DATA_INCOME
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM get_data_income .
+  " 조회 버튼 클릭시, 3줄만 나오게 ALV 테이블 클리어함.
+  CLEAR gt_tab2.
+  " 금액 넣기.
+  DATA: lt_tab  LIKE gt_tab2,
+        ls_tab  LIKE gs_tab2,
+        lv_sum  TYPE n LENGTH 10,
+        lv_sum2 TYPE n LENGTH 10,
+        lv_sum3 TYPE n LENGTH 10.
+
+  " 매출액 계산.
+  SELECT amount
+    FROM zdvc702_docu
+    INTO CORRESPONDING FIELDS OF TABLE lt_tab
+   WHERE docudate BETWEEN zsc702_income-docudate_a AND zsc702_income-docudate_b
+     AND drcrsort = 'DR'
+     AND acccode = '108'.
+
+  LOOP AT lt_tab INTO ls_tab.
+    lv_sum = lv_sum + ls_tab-amount.
+  ENDLOOP.
+
+  ls_tab-amount = lv_sum.
+  ls_tab-accname = '매출액'.
+  ls_tab-currency = 'KRW'.
+  APPEND ls_tab TO gt_tab2.
+
+  " 매출원가 계산.
+  CLEAR lt_tab.
+  SELECT amount
+    FROM zdvc702_docu
+    INTO CORRESPONDING FIELDS OF TABLE lt_tab
+   WHERE docudate BETWEEN zsc702_income-docudate_a AND zsc702_income-docudate_b
+     AND drcrsort = 'CR'
+     AND acccode = '251'.
+
+  LOOP AT lt_tab INTO ls_tab.
+    lv_sum2 = lv_sum2 + ls_tab-amount.
+  ENDLOOP.
+
+  ls_tab-amount = lv_sum2.
+  ls_tab-accname = '매출원가'.
+  ls_tab-currency = 'KRW'.
+  APPEND ls_tab TO gt_tab2.
+
+  " 매출총이익 계산.
+  lv_sum3 = lv_sum - lv_sum2.
+  IF lv_sum >= lv_sum2.
+    ls_tab-amount = lv_sum3.
+    ls_tab-accname = '매출총이익'.
+    ls_tab-currency = 'KRW'.
+    APPEND ls_tab TO gt_tab2.
+  ELSEIF lv_sum < lv_sum2.
+    ls_tab-amount = lv_sum3.
+    ls_tab-accname = '매출총손실'.
+    ls_tab-currency = 'KRW'.
+    APPEND ls_tab TO gt_tab2.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form GET_DATA_POSITION
+*&---------------------------------------------------------------------*
+*& text
+*&---------------------------------------------------------------------*
+*& -->  p1        text
+*& <--  p2        text
+*&---------------------------------------------------------------------*
+FORM get_data_position .
+  " 조회 버튼 클릭마다, 데이터 업데이트해서 ALV 출력되게끔 클리어.
+  CLEAR gt_tab3.
+
+  " 금액 넣을 데이터 생성.
+  DATA: lt_tab    LIKE gt_tab3,
+        ls_tab    LIKE gs_tab3,
+        lv_drsum  TYPE n LENGTH 10,
+        lv_crsum  TYPE n LENGTH 10,
+        lv_totsum TYPE n LENGTH 10,
+        lv_accsum TYPE n LENGTH 10.
+
+  " 현금 계산.
+  SELECT drcrsort amount
+    FROM zdvc702_docu
+    INTO CORRESPONDING FIELDS OF TABLE lt_tab
+   WHERE docudate BETWEEN zsc702_income-docudate_a AND zsc702_income-docudate_b
+     AND acccode = '101'.
+
+  LOOP AT lt_tab INTO ls_tab.
+    IF ls_tab-drcrsort = 'DR'.
+      lv_drsum = lv_drsum + ls_tab-amount.
+    ELSEIF ls_tab-drcrsort = 'CR'.
+      lv_crsum = lv_crsum + ls_tab-amount.
+    ENDIF.
+  ENDLOOP.
+
+  IF lv_drsum >= lv_crsum.
+    lv_totsum = lv_drsum - lv_crsum.
+    ls_tab-amount = lv_totsum.
+    ls_tab-accname = '현금'.
+    ls_tab-currency = 'KRW'.
+  ELSEIF lv_drsum < lv_crsum.
+    lv_totsum = lv_drsum - lv_crsum.
+    ls_tab-amount = lv_totsum.
+    ls_tab-accname = '현금'.
+    ls_tab-currency = 'KRW'.
+  ENDIF.
+  lv_accsum = lv_accsum + lv_totsum.
+  APPEND ls_tab TO gt_tab3.
+
+  " 외상매출금 계산.
+  CLEAR: ls_tab, lv_totsum, lv_drsum, lv_crsum.
+
+  SELECT drcrsort amount
+    FROM zdvc702_docu
+    INTO CORRESPONDING FIELDS OF TABLE lt_tab
+   WHERE docudate BETWEEN zsc702_income-docudate_a AND zsc702_income-docudate_b
+     AND acccode = '108'.
+
+  LOOP AT lt_tab INTO ls_tab.
+    IF ls_tab-drcrsort = 'DR'.
+      lv_drsum = lv_drsum + ls_tab-amount.
+    ELSEIF ls_tab-drcrsort = 'CR'.
+      lv_crsum = lv_crsum + ls_tab-amount.
+    ENDIF.
+  ENDLOOP.
+
+  IF lv_drsum >= lv_crsum.
+    lv_totsum = lv_drsum - lv_crsum.
+    ls_tab-amount = lv_totsum.
+    ls_tab-accname = '외상매출금'.
+    ls_tab-currency = 'KRW'.
+  ELSEIF lv_drsum < lv_crsum.
+    lv_totsum = lv_drsum - lv_crsum.
+    ls_tab-amount = lv_totsum.
+    ls_tab-accname = '외상매출금'.
+    ls_tab-currency = 'KRW'.
+  ENDIF.
+  lv_accsum = lv_accsum + lv_totsum.
+  APPEND ls_tab TO gt_tab3.
+
+  " 상품 계산.
+  CLEAR: ls_tab, lv_totsum, lv_drsum, lv_crsum.
+
+  SELECT drcrsort amount
+    FROM zdvc702_docu
+    INTO CORRESPONDING FIELDS OF TABLE lt_tab
+   WHERE docudate BETWEEN zsc702_income-docudate_a AND zsc702_income-docudate_b
+     AND acccode = '146'.
+
+  LOOP AT lt_tab INTO ls_tab.
+    IF ls_tab-drcrsort = 'DR'.
+      lv_drsum = lv_drsum + ls_tab-amount.
+    ELSEIF ls_tab-drcrsort = 'CR'.
+      lv_crsum = lv_crsum + ls_tab-amount.
+    ENDIF.
+  ENDLOOP.
+
+  IF lv_drsum >= lv_crsum.
+    lv_totsum = lv_drsum - lv_crsum.
+    ls_tab-amount = lv_totsum.
+    ls_tab-accname = '상품'.
+    ls_tab-currency = 'KRW'.
+  ELSEIF lv_drsum < lv_crsum.
+    lv_totsum = lv_drsum - lv_crsum.
+    lv_totsum = '(' && lv_totsum && ')'.
+    ls_tab-amount = lv_totsum.
+    ls_tab-accname = '상품'.
+    ls_tab-currency = 'KRW'.
+  ENDIF.
+  lv_accsum = lv_accsum + lv_totsum.
+  APPEND ls_tab TO gt_tab3.
+
+  " 원자재 계산.
+  CLEAR: ls_tab, lv_totsum, lv_drsum, lv_crsum.
+
+  SELECT drcrsort amount
+    FROM zdvc702_docu
+    INTO CORRESPONDING FIELDS OF TABLE lt_tab
+   WHERE docudate BETWEEN zsc702_income-docudate_a AND zsc702_income-docudate_b
+     AND acccode = '150'.
+
+  LOOP AT lt_tab INTO ls_tab.
+    IF ls_tab-drcrsort = 'DR'.
+      lv_drsum = lv_drsum + ls_tab-amount.
+    ELSEIF ls_tab-drcrsort = 'CR'.
+      lv_crsum = lv_crsum + ls_tab-amount.
+    ENDIF.
+  ENDLOOP.
+
+  IF lv_drsum >= lv_crsum.
+    lv_totsum = lv_drsum - lv_crsum.
+    ls_tab-amount = lv_totsum.
+    ls_tab-accname = '원자재'.
+    ls_tab-currency = 'KRW'.
+  ELSEIF lv_drsum < lv_crsum.
+    lv_totsum = lv_drsum - lv_crsum.
+    lv_totsum = '(' && lv_totsum && ')'.
+    ls_tab-amount = lv_totsum.
+    ls_tab-accname = '원자재'.
+    ls_tab-currency = 'KRW'.
+  ENDIF.
+  lv_accsum = lv_accsum + lv_totsum.
+  APPEND ls_tab TO gt_tab3.
+
+  " 부자재 계산.
+  CLEAR: ls_tab, lv_totsum, lv_drsum, lv_crsum.
+
+  SELECT drcrsort amount
+    FROM zdvc702_docu
+    INTO CORRESPONDING FIELDS OF TABLE lt_tab
+   WHERE docudate BETWEEN zsc702_income-docudate_a AND zsc702_income-docudate_b
+     AND acccode = '153'.
+
+  LOOP AT lt_tab INTO ls_tab.
+    IF ls_tab-drcrsort = 'DR'.
+      lv_drsum = lv_drsum + ls_tab-amount.
+    ELSEIF ls_tab-drcrsort = 'CR'.
+      lv_crsum = lv_crsum + ls_tab-amount.
+    ENDIF.
+  ENDLOOP.
+
+  IF lv_drsum >= lv_crsum.
+    lv_totsum = lv_drsum - lv_crsum.
+    ls_tab-amount = lv_totsum.
+    ls_tab-accname = '부자재'.
+    ls_tab-currency = 'KRW'.
+  ELSEIF lv_drsum < lv_crsum.
+    lv_totsum = lv_drsum - lv_crsum.
+    lv_totsum = '(' && lv_totsum && ')'.
+    ls_tab-amount = lv_totsum.
+    ls_tab-accname = '부자재'.
+    ls_tab-currency = 'KRW'.
+  ENDIF.
+  lv_accsum = lv_accsum + lv_totsum.
+  APPEND ls_tab TO gt_tab3.
+
+  " 자산 총계 계산.
+  ls_tab-accname = '자산 총계'.
+  ls_tab-amount = lv_accsum.
+  ls_tab-currency = 'KRW'.
+  APPEND ls_tab TO gt_tab3.
+  CLEAR lv_accsum.
+
+  " 외상매입금 계산.
+  CLEAR: ls_tab, lv_totsum, lv_drsum, lv_crsum.
+
+  SELECT drcrsort amount
+    FROM zdvc702_docu
+    INTO CORRESPONDING FIELDS OF TABLE lt_tab
+   WHERE docudate BETWEEN zsc702_income-docudate_a AND zsc702_income-docudate_b
+     AND acccode = '251'.
+
+  LOOP AT lt_tab INTO ls_tab.
+    IF ls_tab-drcrsort = 'DR'.
+      lv_drsum = lv_drsum + ls_tab-amount.
+    ELSEIF ls_tab-drcrsort = 'CR'.
+      lv_crsum = lv_crsum + ls_tab-amount.
+    ENDIF.
+  ENDLOOP.
+
+  IF lv_drsum >= lv_crsum.
+    lv_totsum = lv_drsum - lv_crsum.
+    ls_tab-amount = lv_totsum.
+    ls_tab-accname = '외상매입금'.
+    ls_tab-currency = 'KRW'.
+  ELSEIF lv_drsum < lv_crsum.
+    lv_totsum = lv_drsum - lv_crsum.
+    lv_totsum = '(' && lv_totsum && ')'.
+    ls_tab-amount = lv_totsum.
+    ls_tab-accname = '외상매입금'.
+    ls_tab-currency = 'KRW'.
+  ENDIF.
+  lv_accsum = lv_accsum + lv_totsum.
+  APPEND ls_tab TO gt_tab3.
+
+  " 부채 총계 계산.
+  ls_tab-accname = '부채 총계'.
+  ls_tab-amount = lv_accsum.
+  ls_tab-currency = 'KRW'.
+  APPEND ls_tab TO gt_tab3.
+  CLEAR lv_accsum.
+
+  " 자본 총계 계산.
+  ls_tab-accname = '자본 총계'.
+  ls_tab-amount = 0.
+  ls_tab-currency = 'KRW'.
+  APPEND ls_tab TO gt_tab3.
+ENDFORM.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

@@ -1,0 +1,102 @@
+*&---------------------------------------------------------------------*
+*& Include MZC702_PP_08TOP                          - Module Pool      SAPMZC702_PP_08
+*&---------------------------------------------------------------------*
+PROGRAM sapmzc702_pp_08 MESSAGE-ID zc702_message.
+
+TYPE-POOLS icon.
+
+TABLES: ztc702_mrp_h, ztc702_mrp_i, zdvc702_mrplist.
+
+TYPES: BEGIN OF gty_mrp_pr.
+    INCLUDE TYPE ztc702_mrp_i .
+TYPES: light     TYPE c LENGTH 1,
+       request   TYPE c LENGTH 16,
+       cellstyle TYPE lvc_t_styl,
+       END OF gty_mrp_pr .
+
+***** MRP LIST를 위한 데이터 선언
+DATA: gt_mrp_h     TYPE TABLE OF ztc702_mrp_h,
+      gs_mrp_hf    TYPE ztc702_mrp_h,
+      gs_mrp_200_h TYPE ztc702_mrp_h,
+      gs_mrp_h     TYPE ztc702_mrp_h.
+
+DATA: gt_mrp_i TYPE TABLE OF gty_mrp_pr,
+      gs_mrp_i TYPE gty_mrp_pr.
+
+***** 구매요청을 위한 MPR 데이터 선언
+DATA: gt_mpr_list TYPE TABLE OF ztc702_mpr,
+      gs_mpr_list TYPE ztc702_mpr.
+
+***** ALV 화면 선언
+DATA: go_container TYPE REF TO cl_gui_custom_container,
+      go_alv_grid  TYPE REF TO cl_gui_alv_grid,
+      gv_refresh   TYPE c LENGTH 1.
+
+DATA: go_container2 TYPE REF TO cl_gui_custom_container,
+      go_alv_grid2  TYPE REF TO cl_gui_alv_grid,
+      gv_refresh2   TYPE c LENGTH 1.
+
+DATA: go_container3 TYPE REF TO cl_gui_custom_container,
+      go_alv_grid3  TYPE REF TO cl_gui_alv_grid,
+      gv_refresh3   TYPE c LENGTH 1.
+
+
+DATA: ok_code       TYPE sy-ucomm,
+      gs_cell_style TYPE lvc_s_styl,
+      gs_layout     TYPE lvc_s_layo,
+      gs_layout_200 TYPE lvc_s_layo.
+
+DATA: gt_fcat     TYPE lvc_t_fcat,      " 100Q번 스크린 MPR 리스트
+      gt_fcat_200 TYPE lvc_t_fcat,      " 200번 스크린 상세 MRP ALV
+      gt_fcat_MPR TYPE LVC_T_fCAT,      " MPR ALV
+      gs_fcat     TYPE lvc_s_fcat.
+
+
+DATA : gt_index TYPE lvc_t_row, "ALV 선택라인 저장 인터널테이블
+       gs_index LIKE LINE OF gt_index, "ALV 선택라인 저장 스트럭쳐
+       gv_lines TYPE i. "선택한 라인수를 저장할 변수
+
+DATA: gv_check TYPE c LENGTH 1 VALUE '1'.     " 필드 비활성화 체크용 데이터
+
+DATA: gv_pre_date TYPE sy-datum,
+      gv_nxt_date TYPE sy-datum.
+
+CLASS lcl_handler DEFINITION.
+  PUBLIC SECTION.
+*    CLASS-DATA : gv_rowid TYPE i.
+    CLASS-METHODS: on_double_click
+                  FOR EVENT double_click OF cl_gui_alv_grid
+      IMPORTING es_row_no,
+
+      on_button_click
+      FOR EVENT button_click OF cl_gui_alv_grid
+
+        IMPORTING es_row_no.
+
+ENDCLASS.
+CLASS lcl_handler IMPLEMENTATION.
+  METHOD on_double_click.
+
+    READ TABLE gt_mrp_h  INTO gs_mrp_hf INDEX es_row_no-row_id.
+
+*    CALL METHOD cl_gui_cfw=>set_new_ok_code
+*      EXPORTING
+*        new_code = 'ENTER'.
+*    CALL SCREEN 200.
+
+    PERFORM display_mrp_i.        " 생산 오더 상세 조회 서브루틴
+
+    LEAVE SCREEN.
+
+  ENDMETHOD.
+  METHOD on_button_click.
+    READ TABLE gt_mrp_i INTO gs_mrp_i INDEX es_row_no-row_id.
+    PERFORM test_display.
+
+    LEAVE SCREEN.
+
+  ENDMETHOD.
+ENDCLASS.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

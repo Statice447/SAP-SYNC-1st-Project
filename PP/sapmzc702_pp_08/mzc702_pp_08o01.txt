@@ -1,0 +1,251 @@
+*&---------------------------------------------------------------------*
+*& Include          MZC702_PP_08O01
+*&---------------------------------------------------------------------*
+*&---------------------------------------------------------------------*
+*& Module SET_ALV OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE set_alv OUTPUT.
+**** 최초 컨테이너 생성 시
+  IF go_container IS INITIAL.
+    CREATE OBJECT go_container
+      EXPORTING
+        container_name = 'MRP_LIST'.
+    gv_refresh     = abap_true.   " 리프레쉬 체크
+  ENDIF.
+
+***** 최초 ALV 생성 시
+  IF gv_refresh = abap_true.      " 리프레시 확인
+    CREATE OBJECT go_alv_grid
+      EXPORTING
+        i_parent = go_container.
+
+***** ALV 핸들러 설정
+    SET HANDLER lcl_handler=>on_double_click FOR go_alv_grid.
+
+***** ALV 레이아웃 및 필드카탈로그 설정
+    PERFORM set_layout.
+    PERFORM set_fcat.
+
+    CALL METHOD go_alv_grid->set_table_for_first_display
+      EXPORTING
+*       i_structure_name = 'ZTC702_MRP_I'
+*       is_variant      = gs_variant
+*       i_save          = gv_save
+        i_default       = 'X'
+        is_layout       = gs_layout
+      CHANGING
+        it_outtab       = gt_mrp_h
+        it_fieldcatalog = gt_fcat
+*       it_sort         =
+*       it_filter       =
+      EXCEPTIONS
+        OTHERS          = 4.
+    IF sy-subrc <> 0.
+*       Implement suitable error handling here
+    ENDIF.
+
+    gv_refresh = abap_false.    " 리프레시 해제
+
+  ELSE.                         " 기존 ALV가 있을경우 리프레시
+    go_alv_grid->refresh_table_display( ).
+  ENDIF.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0100 OUTPUT.
+  SET PF-STATUS 'S0100'.
+  SET TITLEBAR 'T0100'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_100 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_100 OUTPUT.
+
+**** 날짜 초기 값 설정
+  IF gv_pre_date IS INITIAL OR gv_nxt_date IS INITIAL.
+    gv_nxt_date = sy-datum.
+
+    CALL FUNCTION 'RP_CALC_DATE_IN_INTERVAL'
+      EXPORTING
+        date      = sy-datum
+        days      = '00'
+        months    = '01'
+        signum    = '-'
+        years     = '00'
+      IMPORTING
+        calc_date = gv_pre_date.
+
+  ENDIF.
+
+***** ALV LOOP문
+*  LOOP AT gt_mrp_i INTO gs_mrp_i.
+***** 삭제플래그 체크 시 ROW 색 변경
+**    IF gs_prdmanage-delflag = 'X'.
+**      gs_prdmanage-color = 'C610'.
+**    ENDIF.
+***** 상태플래그에 따른 신호등 색 설정 ( 1: 반려/빨강, 2: 대기/노랑, 3: 승인/초록)
+*    IF gs_mrp_i-status = '2'.
+*      gs_mrp_i-light = '2'.
+*    ELSEIF gs_mrp_i-status = '1'.
+*      gs_mrp_i-light = '1'.
+*    ELSEIF gs_mrp_i-status = '3'.
+*      gs_mrp_i-light = '3'.
+*    ENDIF.
+*
+*    MODIFY gt_mrp_i FROM gs_mrp_i TRANSPORTING light.
+*  ENDLOOP.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module CLEAR_OK_CODE OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE clear_ok_code OUTPUT.
+  CLEAR ok_code.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module STATUS_0200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE status_0200 OUTPUT.
+  SET PF-STATUS 'S0200'.
+  SET TITLEBAR 'T0200'.
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SET_ALV_200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE set_alv_200 OUTPUT.
+**** 최초 컨테이너 생성 시
+  IF go_container2 IS INITIAL.
+    CREATE OBJECT go_container2
+      EXPORTING
+        container_name = 'MRP_I'.
+    gv_refresh2     = abap_true.   " 리프레쉬 체크
+  ENDIF.
+
+***** 최초 ALV 생성 시
+  IF gv_refresh2 = abap_true.      " 리프레시 확인
+    CREATE OBJECT go_alv_grid2
+      EXPORTING
+        i_parent = go_container2.
+
+***** ALV 핸들러 설정
+*    SET HANDLER lcl_handler=>on_user_command FOR go_alv_grid2.
+    SET HANDLER lcl_handler=>on_button_click FOR go_alv_grid2.
+
+***** ALV 레이아웃 및 필드카탈로그 설정
+    PERFORM set_layout_200.
+    PERFORM set_fcat_200.
+
+    CALL METHOD go_alv_grid2->set_table_for_first_display
+      EXPORTING
+*       i_structure_name = 'ZTC702_MRP_I'
+*       is_variant      = gs_variant
+*       i_save          = gv_save
+        i_default       = 'X'
+        is_layout       = gs_layout_200
+      CHANGING
+        it_outtab       = gt_mrp_i
+        it_fieldcatalog = gt_fcat_200
+*       it_sort         =
+*       it_filter       =
+      EXCEPTIONS
+        OTHERS          = 4.
+    IF sy-subrc <> 0.
+*       Implement suitable error handling here
+    ENDIF.
+
+    gv_refresh2 = abap_false.    " 리프레시 해제
+
+  ELSE.                         " 기존 ALV가 있을경우 리프레시
+    go_alv_grid2->refresh_table_display( ).
+  ENDIF.
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module INIT_200 OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE init_200 OUTPUT.
+***** 100번 화면 ALV 리스트 인덱스를 통해 데이터 불러오기
+  MOVE-CORRESPONDING gs_mrp_hf TO gs_mrp_200_h.
+
+  SELECT *
+    FROM ztc702_mrp_i INTO CORRESPONDING FIELDS OF TABLE gt_mrp_i
+    WHERE mrpnum = gs_mrp_200_h-mrpnum.
+
+  PERFORM set_cell_light.      " alv 버튼 및 신호등 설정
+
+  PERFORM set_mpr_list.
+
+
+
+ENDMODULE.
+*&---------------------------------------------------------------------*
+*& Module SET_ALV_MPR OUTPUT
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+MODULE set_alv_mpr OUTPUT.
+**** 최초 컨테이너 생성 시
+  IF go_container3 IS INITIAL.
+    CREATE OBJECT go_container3
+      EXPORTING
+        container_name = 'REQUEST_MPR'.
+    gv_refresh3    = abap_true.   " 리프레쉬 체크
+  ENDIF.
+
+***** 최초 ALV 생성 시
+  IF gv_refresh3 = abap_true.      " 리프레시 확인
+    CREATE OBJECT go_alv_grid3
+      EXPORTING
+        i_parent = go_container3.
+
+***** ALV 핸들러 설정
+*    SET HANDLER lcl_handler=>on_user_command FOR go_alv_grid2.
+*  SET HANDLER lcl_handler=>on_button_click FOR go_alv_grid2.
+
+***** ALV 레이아웃 및 필드카탈로그 설정
+*  PERFORM set_layout_200.
+    PERFORM set_fcat_mpr.
+
+    CALL METHOD go_alv_grid3->set_table_for_first_display
+      EXPORTING
+*        i_structure_name = 'ZTC702_MPR'
+*       is_variant       = gs_variant
+*       i_save           = gv_save
+        i_default        = 'X'
+*        is_layout        = gs_layout_200
+      CHANGING
+        it_outtab        = gt_mpr_list
+        it_fieldcatalog  = gt_fcat_mpr
+*       it_sort          =
+*       it_filter        =
+      EXCEPTIONS
+        OTHERS           = 4.
+    IF sy-subrc <> 0.
+*       Implement suitable error handling here
+    ENDIF.
+
+    gv_refresh3 = abap_false.    " 리프레시 해제
+
+  ELSE.                         " 기존 ALV가 있을경우 리프레시
+    go_alv_grid3->refresh_table_display( ).
+  ENDIF.
+
+ENDMODULE.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751

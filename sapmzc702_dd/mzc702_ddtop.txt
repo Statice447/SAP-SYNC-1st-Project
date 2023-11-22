@@ -1,0 +1,13 @@
+*&---------------------------------------------------------------------*
+*& Include MZC702_DDTOP                             - Module Pool      SAPMZC702_DD
+*&---------------------------------------------------------------------*
+PROGRAM sapmzc702_dd MESSAGE-ID ZC702_MESSAGE.
+
+DATA: gv_cont        TYPE string,
+      gv_dynnr_check TYPE string.
+
+DATA: ok_code    TYPE sy-ucomm,
+      subrc      TYPE sy-subrc.
+
+----------------------------------------------------------------------------------
+Extracted by Mass Download version 1.5.5 - E.G.Mellodew. 1998-2023. Sap Release 751
